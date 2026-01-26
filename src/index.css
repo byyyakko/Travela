@@ -94,9 +94,7 @@
     --sidebar-border: 20 15% 20%;
     --sidebar-ring: 16 65% 60%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -109,33 +107,126 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: "Fraunces", Georgia, serif;
   }
+}
 
-  /* Theme-specific font families */
-  body.theme-cutesy {
-    font-family: "Quicksand", system-ui, sans-serif;
-  }
+/* Cutesy Theme - Pastel pink & playful */
+body.theme-cutesy {
+  --background: 330 50% 98%;
+  --foreground: 330 30% 20%;
 
-  body.theme-cutesy h1,
-  body.theme-cutesy h2,
-  body.theme-cutesy h3,
-  body.theme-cutesy h4,
-  body.theme-cutesy h5,
-  body.theme-cutesy h6 {
-    font-family: "Quicksand", system-ui, sans-serif;
-    font-weight: 700;
-  }
+  --card: 330 40% 99%;
+  --card-foreground: 330 30% 20%;
 
-  body.theme-anime {
-    font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
-  }
+  --popover: 330 40% 99%;
+  --popover-foreground: 330 30% 20%;
 
-  body.theme-anime h1,
-  body.theme-anime h2,
-  body.theme-anime h3,
-  body.theme-anime h4,
-  body.theme-anime h5,
-  body.theme-anime h6 {
-    font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
-    font-weight: 700;
-  }
+  /* Soft pink primary */
+  --primary: 340 70% 65%;
+  --primary-foreground: 330 50% 98%;
+
+  /* Lavender secondary */
+  --secondary: 280 40% 92%;
+  --secondary-foreground: 330 30% 25%;
+
+  --muted: 330 30% 94%;
+  --muted-foreground: 330 20% 50%;
+
+  /* Mint accent */
+  --accent: 170 50% 60%;
+  --accent-foreground: 330 50% 98%;
+
+  --destructive: 0 70% 60%;
+  --destructive-foreground: 330 50% 98%;
+
+  --border: 330 30% 88%;
+  --input: 330 30% 88%;
+  --ring: 340 70% 65%;
+
+  --radius: 1.25rem;
+
+  --gradient-warm: linear-gradient(135deg, hsl(340 70% 65%) 0%, hsl(280 60% 70%) 100%);
+  --shadow-card: 0 4px 24px -4px hsla(340, 70%, 65%, 0.15);
+  --shadow-card-hover: 0 12px 36px -8px hsla(340, 70%, 65%, 0.25);
+
+  --sidebar-background: 330 50% 98%;
+  --sidebar-foreground: 330 30% 20%;
+  --sidebar-primary: 340 70% 65%;
+  --sidebar-primary-foreground: 330 50% 98%;
+  --sidebar-accent: 280 40% 92%;
+  --sidebar-accent-foreground: 330 30% 25%;
+  --sidebar-border: 330 30% 88%;
+  --sidebar-ring: 340 70% 65%;
+
+  font-family: "Quicksand", system-ui, sans-serif;
+}
+
+body.theme-cutesy h1,
+body.theme-cutesy h2,
+body.theme-cutesy h3,
+body.theme-cutesy h4,
+body.theme-cutesy h5,
+body.theme-cutesy h6 {
+  font-family: "Quicksand", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+/* Anime Theme - Bold, vibrant, high contrast */
+body.theme-anime {
+  --background: 240 30% 8%;
+  --foreground: 0 0% 98%;
+
+  --card: 240 30% 12%;
+  --card-foreground: 0 0% 98%;
+
+  --popover: 240 30% 12%;
+  --popover-foreground: 0 0% 98%;
+
+  /* Electric cyan primary */
+  --primary: 185 100% 50%;
+  --primary-foreground: 240 30% 8%;
+
+  /* Deep purple secondary */
+  --secondary: 270 60% 25%;
+  --secondary-foreground: 0 0% 98%;
+
+  --muted: 240 25% 18%;
+  --muted-foreground: 240 15% 60%;
+
+  /* Hot pink accent */
+  --accent: 330 100% 60%;
+  --accent-foreground: 240 30% 8%;
+
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 240 30% 22%;
+  --input: 240 30% 22%;
+  --ring: 185 100% 50%;
+
+  --radius: 0.5rem;
+
+  --gradient-warm: linear-gradient(135deg, hsl(185 100% 50%) 0%, hsl(330 100% 60%) 100%);
+  --shadow-card: 0 4px 24px -4px hsla(185, 100%, 50%, 0.2);
+  --shadow-card-hover: 0 12px 40px -8px hsla(330, 100%, 60%, 0.3);
+
+  --sidebar-background: 240 30% 8%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 185 100% 50%;
+  --sidebar-primary-foreground: 240 30% 8%;
+  --sidebar-accent: 270 60% 25%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 240 30% 22%;
+  --sidebar-ring: 185 100% 50%;
+
+  font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+}
+
+body.theme-anime h1,
+body.theme-anime h2,
+body.theme-anime h3,
+body.theme-anime h4,
+body.theme-anime h5,
+body.theme-anime h6 {
+  font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+  font-weight: 700;
 }
