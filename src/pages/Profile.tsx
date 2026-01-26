@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, MapPin, Sparkles, Heart, Zap, Check, Calendar, Users, Plane, Globe } from "lucide-react";
+import { Camera, MapPin, Sparkles, Heart, Zap, Check, Calendar, Users, Plane, Globe, Eye, Edit } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import ProfilePreview from "@/components/ProfilePreview";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -206,6 +208,66 @@ const Profile = () => {
         )}>
           Your Profile
         </h1>
+
+        {/* Edit / Preview Tabs */}
+        <Tabs defaultValue="edit" className="w-full">
+          <TabsList className={cn(
+            "grid w-full grid-cols-2",
+            theme === "cutesy" && "bg-pink-100",
+            theme === "anime" && "bg-purple-900/50 border border-purple-500/30"
+          )}>
+            <TabsTrigger 
+              value="edit"
+              className={cn(
+                "flex items-center gap-2",
+                theme === "cutesy" && "data-[state=active]:bg-pink-500 data-[state=active]:text-white",
+                theme === "anime" && "data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
+              )}
+            >
+              <Edit className="w-4 h-4" />
+              Edit
+            </TabsTrigger>
+            <TabsTrigger 
+              value="preview"
+              className={cn(
+                "flex items-center gap-2",
+                theme === "cutesy" && "data-[state=active]:bg-pink-500 data-[state=active]:text-white",
+                theme === "anime" && "data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
+              )}
+            >
+              <Eye className="w-4 h-4" />
+              Preview
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Preview Tab Content */}
+          <TabsContent value="preview" className="mt-6">
+            <div className="space-y-4">
+              <p className={cn(
+                "text-center text-sm",
+                theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+              )}>
+                This is how others see your profile
+              </p>
+              <ProfilePreview
+                displayName={displayName}
+                bio={bio}
+                location={location}
+                avatarUrl={avatarUrl}
+                isLocal={isLocal}
+                isVerified={isVerified}
+                interests={interests}
+                languages={languages}
+                dateOfBirth={dateOfBirth}
+                destination={destination}
+                travelStartDate={travelStartDate}
+                travelEndDate={travelEndDate}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Edit Tab Content */}
+          <TabsContent value="edit" className="mt-6 space-y-6">
 
         {/* Avatar */}
         <div className="flex justify-center">
@@ -667,6 +729,8 @@ const Profile = () => {
             Sign Out
           </Button>
         </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
