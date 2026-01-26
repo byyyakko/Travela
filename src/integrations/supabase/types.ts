@@ -243,12 +243,15 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          date_of_birth: string | null
           display_name: string | null
           email: string
           id: string
           interests: string[] | null
           is_local: boolean | null
           location: string | null
+          max_age_preference: number | null
+          min_age_preference: number | null
           theme: Database["public"]["Enums"]["user_theme"]
           updated_at: string
           user_id: string
@@ -257,12 +260,15 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           email: string
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
           location?: string | null
+          max_age_preference?: number | null
+          min_age_preference?: number | null
           theme?: Database["public"]["Enums"]["user_theme"]
           updated_at?: string
           user_id: string
@@ -271,12 +277,15 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           email?: string
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
           location?: string | null
+          max_age_preference?: number | null
+          min_age_preference?: number | null
           theme?: Database["public"]["Enums"]["user_theme"]
           updated_at?: string
           user_id?: string

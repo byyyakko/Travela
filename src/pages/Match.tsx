@@ -17,9 +17,38 @@ const Match = () => {
   const { theme } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Fetch current user's age preferences
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("min_age_preference, max_age_preference")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Calculate age from date of birth
+  const calculateAge = (dateOfBirth: string | null): number | null => {
+    if (!dateOfBirth) return null;
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   // Fetch profiles to swipe on (excluding self and already swiped)
   const { data: profiles, isLoading, refetch } = useQuery({
-    queryKey: ["matchProfiles", user?.id],
+    queryKey: ["matchProfiles", user?.id, userProfile?.min_age_preference, userProfile?.max_age_preference],
     queryFn: async () => {
       if (!user) return [];
 
@@ -37,12 +66,23 @@ const Match = () => {
         .select("*")
         .not("user_id", "in", `(${swipedIds.join(",")})`)
         .eq("is_local", true)
-        .limit(20);
+        .limit(50);
 
       if (error) throw error;
-      return data || [];
+
+      // Filter by age preferences
+      const minAge = userProfile?.min_age_preference || 18;
+      const maxAge = userProfile?.max_age_preference || 99;
+
+      const filteredProfiles = (data || []).filter(profile => {
+        const age = calculateAge(profile.date_of_birth);
+        if (age === null) return true; // Show profiles without DOB
+        return age >= minAge && age <= maxAge;
+      });
+
+      return filteredProfiles;
     },
-    enabled: !!user,
+    enabled: !!user && userProfile !== undefined,
   });
 
   const matchMutation = useMutation({
@@ -201,6 +241,11 @@ const Match = () => {
                   <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                     <h2 className="text-2xl font-display font-bold">
                       {currentProfile.display_name || "Local Guide"}
+                      {currentProfile.date_of_birth && (
+                        <span className="text-xl font-normal ml-2">
+                          , {calculateAge(currentProfile.date_of_birth)}
+                        </span>
+                      )}
                     </h2>
                     {currentProfile.location && (
                       <p className="flex items-center gap-1 mt-1 text-white/80">
