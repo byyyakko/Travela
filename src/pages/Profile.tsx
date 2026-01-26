@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, MapPin, Sparkles, Heart, Zap, Check, Calendar, Users } from "lucide-react";
+import { Camera, MapPin, Sparkles, Heart, Zap, Check, Calendar, Users, Plane, Globe } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import VerifiedBadge from "@/components/VerifiedBadge";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -31,6 +32,7 @@ const Profile = () => {
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [isLocal, setIsLocal] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [interests, setInterests] = useState<string[]>([]);
   const [interestInput, setInterestInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -38,6 +40,13 @@ const Profile = () => {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [minAgePreference, setMinAgePreference] = useState(18);
   const [maxAgePreference, setMaxAgePreference] = useState(99);
+  
+  // Traveler-specific fields
+  const [destination, setDestination] = useState("");
+  const [travelStartDate, setTravelStartDate] = useState("");
+  const [travelEndDate, setTravelEndDate] = useState("");
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [languageInput, setLanguageInput] = useState("");
 
   const { isLoading } = useQuery({
     queryKey: ["profile", user?.id],
@@ -57,11 +66,16 @@ const Profile = () => {
         setBio(data.bio || "");
         setLocation(data.location || "");
         setIsLocal(data.is_local || false);
+        setIsVerified(data.is_verified || false);
         setInterests(data.interests || []);
         setAvatarUrl(data.avatar_url);
         setDateOfBirth(data.date_of_birth || "");
         setMinAgePreference(data.min_age_preference || 18);
         setMaxAgePreference(data.max_age_preference || 99);
+        setDestination(data.destination || "");
+        setTravelStartDate(data.travel_start_date || "");
+        setTravelEndDate(data.travel_end_date || "");
+        setLanguages(data.languages || []);
       }
 
       return data;
@@ -115,6 +129,17 @@ const Profile = () => {
     setInterests(interests.filter((i) => i !== interest));
   };
 
+  const handleAddLanguage = () => {
+    if (languageInput.trim() && !languages.includes(languageInput.trim())) {
+      setLanguages([...languages, languageInput.trim()]);
+      setLanguageInput("");
+    }
+  };
+
+  const handleRemoveLanguage = (language: string) => {
+    setLanguages(languages.filter((l) => l !== language));
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -131,6 +156,10 @@ const Profile = () => {
           date_of_birth: dateOfBirth || null,
           min_age_preference: minAgePreference,
           max_age_preference: maxAgePreference,
+          destination: destination.trim() || null,
+          travel_start_date: travelStartDate || null,
+          travel_end_date: travelEndDate || null,
+          languages: languages.length > 0 ? languages : [],
         })
         .eq("user_id", user.id);
 
@@ -360,8 +389,143 @@ const Profile = () => {
                 ))}
               </div>
             </div>
+
+            {/* Languages */}
+            <div className="space-y-2">
+              <Label className={theme === "anime" ? "text-purple-200" : ""}>
+                <Globe className="w-4 h-4 inline mr-2" />
+                Languages I Speak
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a language..."
+                  value={languageInput}
+                  onChange={(e) => setLanguageInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddLanguage())}
+                  className={cn(
+                    theme === "cutesy" && "bg-pink-50 border-pink-200",
+                    theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                  )}
+                />
+                <Button onClick={handleAddLanguage} variant="outline" className={cn(
+                  theme === "cutesy" && "border-pink-200",
+                  theme === "anime" && "border-purple-500/30 text-purple-300"
+                )}>
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {languages.map((language) => (
+                  <span
+                    key={language}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-sm cursor-pointer",
+                      theme === "minimalist" && "bg-secondary text-secondary-foreground",
+                      theme === "cutesy" && "bg-purple-100 text-purple-600",
+                      theme === "anime" && "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                    )}
+                    onClick={() => handleRemoveLanguage(language)}
+                  >
+                    {language} ×
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Verified Badge Display */}
+            {isVerified && (
+              <div className={cn(
+                "flex items-center gap-2 p-3 rounded-lg",
+                theme === "minimalist" && "bg-blue-50",
+                theme === "cutesy" && "bg-pink-50",
+                theme === "anime" && "bg-cyan-500/10 border border-cyan-500/30"
+              )}>
+                <VerifiedBadge size="lg" />
+                <span className={cn(
+                  "font-medium",
+                  theme === "anime" && "text-cyan-400"
+                )}>
+                  Verified Local Guide
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Traveler Info (for non-locals) */}
+        {!isLocal && (
+          <Card className={cn(
+            theme === "cutesy" && "border-pink-200",
+            theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+          )}>
+            <CardHeader>
+              <CardTitle className={cn(
+                "text-lg flex items-center gap-2",
+                theme === "anime" && "text-white"
+              )}>
+                <Plane className="w-5 h-5" />
+                Travel Plans
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className={theme === "anime" ? "text-purple-200" : ""}>Destination City</Label>
+                <div className="relative">
+                  <MapPin className={cn(
+                    "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
+                    theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                  )} />
+                  <Input
+                    placeholder="Where are you traveling to?"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    className={cn(
+                      "pl-9",
+                      theme === "cutesy" && "bg-pink-50 border-pink-200",
+                      theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className={theme === "anime" ? "text-purple-200" : ""}>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={travelStartDate}
+                    onChange={(e) => setTravelStartDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className={cn(
+                      theme === "cutesy" && "bg-pink-50 border-pink-200",
+                      theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className={theme === "anime" ? "text-purple-200" : ""}>End Date</Label>
+                  <Input
+                    type="date"
+                    value={travelEndDate}
+                    onChange={(e) => setTravelEndDate(e.target.value)}
+                    min={travelStartDate || new Date().toISOString().split('T')[0]}
+                    className={cn(
+                      theme === "cutesy" && "bg-pink-50 border-pink-200",
+                      theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                    )}
+                  />
+                </div>
+              </div>
+
+              <p className={cn(
+                "text-sm",
+                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+              )}>
+                This helps locals in your destination city find you
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Age Preferences */}
         <Card className={cn(
