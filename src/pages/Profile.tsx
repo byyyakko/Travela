@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, MapPin, Sparkles, Heart, Zap, Check } from "lucide-react";
+import { Camera, MapPin, Sparkles, Heart, Zap, Check, Calendar, Users } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -34,6 +35,9 @@ const Profile = () => {
   const [interestInput, setInterestInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [minAgePreference, setMinAgePreference] = useState(18);
+  const [maxAgePreference, setMaxAgePreference] = useState(99);
 
   const { isLoading } = useQuery({
     queryKey: ["profile", user?.id],
@@ -55,6 +59,9 @@ const Profile = () => {
         setIsLocal(data.is_local || false);
         setInterests(data.interests || []);
         setAvatarUrl(data.avatar_url);
+        setDateOfBirth(data.date_of_birth || "");
+        setMinAgePreference(data.min_age_preference || 18);
+        setMaxAgePreference(data.max_age_preference || 99);
       }
 
       return data;
@@ -121,6 +128,9 @@ const Profile = () => {
           location: location.trim() || null,
           is_local: isLocal,
           interests: interests.length > 0 ? interests : null,
+          date_of_birth: dateOfBirth || null,
+          min_age_preference: minAgePreference,
+          max_age_preference: maxAgePreference,
         })
         .eq("user_id", user.id);
 
@@ -233,6 +243,33 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
+              <Label className={theme === "anime" ? "text-purple-200" : ""}>Date of Birth</Label>
+              <div className="relative">
+                <Calendar className={cn(
+                  "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
+                  theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                )} />
+                <Input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                  className={cn(
+                    "pl-9",
+                    theme === "cutesy" && "bg-pink-50 border-pink-200",
+                    theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                  )}
+                />
+              </div>
+              <p className={cn(
+                "text-xs",
+                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+              )}>
+                You must be at least 18 years old
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label className={theme === "anime" ? "text-purple-200" : ""}>Bio</Label>
               <Textarea
                 placeholder="Tell travelers about yourself..."
@@ -322,6 +359,86 @@ const Profile = () => {
                   </span>
                 ))}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Age Preferences */}
+        <Card className={cn(
+          theme === "cutesy" && "border-pink-200",
+          theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+        )}>
+          <CardHeader>
+            <CardTitle className={cn(
+              "text-lg flex items-center gap-2",
+              theme === "anime" && "text-white"
+            )}>
+              <Users className="w-5 h-5" />
+              Match Preferences
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <Label className={theme === "anime" ? "text-purple-200" : ""}>
+                Age Range: {minAgePreference} - {maxAgePreference}
+              </Label>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className={theme === "anime" ? "text-purple-400" : "text-muted-foreground"}>Minimum Age</span>
+                    <span className={cn(
+                      "font-medium",
+                      theme === "anime" && "text-cyan-400"
+                    )}>{minAgePreference}</span>
+                  </div>
+                  <Slider
+                    value={[minAgePreference]}
+                    onValueChange={(value) => {
+                      const newMin = Math.max(18, value[0]);
+                      setMinAgePreference(newMin);
+                      if (newMin > maxAgePreference) {
+                        setMaxAgePreference(newMin);
+                      }
+                    }}
+                    min={18}
+                    max={99}
+                    step={1}
+                    className={cn(
+                      theme === "cutesy" && "[&_[role=slider]]:bg-pink-500",
+                      theme === "anime" && "[&_[role=slider]]:bg-cyan-500"
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className={theme === "anime" ? "text-purple-400" : "text-muted-foreground"}>Maximum Age</span>
+                    <span className={cn(
+                      "font-medium",
+                      theme === "anime" && "text-cyan-400"
+                    )}>{maxAgePreference}</span>
+                  </div>
+                  <Slider
+                    value={[maxAgePreference]}
+                    onValueChange={(value) => {
+                      const newMax = Math.max(minAgePreference, value[0]);
+                      setMaxAgePreference(newMax);
+                    }}
+                    min={18}
+                    max={99}
+                    step={1}
+                    className={cn(
+                      theme === "cutesy" && "[&_[role=slider]]:bg-pink-500",
+                      theme === "anime" && "[&_[role=slider]]:bg-cyan-500"
+                    )}
+                  />
+                </div>
+              </div>
+              <p className={cn(
+                "text-sm",
+                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+              )}>
+                You'll only see locals within this age range
+              </p>
             </div>
           </CardContent>
         </Card>
