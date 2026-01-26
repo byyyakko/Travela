@@ -2,11 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Quicksand:wght@300..700&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap');
 
 @layer base {
   :root {
-    /* Warm, inviting palette */
+    /* Minimalist - Warm, inviting palette */
     --background: 30 40% 98%;
     --foreground: 20 20% 15%;
 
@@ -108,5 +108,34 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: "Fraunces", Georgia, serif;
+  }
+
+  /* Theme-specific font families */
+  body.theme-cutesy {
+    font-family: "Quicksand", system-ui, sans-serif;
+  }
+
+  body.theme-cutesy h1,
+  body.theme-cutesy h2,
+  body.theme-cutesy h3,
+  body.theme-cutesy h4,
+  body.theme-cutesy h5,
+  body.theme-cutesy h6 {
+    font-family: "Quicksand", system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  body.theme-anime {
+    font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+  }
+
+  body.theme-anime h1,
+  body.theme-anime h2,
+  body.theme-anime h3,
+  body.theme-anime h4,
+  body.theme-anime h5,
+  body.theme-anime h6 {
+    font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+    font-weight: 700;
   }
 }
