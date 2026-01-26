@@ -1,21 +1,26 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Heart, MapPin, Sparkles, RefreshCw } from "lucide-react";
+import { X, Heart, MapPin, Sparkles, RefreshCw, Search, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import VerifiedBadge from "@/components/VerifiedBadge";
+import ReportBlockDialog from "@/components/ReportBlockDialog";
 
 const Match = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [locationFilter, setLocationFilter] = useState("");
 
   // Fetch current user's age preferences
   const { data: userProfile } = useQuery({
@@ -46,9 +51,24 @@ const Match = () => {
     return age;
   };
 
-  // Fetch profiles to swipe on (excluding self and already swiped)
+  // Fetch blocked users
+  const { data: blockedUsers } = useQuery({
+    queryKey: ["blockedUsers", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("blocked_users")
+        .select("blocked_user_id")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      return data?.map(b => b.blocked_user_id) || [];
+    },
+    enabled: !!user,
+  });
+
+  // Fetch profiles to swipe on (excluding self, already swiped, and blocked)
   const { data: profiles, isLoading, refetch } = useQuery({
-    queryKey: ["matchProfiles", user?.id, userProfile?.min_age_preference, userProfile?.max_age_preference],
+    queryKey: ["matchProfiles", user?.id, userProfile?.min_age_preference, userProfile?.max_age_preference, blockedUsers],
     queryFn: async () => {
       if (!user) return [];
 
@@ -59,12 +79,13 @@ const Match = () => {
         .eq("user_id", user.id);
 
       const swipedIds = swipedData?.map(s => s.target_user_id) || [];
-      swipedIds.push(user.id); // exclude self
+      const blockedIds = blockedUsers || [];
+      const excludeIds = [...new Set([...swipedIds, ...blockedIds, user.id])];
 
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .not("user_id", "in", `(${swipedIds.join(",")})`)
+        .not("user_id", "in", `(${excludeIds.join(",")})`)
         .eq("is_local", true)
         .limit(50);
 
@@ -82,8 +103,19 @@ const Match = () => {
 
       return filteredProfiles;
     },
-    enabled: !!user && userProfile !== undefined,
+    enabled: !!user && userProfile !== undefined && blockedUsers !== undefined,
   });
+
+  // Filter profiles by location search
+  const filteredProfiles = useMemo(() => {
+    if (!profiles) return [];
+    if (!locationFilter.trim()) return profiles;
+    
+    const searchTerm = locationFilter.toLowerCase().trim();
+    return profiles.filter(profile => 
+      profile.location?.toLowerCase().includes(searchTerm)
+    );
+  }, [profiles, locationFilter]);
 
   const matchMutation = useMutation({
     mutationFn: async ({ targetUserId, action }: { targetUserId: string; action: "like" | "pass" }) => {
@@ -124,7 +156,7 @@ const Match = () => {
     },
   });
 
-  const currentProfile = profiles?.[currentIndex];
+  const currentProfile = filteredProfiles?.[currentIndex];
 
   const handleSwipe = (action: "like" | "pass") => {
     if (!currentProfile) return;
@@ -136,10 +168,16 @@ const Match = () => {
     refetch();
   };
 
+  const handleBlock = () => {
+    queryClient.invalidateQueries({ queryKey: ["blockedUsers"] });
+    queryClient.invalidateQueries({ queryKey: ["matchProfiles"] });
+    setCurrentIndex(prev => Math.min(prev, (filteredProfiles?.length || 1) - 1));
+  };
+
   return (
     <AppLayout>
       <div className="max-w-md mx-auto space-y-6">
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <h1 className={cn(
             "text-2xl font-display font-bold mb-2",
             theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400"
@@ -151,6 +189,24 @@ const Match = () => {
           )}>
             Swipe right to connect with locals in your destination
           </p>
+        </div>
+
+        {/* Location Search */}
+        <div className="relative">
+          <Search className={cn(
+            "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
+            theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+          )} />
+          <Input
+            placeholder="Search by location..."
+            value={locationFilter}
+            onChange={(e) => { setLocationFilter(e.target.value); setCurrentIndex(0); }}
+            className={cn(
+              "pl-9",
+              theme === "cutesy" && "bg-pink-50 border-pink-200",
+              theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white placeholder:text-purple-400"
+            )}
+          />
         </div>
 
         {isLoading ? (
@@ -214,6 +270,13 @@ const Match = () => {
                   theme === "cutesy" && "bg-gradient-to-br from-pink-100 to-purple-100",
                   theme === "anime" && "bg-gradient-to-br from-purple-800 to-slate-900"
                 )}>
+                  {/* Report/Block Button */}
+                  <ReportBlockDialog
+                    targetUserId={currentProfile.user_id}
+                    targetUserName={currentProfile.display_name || "this user"}
+                    onBlock={handleBlock}
+                  />
+
                   {currentProfile.avatar_url ? (
                     <img
                       src={currentProfile.avatar_url}
@@ -235,17 +298,20 @@ const Match = () => {
                   )}
 
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
 
                   {/* Profile info */}
                   <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <h2 className="text-2xl font-display font-bold">
-                      {currentProfile.display_name || "Local Guide"}
-                      {currentProfile.date_of_birth && (
-                        <span className="text-xl font-normal ml-2">
-                          , {calculateAge(currentProfile.date_of_birth)}
-                        </span>
-                      )}
+                    <h2 className="text-2xl font-display font-bold flex items-center gap-2">
+                      <span>
+                        {currentProfile.display_name || "Local Guide"}
+                        {currentProfile.date_of_birth && (
+                          <span className="text-xl font-normal ml-2">
+                            , {calculateAge(currentProfile.date_of_birth)}
+                          </span>
+                        )}
+                      </span>
+                      {currentProfile.is_verified && <VerifiedBadge size="lg" />}
                     </h2>
                     {currentProfile.location && (
                       <p className="flex items-center gap-1 mt-1 text-white/80">
@@ -273,6 +339,12 @@ const Match = () => {
                             {interest}
                           </span>
                         ))}
+                      </div>
+                    )}
+                    {currentProfile.languages && currentProfile.languages.length > 0 && (
+                      <div className="flex items-center gap-2 mt-2 text-white/70 text-xs">
+                        <Globe className="w-3 h-3" />
+                        <span>{currentProfile.languages.join(", ")}</span>
                       </div>
                     )}
                   </div>

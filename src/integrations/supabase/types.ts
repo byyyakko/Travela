@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_users: {
+        Row: {
+          blocked_user_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          blocked_user_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          blocked_user_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -244,15 +265,20 @@ export type Database = {
           bio: string | null
           created_at: string
           date_of_birth: string | null
+          destination: string | null
           display_name: string | null
           email: string
           id: string
           interests: string[] | null
           is_local: boolean | null
+          is_verified: boolean | null
+          languages: string[] | null
           location: string | null
           max_age_preference: number | null
           min_age_preference: number | null
           theme: Database["public"]["Enums"]["user_theme"]
+          travel_end_date: string | null
+          travel_start_date: string | null
           updated_at: string
           user_id: string
         }
@@ -261,15 +287,20 @@ export type Database = {
           bio?: string | null
           created_at?: string
           date_of_birth?: string | null
+          destination?: string | null
           display_name?: string | null
           email: string
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
+          is_verified?: boolean | null
+          languages?: string[] | null
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
           theme?: Database["public"]["Enums"]["user_theme"]
+          travel_end_date?: string | null
+          travel_start_date?: string | null
           updated_at?: string
           user_id: string
         }
@@ -278,17 +309,55 @@ export type Database = {
           bio?: string | null
           created_at?: string
           date_of_birth?: string | null
+          destination?: string | null
           display_name?: string | null
           email?: string
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
+          is_verified?: boolean | null
+          languages?: string[] | null
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
           theme?: Database["public"]["Enums"]["user_theme"]
+          travel_end_date?: string | null
+          travel_start_date?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason?: string
+          reported_user_id?: string
+          reporter_id?: string
+          status?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
