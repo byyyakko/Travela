@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { Plus, MoreHorizontal, MapPin, Calendar as CalendarIcon, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import mascotCutesy from "@/assets/mascot-cutesy.png";
 
 const countries = [
   { code: "JP", name: "Japan", flag: "🇯🇵" },
@@ -151,10 +152,18 @@ const CutesyPlanner = () => {
   return (
     <div className="space-y-6">
       {/* Header with create button */}
-      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95">
-        <h1 className="text-2xl font-bold text-primary mb-4 cutesy-underline inline-block">
-          Plan ✈️
-        </h1>
+      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden">
+        <div className="flex items-start justify-between mb-4">
+          <h1 className="text-2xl font-bold text-primary cutesy-underline inline-block">
+            Plan ✈️
+          </h1>
+          {/* Mascot */}
+          <img 
+            src={mascotCutesy} 
+            alt="Cute cat mascot" 
+            className="w-16 h-16 object-contain -mt-1 -mr-1 drop-shadow-md"
+          />
+        </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -267,7 +276,11 @@ const CutesyPlanner = () => {
           </div>
         ) : trips?.length === 0 ? (
           <Card className="p-8 text-center cutesy-border bg-card/90">
-            <MapPin className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+            <img 
+              src={mascotCutesy} 
+              alt="Cute cat mascot" 
+              className="w-24 h-24 object-contain mx-auto mb-4 opacity-80"
+            />
             <p className="text-muted-foreground">
               No trips planned yet. Create your first adventure! ✨
             </p>
