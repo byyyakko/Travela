@@ -5,8 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import Onboarding from "./pages/Onboarding";
 import ThemeSelect from "./pages/ThemeSelect";
 import Home from "./pages/Home";
 import Match from "./pages/Match";
@@ -17,11 +19,12 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected route wrapper
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+// Protected route wrapper with onboarding check
+const ProtectedRoute = ({ children, skipOnboardingCheck = false }: { children: React.ReactNode; skipOnboardingCheck?: boolean }) => {
   const { user, loading } = useAuth();
+  const { needsOnboarding, isLoading: onboardingLoading } = useOnboardingCheck();
 
-  if (loading) {
+  if (loading || onboardingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -31,6 +34,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  // Redirect to onboarding if needed (unless we're skipping the check)
+  if (needsOnboarding && !skipOnboardingCheck) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
@@ -60,6 +68,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>} />
       <Route path="/theme" element={<ProtectedRoute><ThemeSelect /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
