@@ -7,7 +7,7 @@ import CreatePost from "@/components/posts/CreatePost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Search, MapPin, Users, Compass, ChevronRight } from "lucide-react";
+import { Search, MapPin, Users, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 
@@ -42,8 +42,7 @@ const categoryFilters = [
 // Quick action icons
 const quickActions = [
   { icon: Users, label: "Connect", path: "/match" },
-  { icon: Compass, label: "Explore", path: "/home" },
-  { icon: MapPin, label: "Plan", path: "/profile" },
+  { icon: MapPin, label: "Plan", path: "/planner" },
 ];
 
 interface CutesyHomeProps {
