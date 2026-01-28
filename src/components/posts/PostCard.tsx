@@ -1,12 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "@/hooks/use-toast";
 
 interface PostCardProps {
   post: {
@@ -35,6 +52,28 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
   );
   const [likeCount, setLikeCount] = useState(post.post_likes.length);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isOwnPost = currentUserId === post.user_id;
+
+  // Check if post is bookmarked on mount
+  useEffect(() => {
+    const checkBookmark = async () => {
+      if (!currentUserId) return;
+      
+      const { data } = await supabase
+        .from("post_bookmarks")
+        .select("id")
+        .eq("post_id", post.id)
+        .eq("user_id", currentUserId)
+        .maybeSingle();
+      
+      setIsBookmarked(!!data);
+    };
+    
+    checkBookmark();
+  }, [post.id, currentUserId]);
 
   const handleLike = async () => {
     if (!currentUserId) return;
@@ -65,155 +104,261 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
         .delete()
         .eq("post_id", post.id)
         .eq("user_id", currentUserId);
+      toast({
+        title: "Removed from saved",
+        description: "Post removed from your saved collection.",
+      });
     } else {
       await supabase.from("post_bookmarks").insert({
         post_id: post.id,
         user_id: currentUserId,
       });
+      toast({
+        title: "Saved!",
+        description: "Post added to your saved collection.",
+      });
     }
     setIsBookmarked(!isBookmarked);
+  };
+
+  const handleDelete = async () => {
+    if (!currentUserId || !isOwnPost) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      // If post has an image, delete it from storage
+      if (post.image_url) {
+        const imagePath = post.image_url.split("/post-images/")[1];
+        if (imagePath) {
+          await supabase.storage.from("post-images").remove([imagePath]);
+        }
+      }
+
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", post.id)
+        .eq("user_id", currentUserId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Deleted",
+        description: "Your post has been deleted.",
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   const displayName = post.profiles?.display_name || "Traveler";
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
 
   return (
-    <Card className={cn(
-      "overflow-hidden",
-      theme === "cutesy" && "bg-white border-pink-200 shadow-pink-100",
-      theme === "anime" && "bg-purple-900/50 border-purple-500/30"
-    )}>
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className={cn(
-            "w-10 h-10",
-            theme === "cutesy" && "ring-2 ring-pink-200",
-            theme === "anime" && "ring-2 ring-purple-500"
-          )}>
-            <AvatarImage src={post.profiles?.avatar_url || ""} />
-            <AvatarFallback className={cn(
-              theme === "cutesy" && "bg-pink-100 text-pink-600",
-              theme === "anime" && "bg-purple-700 text-cyan-400"
+    <>
+      <Card className={cn(
+        "overflow-hidden",
+        theme === "cutesy" && "bg-white border-pink-200 shadow-pink-100",
+        theme === "anime" && "bg-purple-900/50 border-purple-500/30"
+      )}>
+        {/* Header */}
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className={cn(
+              "w-10 h-10",
+              theme === "cutesy" && "ring-2 ring-pink-200",
+              theme === "anime" && "ring-2 ring-purple-500"
             )}>
-              {displayName[0].toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className={cn(
-              "font-medium",
-              theme === "anime" && "text-white"
-            )}>
-              {displayName}
-            </p>
-            <div className="flex items-center gap-2 text-sm">
-              <span className={cn(
-                theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+              <AvatarImage src={post.profiles?.avatar_url || ""} />
+              <AvatarFallback className={cn(
+                theme === "cutesy" && "bg-pink-100 text-pink-600",
+                theme === "anime" && "bg-purple-700 text-cyan-400"
               )}>
-                {timeAgo}
-              </span>
-              {post.location_tag && (
-                <>
-                  <span className={cn(
-                    theme === "anime" ? "text-purple-500" : "text-muted-foreground"
-                  )}>·</span>
-                  <span className={cn(
-                    "flex items-center gap-1",
-                    theme === "minimalist" && "text-primary",
-                    theme === "cutesy" && "text-pink-500",
-                    theme === "anime" && "text-cyan-400"
-                  )}>
-                    <MapPin className="w-3 h-3" />
-                    {post.location_tag}
-                  </span>
-                </>
-              )}
+                {displayName[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className={cn(
+                "font-medium",
+                theme === "anime" && "text-white"
+              )}>
+                {displayName}
+              </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className={cn(
+                  theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+                )}>
+                  {timeAgo}
+                </span>
+                {post.location_tag && (
+                  <>
+                    <span className={cn(
+                      theme === "anime" ? "text-purple-500" : "text-muted-foreground"
+                    )}>·</span>
+                    <span className={cn(
+                      "flex items-center gap-1",
+                      theme === "minimalist" && "text-primary",
+                      theme === "cutesy" && "text-pink-500",
+                      theme === "anime" && "text-cyan-400"
+                    )}>
+                      <MapPin className="w-3 h-3" />
+                      {post.location_tag}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <Button variant="ghost" size="icon" className={cn(
-          theme === "anime" && "text-purple-300 hover:text-white hover:bg-purple-800/50"
-        )}>
-          <MoreHorizontal className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {/* Content */}
-      <div className="px-4 pb-3">
-        <p className={cn(
-          "whitespace-pre-wrap",
-          theme === "anime" && "text-purple-100"
-        )}>
-          {post.content}
-        </p>
-      </div>
-
-      {/* Image */}
-      {post.image_url && (
-        <div className="px-4 pb-3">
-          <img
-            src={post.image_url}
-            alt="Post"
-            className={cn(
-              "w-full rounded-xl object-cover max-h-96",
-              theme === "cutesy" && "ring-2 ring-pink-200",
-              theme === "anime" && "ring-2 ring-purple-500/50"
-            )}
-          />
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className={cn(
-        "px-4 py-3 flex items-center justify-between border-t",
-        theme === "cutesy" && "border-pink-100",
-        theme === "anime" && "border-purple-500/20"
-      )}>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLike}
-            className={cn(
-              "gap-2",
-              isLiked && theme === "minimalist" && "text-red-500",
-              isLiked && theme === "cutesy" && "text-pink-500",
-              isLiked && theme === "anime" && "text-pink-400",
-              !isLiked && theme === "anime" && "text-purple-300 hover:text-pink-400"
-            )}
-          >
-            <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
-            {likeCount > 0 && likeCount}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "gap-2",
-              theme === "anime" && "text-purple-300 hover:text-cyan-400"
-            )}
-          >
-            <MessageCircle className="w-5 h-5" />
-            {post.post_comments.length > 0 && post.post_comments.length}
-          </Button>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleBookmark}
-          className={cn(
-            isBookmarked && theme === "minimalist" && "text-primary",
-            isBookmarked && theme === "cutesy" && "text-pink-500",
-            isBookmarked && theme === "anime" && "text-cyan-400",
-            !isBookmarked && theme === "anime" && "text-purple-300 hover:text-cyan-400"
+          
+          {isOwnPost && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className={cn(
+                  theme === "anime" && "text-purple-300 hover:text-white hover:bg-purple-800/50"
+                )}>
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className={cn(
+                theme === "anime" && "bg-purple-900 border-purple-500/30"
+              )}>
+                <DropdownMenuItem
+                  onClick={() => setShowDeleteDialog(true)}
+                  className={cn(
+                    "text-destructive cursor-pointer",
+                    theme === "anime" && "text-red-400 focus:bg-purple-800 focus:text-red-400"
+                  )}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-        >
-          <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
-        </Button>
-      </div>
-    </Card>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 pb-3">
+          <p className={cn(
+            "whitespace-pre-wrap",
+            theme === "anime" && "text-purple-100"
+          )}>
+            {post.content}
+          </p>
+        </div>
+
+        {/* Image */}
+        {post.image_url && (
+          <div className="px-4 pb-3">
+            <img
+              src={post.image_url}
+              alt="Post"
+              className={cn(
+                "w-full rounded-xl object-cover max-h-96",
+                theme === "cutesy" && "ring-2 ring-pink-200",
+                theme === "anime" && "ring-2 ring-purple-500/50"
+              )}
+            />
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className={cn(
+          "px-4 py-3 flex items-center justify-between border-t",
+          theme === "cutesy" && "border-pink-100",
+          theme === "anime" && "border-purple-500/20"
+        )}>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              className={cn(
+                "gap-2",
+                isLiked && theme === "minimalist" && "text-red-500",
+                isLiked && theme === "cutesy" && "text-pink-500",
+                isLiked && theme === "anime" && "text-pink-400",
+                !isLiked && theme === "anime" && "text-purple-300 hover:text-pink-400"
+              )}
+            >
+              <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
+              {likeCount > 0 && likeCount}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "gap-2",
+                theme === "anime" && "text-purple-300 hover:text-cyan-400"
+              )}
+            >
+              <MessageCircle className="w-5 h-5" />
+              {post.post_comments.length > 0 && post.post_comments.length}
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBookmark}
+            className={cn(
+              isBookmarked && theme === "minimalist" && "text-primary",
+              isBookmarked && theme === "cutesy" && "text-pink-500",
+              isBookmarked && theme === "anime" && "text-cyan-400",
+              !isBookmarked && theme === "anime" && "text-purple-300 hover:text-cyan-400"
+            )}
+          >
+            <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
+          </Button>
+        </div>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className={cn(
+          theme === "anime" && "bg-purple-900 border-purple-500/30"
+        )}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={cn(
+              theme === "anime" && "text-white"
+            )}>
+              Delete this post?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={cn(
+              theme === "anime" && "text-purple-300"
+            )}>
+              This action cannot be undone. This will permanently delete your post
+              and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={cn(
+              theme === "anime" && "bg-purple-800 border-purple-500/30 text-white hover:bg-purple-700"
+            )}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
