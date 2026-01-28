@@ -191,8 +191,8 @@ const Profile = () => {
           <div className={cn(
             "inline-block w-8 h-8 border-4 border-t-transparent rounded-full animate-spin",
             theme === "minimalist" && "border-primary",
-            theme === "cutesy" && "border-pink-400",
-            theme === "anime" && "border-cyan-400"
+            theme === "cutesy" && "border-primary",
+            theme === "anime" && "border-accent"
           )} />
         </div>
       </AppLayout>
@@ -204,7 +204,7 @@ const Profile = () => {
       <div className="space-y-6 max-w-lg mx-auto">
         <h1 className={cn(
           "text-2xl font-display font-bold text-center",
-          theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400"
+          theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent"
         )}>
           Your Profile
         </h1>
@@ -213,15 +213,15 @@ const Profile = () => {
         <Tabs defaultValue="edit" className="w-full">
           <TabsList className={cn(
             "grid w-full grid-cols-2",
-            theme === "cutesy" && "bg-pink-100",
-            theme === "anime" && "bg-purple-900/50 border border-purple-500/30"
+            theme === "cutesy" && "bg-secondary",
+            theme === "anime" && "bg-card/80 border border-primary/30"
           )}>
             <TabsTrigger 
               value="edit"
               className={cn(
                 "flex items-center gap-2",
-                theme === "cutesy" && "data-[state=active]:bg-pink-500 data-[state=active]:text-white",
-                theme === "anime" && "data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
+                theme === "cutesy" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+                theme === "anime" && "data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-primary-foreground"
               )}
             >
               <Edit className="w-4 h-4" />
@@ -231,8 +231,8 @@ const Profile = () => {
               value="preview"
               className={cn(
                 "flex items-center gap-2",
-                theme === "cutesy" && "data-[state=active]:bg-pink-500 data-[state=active]:text-white",
-                theme === "anime" && "data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
+                theme === "cutesy" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+                theme === "anime" && "data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-primary-foreground"
               )}
             >
               <Eye className="w-4 h-4" />
@@ -245,7 +245,7 @@ const Profile = () => {
             <div className="space-y-4">
               <p className={cn(
                 "text-center text-sm",
-                theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+                theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
               )}>
                 This is how others see your profile
               </p>
@@ -274,14 +274,14 @@ const Profile = () => {
           <div className="relative">
             <Avatar className={cn(
               "w-24 h-24",
-              theme === "cutesy" && "ring-4 ring-pink-200",
-              theme === "anime" && "ring-4 ring-purple-500"
+              theme === "cutesy" && "ring-4 ring-primary/30",
+              theme === "anime" && "ring-4 ring-primary"
             )}>
               <AvatarImage src={avatarUrl || ""} />
               <AvatarFallback className={cn(
                 "text-2xl",
-                theme === "cutesy" && "bg-pink-100 text-pink-600",
-                theme === "anime" && "bg-purple-700 text-cyan-400"
+                theme === "cutesy" && "bg-secondary text-primary",
+                theme === "anime" && "bg-primary/30 text-accent"
               )}>
                 {(displayName || user?.email || "U")[0].toUpperCase()}
               </AvatarFallback>
@@ -298,8 +298,8 @@ const Profile = () => {
               variant="secondary"
               className={cn(
                 "absolute -bottom-2 -right-2 rounded-full h-8 w-8",
-                theme === "cutesy" && "bg-pink-500 text-white hover:bg-pink-600",
-                theme === "anime" && "bg-purple-600 text-white hover:bg-purple-700"
+                theme === "cutesy" && "bg-primary text-primary-foreground hover:bg-primary/90",
+                theme === "anime" && "bg-primary text-primary-foreground hover:bg-primary/90"
               )}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -310,35 +310,35 @@ const Profile = () => {
 
         {/* Profile Info */}
         <Card className={cn(
-          theme === "cutesy" && "border-pink-200",
-          theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+          theme === "cutesy" && "border-primary/30",
+          theme === "anime" && "border-primary/30 bg-card/80"
         )}>
           <CardHeader>
             <CardTitle className={cn(
               "text-lg",
-              theme === "anime" && "text-white"
+              theme === "anime" && "text-foreground"
             )}>Profile Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>Display Name</Label>
+              <Label className={theme === "anime" ? "text-foreground" : ""}>Display Name</Label>
               <Input
                 placeholder="Your name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className={cn(
-                  theme === "cutesy" && "bg-pink-50 border-pink-200",
-                  theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                  theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                  theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                 )}
               />
             </div>
 
             <div className="space-y-2">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>Date of Birth</Label>
+              <Label className={theme === "anime" ? "text-foreground" : ""}>Date of Birth</Label>
               <div className="relative">
                 <Calendar className={cn(
                   "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                  theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                  theme === "anime" ? "text-primary" : "text-muted-foreground"
                 )} />
                 <Input
                   type="date"
@@ -347,39 +347,39 @@ const Profile = () => {
                   max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
                   className={cn(
                     "pl-9",
-                    theme === "cutesy" && "bg-pink-50 border-pink-200",
-                    theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                    theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                    theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                   )}
                 />
               </div>
               <p className={cn(
                 "text-xs",
-                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"
               )}>
                 You must be at least 18 years old
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>Bio</Label>
+              <Label className={theme === "anime" ? "text-foreground" : ""}>Bio</Label>
               <Textarea
                 placeholder="Tell travelers about yourself..."
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 className={cn(
                   "min-h-[100px]",
-                  theme === "cutesy" && "bg-pink-50 border-pink-200",
-                  theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                  theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                  theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                 )}
               />
             </div>
 
             <div className="space-y-2">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>Location</Label>
+              <Label className={theme === "anime" ? "text-foreground" : ""}>Location</Label>
               <div className="relative">
                 <MapPin className={cn(
                   "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                  theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                  theme === "anime" ? "text-primary" : "text-muted-foreground"
                 )} />
                 <Input
                   placeholder="Your city"
@@ -387,8 +387,8 @@ const Profile = () => {
                   onChange={(e) => setLocation(e.target.value)}
                   className={cn(
                     "pl-9",
-                    theme === "cutesy" && "bg-pink-50 border-pink-200",
-                    theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                    theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                    theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                   )}
                 />
               </div>
@@ -396,10 +396,10 @@ const Profile = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className={theme === "anime" ? "text-purple-200" : ""}>I'm a Local Guide</Label>
+                <Label className={theme === "anime" ? "text-foreground" : ""}>I'm a Local Guide</Label>
                 <p className={cn(
                   "text-sm",
-                  theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                  theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"
                 )}>
                   Enable to appear in local search
                 </p>
@@ -408,14 +408,14 @@ const Profile = () => {
                 checked={isLocal}
                 onCheckedChange={setIsLocal}
                 className={cn(
-                  theme === "cutesy" && "data-[state=checked]:bg-pink-500",
-                  theme === "anime" && "data-[state=checked]:bg-cyan-500"
+                  theme === "cutesy" && "data-[state=checked]:bg-primary",
+                  theme === "anime" && "data-[state=checked]:bg-accent"
                 )}
               />
             </div>
 
             <div className="space-y-2">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>Interests</Label>
+              <Label className={theme === "anime" ? "text-foreground" : ""}>Interests</Label>
               <div className="flex gap-2">
                 <Input
                   placeholder="Add an interest..."
@@ -423,13 +423,13 @@ const Profile = () => {
                   onChange={(e) => setInterestInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddInterest())}
                   className={cn(
-                    theme === "cutesy" && "bg-pink-50 border-pink-200",
-                    theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                    theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                    theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                   )}
                 />
                 <Button onClick={handleAddInterest} variant="outline" className={cn(
-                  theme === "cutesy" && "border-pink-200",
-                  theme === "anime" && "border-purple-500/30 text-purple-300"
+                  theme === "cutesy" && "border-primary/30",
+                  theme === "anime" && "border-primary/30 text-foreground"
                 )}>
                   Add
                 </Button>
@@ -441,8 +441,8 @@ const Profile = () => {
                     className={cn(
                       "px-3 py-1 rounded-full text-sm cursor-pointer",
                       theme === "minimalist" && "bg-primary/10 text-primary",
-                      theme === "cutesy" && "bg-pink-100 text-pink-600",
-                      theme === "anime" && "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                      theme === "cutesy" && "bg-secondary text-primary",
+                      theme === "anime" && "bg-accent/20 text-accent border border-accent/30"
                     )}
                     onClick={() => handleRemoveInterest(interest)}
                   >
@@ -454,7 +454,7 @@ const Profile = () => {
 
             {/* Languages */}
             <div className="space-y-2">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>
+              <Label className={theme === "anime" ? "text-foreground" : ""}>
                 <Globe className="w-4 h-4 inline mr-2" />
                 Languages I Speak
               </Label>
@@ -465,13 +465,13 @@ const Profile = () => {
                   onChange={(e) => setLanguageInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddLanguage())}
                   className={cn(
-                    theme === "cutesy" && "bg-pink-50 border-pink-200",
-                    theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                    theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                    theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                   )}
                 />
                 <Button onClick={handleAddLanguage} variant="outline" className={cn(
-                  theme === "cutesy" && "border-pink-200",
-                  theme === "anime" && "border-purple-500/30 text-purple-300"
+                  theme === "cutesy" && "border-primary/30",
+                  theme === "anime" && "border-primary/30 text-foreground"
                 )}>
                   Add
                 </Button>
@@ -483,8 +483,8 @@ const Profile = () => {
                     className={cn(
                       "px-3 py-1 rounded-full text-sm cursor-pointer",
                       theme === "minimalist" && "bg-secondary text-secondary-foreground",
-                      theme === "cutesy" && "bg-purple-100 text-purple-600",
-                      theme === "anime" && "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                      theme === "cutesy" && "bg-accent/20 text-accent",
+                      theme === "anime" && "bg-primary/20 text-primary border border-primary/30"
                     )}
                     onClick={() => handleRemoveLanguage(language)}
                   >
@@ -499,13 +499,13 @@ const Profile = () => {
               <div className={cn(
                 "flex items-center gap-2 p-3 rounded-lg",
                 theme === "minimalist" && "bg-blue-50",
-                theme === "cutesy" && "bg-pink-50",
-                theme === "anime" && "bg-cyan-500/10 border border-cyan-500/30"
+                theme === "cutesy" && "bg-secondary/50",
+                theme === "anime" && "bg-accent/10 border border-accent/30"
               )}>
                 <VerifiedBadge size="lg" />
                 <span className={cn(
                   "font-medium",
-                  theme === "anime" && "text-cyan-400"
+                  theme === "anime" && "text-accent"
                 )}>
                   Verified Local Guide
                 </span>
@@ -517,13 +517,13 @@ const Profile = () => {
         {/* Traveler Info (for non-locals) */}
         {!isLocal && (
           <Card className={cn(
-            theme === "cutesy" && "border-pink-200",
-            theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+            theme === "cutesy" && "border-primary/30",
+            theme === "anime" && "border-primary/30 bg-card/80"
           )}>
             <CardHeader>
               <CardTitle className={cn(
                 "text-lg flex items-center gap-2",
-                theme === "anime" && "text-white"
+                theme === "anime" && "text-foreground"
               )}>
                 <Plane className="w-5 h-5" />
                 Travel Plans
@@ -531,11 +531,11 @@ const Profile = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className={theme === "anime" ? "text-purple-200" : ""}>Destination City</Label>
+                <Label className={theme === "anime" ? "text-foreground" : ""}>Destination City</Label>
                 <div className="relative">
                   <MapPin className={cn(
                     "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                    theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                    theme === "anime" ? "text-primary" : "text-muted-foreground"
                   )} />
                   <Input
                     placeholder="Where are you traveling to?"
@@ -543,8 +543,8 @@ const Profile = () => {
                     onChange={(e) => setDestination(e.target.value)}
                     className={cn(
                       "pl-9",
-                      theme === "cutesy" && "bg-pink-50 border-pink-200",
-                      theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                      theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                      theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                     )}
                   />
                 </div>
@@ -552,28 +552,28 @@ const Profile = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className={theme === "anime" ? "text-purple-200" : ""}>Start Date</Label>
+                  <Label className={theme === "anime" ? "text-foreground" : ""}>Start Date</Label>
                   <Input
                     type="date"
                     value={travelStartDate}
                     onChange={(e) => setTravelStartDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
                     className={cn(
-                      theme === "cutesy" && "bg-pink-50 border-pink-200",
-                      theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                      theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                      theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                     )}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className={theme === "anime" ? "text-purple-200" : ""}>End Date</Label>
+                  <Label className={theme === "anime" ? "text-foreground" : ""}>End Date</Label>
                   <Input
                     type="date"
                     value={travelEndDate}
                     onChange={(e) => setTravelEndDate(e.target.value)}
                     min={travelStartDate || new Date().toISOString().split('T')[0]}
                     className={cn(
-                      theme === "cutesy" && "bg-pink-50 border-pink-200",
-                      theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white"
+                      theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                      theme === "anime" && "bg-card/80 border-primary/30 text-foreground"
                     )}
                   />
                 </div>
@@ -581,7 +581,7 @@ const Profile = () => {
 
               <p className={cn(
                 "text-sm",
-                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"
               )}>
                 This helps locals in your destination city find you
               </p>
@@ -591,13 +591,13 @@ const Profile = () => {
 
         {/* Age Preferences */}
         <Card className={cn(
-          theme === "cutesy" && "border-pink-200",
-          theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+          theme === "cutesy" && "border-primary/30",
+          theme === "anime" && "border-primary/30 bg-card/80"
         )}>
           <CardHeader>
             <CardTitle className={cn(
               "text-lg flex items-center gap-2",
-              theme === "anime" && "text-white"
+              theme === "anime" && "text-foreground"
             )}>
               <Users className="w-5 h-5" />
               Match Preferences
@@ -605,16 +605,16 @@ const Profile = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>
+              <Label className={theme === "anime" ? "text-foreground" : ""}>
                 Age Range: {minAgePreference} - {maxAgePreference}
               </Label>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className={theme === "anime" ? "text-purple-400" : "text-muted-foreground"}>Minimum Age</span>
+                    <span className={theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"}>Minimum Age</span>
                     <span className={cn(
                       "font-medium",
-                      theme === "anime" && "text-cyan-400"
+                      theme === "anime" && "text-accent"
                     )}>{minAgePreference}</span>
                   </div>
                   <Slider
@@ -630,17 +630,17 @@ const Profile = () => {
                     max={99}
                     step={1}
                     className={cn(
-                      theme === "cutesy" && "[&_[role=slider]]:bg-pink-500",
-                      theme === "anime" && "[&_[role=slider]]:bg-cyan-500"
+                      theme === "cutesy" && "[&_[role=slider]]:bg-primary",
+                      theme === "anime" && "[&_[role=slider]]:bg-accent"
                     )}
                   />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className={theme === "anime" ? "text-purple-400" : "text-muted-foreground"}>Maximum Age</span>
+                    <span className={theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"}>Maximum Age</span>
                     <span className={cn(
                       "font-medium",
-                      theme === "anime" && "text-cyan-400"
+                      theme === "anime" && "text-accent"
                     )}>{maxAgePreference}</span>
                   </div>
                   <Slider
@@ -653,15 +653,15 @@ const Profile = () => {
                     max={99}
                     step={1}
                     className={cn(
-                      theme === "cutesy" && "[&_[role=slider]]:bg-pink-500",
-                      theme === "anime" && "[&_[role=slider]]:bg-cyan-500"
+                      theme === "cutesy" && "[&_[role=slider]]:bg-primary",
+                      theme === "anime" && "[&_[role=slider]]:bg-accent"
                     )}
                   />
                 </div>
               </div>
               <p className={cn(
                 "text-sm",
-                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"
               )}>
                 You'll only see locals within this age range
               </p>
@@ -671,13 +671,13 @@ const Profile = () => {
 
         {/* Theme Selection */}
         <Card className={cn(
-          theme === "cutesy" && "border-pink-200",
-          theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+          theme === "cutesy" && "border-primary/30",
+          theme === "anime" && "border-primary/30 bg-card/80"
         )}>
           <CardHeader>
             <CardTitle className={cn(
               "text-lg",
-              theme === "anime" && "text-white"
+              theme === "anime" && "text-foreground"
             )}>App Theme</CardTitle>
           </CardHeader>
           <CardContent>
@@ -688,9 +688,9 @@ const Profile = () => {
                   variant={theme === t.id ? "default" : "outline"}
                   className={cn(
                     "flex-1 gap-2",
-                    theme === t.id && t.id === "cutesy" && "bg-pink-500 hover:bg-pink-600",
-                    theme === t.id && t.id === "anime" && "bg-gradient-to-r from-pink-500 to-cyan-500",
-                    theme !== t.id && theme === "anime" && "border-purple-500/30 text-purple-300"
+                    theme === t.id && t.id === "cutesy" && "bg-primary hover:bg-primary/90",
+                    theme === t.id && t.id === "anime" && "bg-gradient-to-r from-primary to-accent",
+                    theme !== t.id && theme === "anime" && "border-primary/30 text-foreground"
                   )}
                   onClick={() => setTheme(t.id)}
                 >
@@ -708,8 +708,8 @@ const Profile = () => {
           <Button
             className={cn(
               "w-full",
-              theme === "cutesy" && "bg-pink-500 hover:bg-pink-600",
-              theme === "anime" && "bg-gradient-to-r from-pink-500 to-cyan-500"
+              theme === "cutesy" && "bg-primary hover:bg-primary/90",
+              theme === "anime" && "bg-gradient-to-r from-primary to-accent"
             )}
             onClick={handleSave}
             disabled={saving}
@@ -721,8 +721,8 @@ const Profile = () => {
             variant="outline"
             className={cn(
               "w-full",
-              theme === "cutesy" && "border-pink-200 text-pink-600",
-              theme === "anime" && "border-purple-500/30 text-purple-300"
+              theme === "cutesy" && "border-primary/30 text-primary",
+              theme === "anime" && "border-primary/30 text-foreground"
             )}
             onClick={handleSignOut}
           >

@@ -153,40 +153,40 @@ const Messages = () => {
       <AppLayout>
         <Card className={cn(
           "h-[calc(100vh-12rem)] flex flex-col",
-          theme === "cutesy" && "border-pink-200",
-          theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+          theme === "cutesy" && "border-primary/30",
+          theme === "anime" && "border-primary/30 bg-card/80"
         )}>
           {/* Chat header */}
           <div className={cn(
             "p-4 border-b flex items-center gap-3",
-            theme === "cutesy" && "border-pink-200",
-            theme === "anime" && "border-purple-500/30"
+            theme === "cutesy" && "border-primary/30",
+            theme === "anime" && "border-primary/30"
           )}>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSelectedConversation(null)}
               className={cn(
-                theme === "anime" && "text-purple-300 hover:text-white"
+                theme === "anime" && "text-foreground hover:text-foreground"
               )}
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <Avatar className={cn(
-              theme === "cutesy" && "ring-2 ring-pink-200",
-              theme === "anime" && "ring-2 ring-purple-500"
+              theme === "cutesy" && "ring-2 ring-primary/30",
+              theme === "anime" && "ring-2 ring-primary"
             )}>
               <AvatarImage src={selectedConversation.otherUser?.avatar_url || ""} />
               <AvatarFallback className={cn(
-                theme === "cutesy" && "bg-pink-100 text-pink-600",
-                theme === "anime" && "bg-purple-700 text-cyan-400"
+                theme === "cutesy" && "bg-secondary text-primary",
+                theme === "anime" && "bg-primary/30 text-accent"
               )}>
                 {(selectedConversation.otherUser?.display_name || "U")[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <span className={cn(
               "font-medium",
-              theme === "anime" && "text-white"
+              theme === "anime" && "text-foreground"
             )}>
               {selectedConversation.otherUser?.display_name || "User"}
             </span>
@@ -208,16 +208,16 @@ const Messages = () => {
                     <div className={cn(
                       "max-w-[70%] px-4 py-2 rounded-2xl",
                       isOwn && theme === "minimalist" && "bg-primary text-primary-foreground",
-                      isOwn && theme === "cutesy" && "bg-pink-500 text-white",
-                      isOwn && theme === "anime" && "bg-gradient-to-r from-pink-500 to-cyan-500 text-white",
+                      isOwn && theme === "cutesy" && "bg-primary text-primary-foreground",
+                      isOwn && theme === "anime" && "bg-gradient-to-r from-primary to-accent text-primary-foreground",
                       !isOwn && theme === "minimalist" && "bg-muted",
-                      !isOwn && theme === "cutesy" && "bg-pink-100",
-                      !isOwn && theme === "anime" && "bg-purple-800 text-purple-100"
+                      !isOwn && theme === "cutesy" && "bg-secondary",
+                      !isOwn && theme === "anime" && "bg-card text-foreground"
                     )}>
                       <p className="text-sm">{msg.content}</p>
                       <span className={cn(
                         "text-xs mt-1 block",
-                        isOwn ? "text-white/70" : "text-muted-foreground"
+                        isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                       )}>
                         {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
                       </span>
@@ -232,8 +232,8 @@ const Messages = () => {
           {/* Message input */}
           <div className={cn(
             "p-4 border-t flex gap-2",
-            theme === "cutesy" && "border-pink-200",
-            theme === "anime" && "border-purple-500/30"
+            theme === "cutesy" && "border-primary/30",
+            theme === "anime" && "border-primary/30"
           )}>
             <Input
               placeholder="Type a message..."
@@ -241,16 +241,16 @@ const Messages = () => {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
               className={cn(
-                theme === "cutesy" && "bg-pink-50 border-pink-200",
-                theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white placeholder:text-purple-300"
+                theme === "cutesy" && "bg-secondary/50 border-primary/30",
+                theme === "anime" && "bg-card/80 border-primary/30 text-foreground placeholder:text-muted-foreground"
               )}
             />
             <Button
               onClick={handleSendMessage}
               disabled={!newMessage.trim()}
               className={cn(
-                theme === "cutesy" && "bg-pink-500 hover:bg-pink-600",
-                theme === "anime" && "bg-gradient-to-r from-pink-500 to-cyan-500"
+                theme === "cutesy" && "bg-primary hover:bg-primary/90",
+                theme === "anime" && "bg-gradient-to-r from-primary to-accent"
               )}
             >
               <Send className="w-4 h-4" />
@@ -266,7 +266,7 @@ const Messages = () => {
       <div className="space-y-6">
         <h1 className={cn(
           "text-2xl font-display font-bold",
-          theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400"
+          theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent"
         )}>
           Messages
         </h1>
@@ -276,30 +276,30 @@ const Messages = () => {
             <div className={cn(
               "inline-block w-8 h-8 border-4 border-t-transparent rounded-full animate-spin",
               theme === "minimalist" && "border-primary",
-              theme === "cutesy" && "border-pink-400",
-              theme === "anime" && "border-cyan-400"
+              theme === "cutesy" && "border-primary",
+              theme === "anime" && "border-accent"
             )} />
           </div>
         ) : conversations?.length === 0 ? (
           <Card className={cn(
             "p-12 text-center",
-            theme === "cutesy" && "bg-pink-50 border-pink-200",
-            theme === "anime" && "bg-purple-900/50 border-purple-500/30"
+            theme === "cutesy" && "bg-secondary/50 border-primary/30",
+            theme === "anime" && "bg-card/80 border-primary/30"
           )}>
             <MessageCircle className={cn(
               "w-16 h-16 mx-auto mb-4",
               theme === "minimalist" && "text-muted-foreground",
-              theme === "cutesy" && "text-pink-300",
-              theme === "anime" && "text-purple-400"
+              theme === "cutesy" && "text-primary/60",
+              theme === "anime" && "text-accent"
             )} />
             <h3 className={cn(
               "text-xl font-display font-semibold mb-2",
-              theme === "anime" && "text-white"
+              theme === "anime" && "text-foreground"
             )}>
               No Messages Yet
             </h3>
             <p className={cn(
-              theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+              theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
             )}>
               Match with locals to start a conversation!
             </p>
@@ -311,20 +311,20 @@ const Messages = () => {
                 key={conv.id}
                 className={cn(
                   "p-4 cursor-pointer transition-all hover:shadow-md",
-                  theme === "cutesy" && "border-pink-200 hover:bg-pink-50",
-                  theme === "anime" && "border-purple-500/30 bg-purple-900/50 hover:bg-purple-800/50"
+                  theme === "cutesy" && "border-primary/30 hover:bg-secondary/50",
+                  theme === "anime" && "border-primary/30 bg-card/80 hover:bg-card"
                 )}
                 onClick={() => setSelectedConversation(conv)}
               >
                 <div className="flex items-center gap-3">
                   <Avatar className={cn(
-                    theme === "cutesy" && "ring-2 ring-pink-200",
-                    theme === "anime" && "ring-2 ring-purple-500"
+                    theme === "cutesy" && "ring-2 ring-primary/30",
+                    theme === "anime" && "ring-2 ring-primary"
                   )}>
                     <AvatarImage src={conv.otherUser?.avatar_url || ""} />
                     <AvatarFallback className={cn(
-                      theme === "cutesy" && "bg-pink-100 text-pink-600",
-                      theme === "anime" && "bg-purple-700 text-cyan-400"
+                      theme === "cutesy" && "bg-secondary text-primary",
+                      theme === "anime" && "bg-primary/30 text-accent"
                     )}>
                       {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
                     </AvatarFallback>
@@ -332,14 +332,14 @@ const Messages = () => {
                   <div className="flex-1 min-w-0">
                     <p className={cn(
                       "font-medium",
-                      theme === "anime" && "text-white"
+                      theme === "anime" && "text-foreground"
                     )}>
                       {conv.otherUser?.display_name || "User"}
                     </p>
                     {conv.lastMessage && (
                       <p className={cn(
                         "text-sm truncate",
-                        theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+                        theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
                       )}>
                         {conv.lastMessage.content}
                       </p>
@@ -348,7 +348,7 @@ const Messages = () => {
                   {conv.lastMessage && (
                     <span className={cn(
                       "text-xs",
-                      theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                      theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"
                     )}>
                       {formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true })}
                     </span>

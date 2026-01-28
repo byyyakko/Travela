@@ -290,12 +290,12 @@ const Match = () => {
         <div className="text-center mb-4">
           <h1 className={cn(
             "text-2xl font-display font-bold mb-2",
-            theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400"
+            theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent"
           )}>
             Find Locals
           </h1>
           <p className={cn(
-            theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+            theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
           )}>
             Swipe right to connect with locals in your destination
           </p>
@@ -303,8 +303,8 @@ const Match = () => {
             <p className={cn(
               "text-xs mt-2 px-3 py-1 rounded-full inline-block",
               theme === "minimalist" && "bg-amber-100 text-amber-700",
-              theme === "cutesy" && "bg-pink-100 text-pink-600",
-              theme === "anime" && "bg-purple-800/50 text-cyan-400 border border-cyan-500/30"
+              theme === "cutesy" && "bg-secondary text-primary",
+              theme === "anime" && "bg-secondary/50 text-primary border border-primary/30"
             )}>
               ✨ Demo Mode - Sample Profiles
             </p>
@@ -315,7 +315,7 @@ const Match = () => {
         <div className="relative">
           <Search className={cn(
             "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-            theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+            theme === "anime" ? "text-primary" : "text-muted-foreground"
           )} />
           <Input
             placeholder="Search by location..."
@@ -323,8 +323,8 @@ const Match = () => {
             onChange={(e) => { setLocationFilter(e.target.value); setCurrentIndex(0); }}
             className={cn(
               "pl-9",
-              theme === "cutesy" && "bg-pink-50 border-pink-200",
-              theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white placeholder:text-purple-400"
+              theme === "cutesy" && "bg-secondary/50 border-primary/30",
+              theme === "anime" && "bg-card/80 border-primary/30 text-foreground placeholder:text-muted-foreground"
             )}
           />
         </div>
@@ -334,37 +334,37 @@ const Match = () => {
             <div className={cn(
               "inline-block w-12 h-12 border-4 border-t-transparent rounded-full animate-spin",
               theme === "minimalist" && "border-primary",
-              theme === "cutesy" && "border-pink-400",
-              theme === "anime" && "border-cyan-400"
+              theme === "cutesy" && "border-primary",
+              theme === "anime" && "border-accent"
             )} />
           </div>
         ) : !currentProfile ? (
           <Card className={cn(
             "p-12 text-center",
-            theme === "cutesy" && "bg-pink-50 border-pink-200",
-            theme === "anime" && "bg-purple-900/50 border-purple-500/30"
+            theme === "cutesy" && "bg-secondary/50 border-primary/30",
+            theme === "anime" && "bg-card/80 border-primary/30"
           )}>
             <Sparkles className={cn(
               "w-16 h-16 mx-auto mb-4",
               theme === "minimalist" && "text-muted-foreground",
-              theme === "cutesy" && "text-pink-300",
-              theme === "anime" && "text-purple-400"
+              theme === "cutesy" && "text-primary/60",
+              theme === "anime" && "text-accent"
             )} />
             <h3 className={cn(
               "text-xl font-display font-semibold mb-2",
-              theme === "anime" && "text-white"
+              theme === "anime" && "text-foreground"
             )}>
               No More Locals
             </h3>
             <p className={cn(
               "mb-6",
-              theme === "anime" ? "text-purple-300" : "text-muted-foreground"
+              theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
             )}>
               You've seen all available locals. Check back later!
             </p>
             <Button onClick={handleRefresh} className={cn(
-              theme === "cutesy" && "bg-pink-500 hover:bg-pink-600",
-              theme === "anime" && "bg-gradient-to-r from-pink-500 to-cyan-500"
+              theme === "cutesy" && "bg-primary hover:bg-primary/90",
+              theme === "anime" && "bg-gradient-to-r from-primary to-accent"
             )}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -381,14 +381,14 @@ const Match = () => {
             >
               <Card className={cn(
                 "overflow-hidden",
-                theme === "cutesy" && "border-pink-200 shadow-pink-100",
-                theme === "anime" && "border-purple-500/30 bg-purple-900/50"
+                theme === "cutesy" && "border-primary/30 shadow-primary/10",
+                theme === "anime" && "border-primary/30 bg-card/80"
               )}>
                 {/* Profile Image */}
                 <div className={cn(
                   "aspect-[3/4] relative",
-                  theme === "cutesy" && "bg-gradient-to-br from-pink-100 to-purple-100",
-                  theme === "anime" && "bg-gradient-to-br from-purple-800 to-slate-900"
+                  theme === "cutesy" && "bg-gradient-to-br from-secondary to-accent/20",
+                  theme === "anime" && "bg-gradient-to-br from-primary/20 to-accent/20"
                 )}>
                   {/* Report/Block Button */}
                   <ReportBlockDialog
@@ -408,8 +408,8 @@ const Match = () => {
                       <Avatar className="w-32 h-32">
                         <AvatarFallback className={cn(
                           "text-4xl",
-                          theme === "cutesy" && "bg-pink-200 text-pink-600",
-                          theme === "anime" && "bg-purple-700 text-cyan-400"
+                          theme === "cutesy" && "bg-secondary text-primary",
+                          theme === "anime" && "bg-primary/30 text-accent"
                         )}>
                           {(currentProfile.display_name || "L")[0].toUpperCase()}
                         </AvatarFallback>
@@ -452,8 +452,8 @@ const Match = () => {
                             className={cn(
                               "px-2 py-1 rounded-full text-xs",
                               theme === "minimalist" && "bg-white/20",
-                              theme === "cutesy" && "bg-pink-400/50",
-                              theme === "anime" && "bg-cyan-500/30 border border-cyan-400/50"
+                              theme === "cutesy" && "bg-primary/40",
+                              theme === "anime" && "bg-accent/30 border border-accent/50"
                             )}
                           >
                             {interest}
@@ -473,15 +473,15 @@ const Match = () => {
                 {/* Action buttons */}
                 <div className={cn(
                   "p-6 flex justify-center gap-6",
-                  theme === "anime" && "bg-purple-900/80"
+                  theme === "anime" && "bg-card/80"
                 )}>
                   <Button
                     size="lg"
                     variant="outline"
                     className={cn(
                       "w-16 h-16 rounded-full",
-                      theme === "cutesy" && "border-pink-300 hover:bg-pink-50",
-                      theme === "anime" && "border-purple-500 hover:bg-purple-800 text-purple-300"
+                      theme === "cutesy" && "border-primary/30 hover:bg-secondary/50",
+                      theme === "anime" && "border-primary/30 hover:bg-primary/20 text-foreground"
                     )}
                     onClick={() => handleSwipe("pass")}
                     disabled={matchMutation.isPending}
@@ -494,8 +494,8 @@ const Match = () => {
                     className={cn(
                       "w-16 h-16 rounded-full",
                       theme === "minimalist" && "bg-primary hover:bg-primary/90",
-                      theme === "cutesy" && "bg-pink-500 hover:bg-pink-600",
-                      theme === "anime" && "bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600"
+                      theme === "cutesy" && "bg-primary hover:bg-primary/90",
+                      theme === "anime" && "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                     )}
                     onClick={() => handleSwipe("like")}
                     disabled={matchMutation.isPending}
