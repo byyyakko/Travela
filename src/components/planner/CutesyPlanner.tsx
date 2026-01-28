@@ -172,7 +172,7 @@ const CutesyPlanner = () => {
           <motion.img 
             src={mascotCutesy} 
             alt="Cute cat mascot" 
-            className="w-16 h-16 object-contain -mt-1 -mr-1 drop-shadow-md mix-blend-multiply"
+            className="w-16 h-16 object-contain -mt-1 -mr-1 drop-shadow-md"
             animate={floatAnimation}
           />
         </div>
@@ -291,7 +291,7 @@ const CutesyPlanner = () => {
             <motion.img 
               src={mascotCutesy} 
               alt="Cute cat mascot" 
-              className="w-24 h-24 object-contain mx-auto mb-4 opacity-80 mix-blend-multiply"
+              className="w-24 h-24 object-contain mx-auto mb-4 opacity-80"
               animate={floatAnimation}
             />
             <p className="text-muted-foreground">
