@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import ThemeSelect from "./pages/ThemeSelect";
 import Home from "./pages/Home";
 import Match from "./pages/Match";
@@ -58,6 +59,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/theme" element={<ProtectedRoute><ThemeSelect /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
