@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useRateLimit, RATE_LIMITS } from "@/hooks/useRateLimit";
 import type { Tables } from "@/integrations/supabase/types";
 
 // Sample demo profiles for testing when no real users exist
@@ -107,6 +108,7 @@ import ReportBlockDialog from "@/components/ReportBlockDialog";
 const Match = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { checkRateLimit } = useRateLimit();
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
@@ -255,7 +257,7 @@ const Match = () => {
 
   const currentProfile = filteredProfiles?.[currentIndex];
 
-  const handleSwipe = (action: "like" | "pass") => {
+  const handleSwipe = async (action: "like" | "pass") => {
     if (!currentProfile) return;
     
     // For demo profiles, just move to next without saving
@@ -267,6 +269,17 @@ const Match = () => {
         });
       }
       setCurrentIndex((prev) => prev + 1);
+      return;
+    }
+
+    // Check rate limit for real profiles
+    const allowed = await checkRateLimit(RATE_LIMITS.MATCH_ACTION);
+    if (!allowed) {
+      toast({
+        title: "Slow down!",
+        description: "You're swiping too fast. Take a moment to review profiles.",
+        variant: "destructive",
+      });
       return;
     }
     
