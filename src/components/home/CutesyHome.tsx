@@ -85,15 +85,32 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
             </h1>
             <p className="text-muted-foreground text-sm">
               Where would you like to explore today?
-            </p>
+          </p>
           </div>
-          {/* Mascot */}
-          <motion.img 
-            src={mascotCutesy} 
-            alt="Cute cat mascot" 
-            className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md"
-            animate={floatAnimation}
-          />
+          {/* Mascot with Speech Bubble */}
+          <div className="relative flex items-start">
+            {/* Speech Bubble */}
+            <motion.div 
+              className="absolute -left-36 top-0 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-[140px]"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
+              <p className="text-xs text-primary font-medium leading-snug">
+                Welcome to Travela! Where are we going today?
+              </p>
+              {/* Speech bubble tail */}
+              <div className="absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
+              <div className="absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
+            </motion.div>
+            {/* Mascot */}
+            <motion.img 
+              src={mascotCutesy} 
+              alt="Cute cat mascot" 
+              className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md"
+              animate={floatAnimation}
+            />
+          </div>
         </div>
 
         {/* Search bar with hand-drawn style */}
