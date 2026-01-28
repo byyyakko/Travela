@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import bgAnime from "@/assets/bg-anime.png";
+import bgCute from "@/assets/bg-cute.png";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -21,13 +23,34 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const { theme } = useTheme();
 
+  const getBackgroundStyle = () => {
+    if (theme === "cutesy") {
+      return {
+        backgroundImage: `url(${bgCute})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      };
+    }
+    if (theme === "anime") {
+      return {
+        backgroundImage: `url(${bgAnime})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      };
+    }
+    return {};
+  };
+
   return (
-    <div className={cn(
-      "min-h-screen pb-20 md:pb-0 md:pl-20",
-      theme === "cutesy" && "bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50",
-      theme === "anime" && "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900",
-      theme === "minimalist" && "bg-background"
-    )}>
+    <div 
+      className={cn(
+        "min-h-screen pb-20 md:pb-0 md:pl-20",
+        theme === "minimalist" && "bg-background"
+      )}
+      style={getBackgroundStyle()}
+    >
       {/* Top bar with search */}
       <header className={cn(
         "fixed top-0 left-0 right-0 z-40 px-4 py-3 md:left-20",
