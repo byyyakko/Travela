@@ -44,6 +44,16 @@ const floatAnimation = {
   },
 };
 
+// Random mascot messages for planner
+const mascotMessages = [
+  "Let's plan something!",
+  "Any new activities lately?",
+  "Add some new activities here!",
+  "New trip? I'm all for it!",
+];
+
+const getRandomMessage = () => mascotMessages[Math.floor(Math.random() * mascotMessages.length)];
+
 const countries = [
   { code: "JP", name: "Japan", flag: "🇯🇵" },
   { code: "ID", name: "Indonesia", flag: "🇮🇩" },
@@ -73,6 +83,7 @@ const CutesyPlanner = () => {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to?: Date | undefined }>({ from: undefined });
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [mascotMessage] = useState(() => getRandomMessage());
 
   const { data: trips, isLoading } = useQuery({
     queryKey: ["trips", user?.id],
@@ -180,13 +191,30 @@ const CutesyPlanner = () => {
           <h1 className="text-2xl font-bold text-primary cutesy-underline inline-block">
             Plan ✈️
           </h1>
-        {/* Mascot */}
-          <motion.img 
-            src={mascotCutesy} 
-            alt="Cute cat mascot" 
-            className="w-16 h-16 object-contain -mt-1 -mr-1 drop-shadow-md mix-blend-multiply"
-            animate={floatAnimation}
-          />
+          {/* Mascot with Speech Bubble */}
+          <div className="relative flex items-start">
+            {/* Speech Bubble */}
+            <motion.div 
+              className="absolute -left-32 top-0 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-[120px]"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
+              <p className="text-xs text-primary font-medium leading-snug">
+                {mascotMessage}
+              </p>
+              {/* Speech bubble tail */}
+              <div className="absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
+              <div className="absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
+            </motion.div>
+            {/* Mascot */}
+            <motion.img 
+              src={mascotCutesy} 
+              alt="Cute cat mascot" 
+              className="w-16 h-16 object-contain -mt-1 -mr-1 drop-shadow-md mix-blend-multiply"
+              animate={floatAnimation}
+            />
+          </div>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
