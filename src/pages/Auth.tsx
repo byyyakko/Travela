@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Plane, Globe, Check, X, Mail } from "lucide-react";
+import { MapPin, Plane, Globe, Check, X, Mail, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPasswordRules, setShowPasswordRules] = useState(false);
   const [pendingVerification, setPendingVerification] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -96,6 +99,110 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      toast({
+        title: "Error sending reset email",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setResetEmailSent(true);
+      toast({
+        title: "Check your email!",
+        description: "We've sent you a password reset link.",
+      });
+    }
+
+    setLoading(false);
+  };
+
+  const renderForgotPassword = () => {
+    if (resetEmailSent) {
+      return (
+        <div className="text-center py-6 space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+            <Mail className="w-8 h-8 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg">Check your email</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+              We've sent a password reset link to <strong>{email}</strong>
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Click the link in your email to reset your password. Check your spam folder if you don't see it.
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setShowForgotPassword(false);
+              setResetEmailSent(false);
+            }}
+            className="mt-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Sign In
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          onClick={() => setShowForgotPassword(false)}
+          className="p-0 h-auto text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Sign In
+        </Button>
+        
+        <div className="text-center py-4">
+          <h3 className="font-semibold text-lg">Forgot your password?</h3>
+          <p className="text-muted-foreground text-sm mt-1">
+            Enter your email and we'll send you a reset link
+          </p>
+        </div>
+
+        <form onSubmit={handleForgotPassword} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="reset-email">Email</Label>
+            <Input
+              id="reset-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Sending..." : "Send Reset Link"}
+          </Button>
+        </form>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
       <div className="w-full max-w-md space-y-8">
@@ -126,71 +233,21 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign In"}
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                {pendingVerification ? (
-                  <div className="text-center py-6 space-y-4">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                      <Mail className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">Verify your email</h3>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        We've sent a verification link to <strong>{email}</strong>
-                      </p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Click the link in your email to complete registration. Check your spam folder if you don't see it.
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setPendingVerification(false)}
-                      className="mt-4"
-                    >
-                      Use a different email
-                    </Button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSignUp} className="space-y-4">
+            {showForgotPassword ? (
+              renderForgotPassword()
+            ) : (
+              <Tabs defaultValue="signin" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="signin">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="signin">
+                  <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
+                      <Label htmlFor="signin-email">Email</Label>
                       <Input
-                        id="signup-email"
+                        id="signin-email"
                         type="email"
                         placeholder="you@example.com"
                         value={email}
@@ -199,35 +256,97 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
+                      <Label htmlFor="signin-password">Password</Label>
                       <Input
-                        id="signup-password"
+                        id="signin-password"
                         type="password"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        onFocus={() => setShowPasswordRules(true)}
                         required
-                        minLength={8}
                       />
-                      {showPasswordRules && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-1">
-                          <p className="text-xs font-medium mb-2">Password must have:</p>
-                          <PasswordRequirement met={passwordValidation.minLength} text="At least 8 characters" />
-                          <PasswordRequirement met={passwordValidation.hasUppercase} text="One uppercase letter" />
-                          <PasswordRequirement met={passwordValidation.hasLowercase} text="One lowercase letter" />
-                          <PasswordRequirement met={passwordValidation.hasNumber} text="One number" />
-                          <PasswordRequirement met={passwordValidation.hasSpecial} text="One special character" />
-                        </div>
-                      )}
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading || !isPasswordValid}>
-                      {loading ? "Creating account..." : "Create Account"}
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Signing in..." : "Sign In"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="w-full text-sm text-muted-foreground"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Forgot your password?
                     </Button>
                   </form>
-                )}
-              </TabsContent>
-            </Tabs>
+                </TabsContent>
+                
+                <TabsContent value="signup">
+                  {pendingVerification ? (
+                    <div className="text-center py-6 space-y-4">
+                      <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                        <Mail className="w-8 h-8 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">Verify your email</h3>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          We've sent a verification link to <strong>{email}</strong>
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Click the link in your email to complete registration. Check your spam folder if you don't see it.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setPendingVerification(false)}
+                        className="mt-4"
+                      >
+                        Use a different email
+                      </Button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSignUp} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email">Email</Label>
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password">Password</Label>
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          onFocus={() => setShowPasswordRules(true)}
+                          required
+                          minLength={8}
+                        />
+                        {showPasswordRules && (
+                          <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-1">
+                            <p className="text-xs font-medium mb-2">Password must have:</p>
+                            <PasswordRequirement met={passwordValidation.minLength} text="At least 8 characters" />
+                            <PasswordRequirement met={passwordValidation.hasUppercase} text="One uppercase letter" />
+                            <PasswordRequirement met={passwordValidation.hasLowercase} text="One lowercase letter" />
+                            <PasswordRequirement met={passwordValidation.hasNumber} text="One number" />
+                            <PasswordRequirement met={passwordValidation.hasSpecial} text="One special character" />
+                          </div>
+                        )}
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading || !isPasswordValid}>
+                        {loading ? "Creating account..." : "Create Account"}
+                      </Button>
+                    </form>
+                  )}
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
