@@ -202,7 +202,7 @@ const TripDetail = ({ trip, onBack }: TripDetailProps) => {
             <motion.img
               src={mascotCutesy}
               alt="Cute cat mascot"
-              className="w-14 h-14 object-contain drop-shadow-md"
+              className="w-14 h-14 object-contain drop-shadow-md mix-blend-multiply"
               animate={floatAnimation}
             />
           )}
