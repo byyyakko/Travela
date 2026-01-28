@@ -8,7 +8,18 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Search, MapPin, Users, Compass, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
+
+// Floating animation for mascot
+const floatAnimation = {
+  y: [0, -8, 0],
+  transition: {
+    duration: 2.5,
+    repeat: Infinity,
+    ease: "easeInOut" as const,
+  },
+};
 
 // Category filter pills with hand-drawn style colors
 const categoryFilters = [
@@ -77,10 +88,11 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
             </p>
           </div>
           {/* Mascot */}
-          <img 
+          <motion.img 
             src={mascotCutesy} 
             alt="Cute cat mascot" 
             className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md"
+            animate={floatAnimation}
           />
         </div>
 
@@ -148,10 +160,11 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           </div>
         ) : posts?.length === 0 ? (
           <Card className="text-center py-12 cutesy-border bg-card/90">
-            <img 
+            <motion.img 
               src={mascotCutesy} 
               alt="Cute cat mascot" 
               className="w-24 h-24 object-contain mx-auto mb-4 opacity-80"
+              animate={floatAnimation}
             />
             <p className="text-muted-foreground">
               No posts yet. Be the first to share your travel experience! ✨

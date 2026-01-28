@@ -30,7 +30,18 @@ import { cn } from "@/lib/utils";
 import { Plus, MoreHorizontal, MapPin, Calendar as CalendarIcon, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { motion } from "framer-motion";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
+
+// Floating animation for mascot
+const floatAnimation = {
+  y: [0, -8, 0],
+  transition: {
+    duration: 2.5,
+    repeat: Infinity,
+    ease: "easeInOut" as const,
+  },
+};
 
 const countries = [
   { code: "JP", name: "Japan", flag: "🇯🇵" },
@@ -158,10 +169,11 @@ const CutesyPlanner = () => {
             Plan ✈️
           </h1>
           {/* Mascot */}
-          <img 
+          <motion.img 
             src={mascotCutesy} 
             alt="Cute cat mascot" 
             className="w-16 h-16 object-contain -mt-1 -mr-1 drop-shadow-md"
+            animate={floatAnimation}
           />
         </div>
 
@@ -276,10 +288,11 @@ const CutesyPlanner = () => {
           </div>
         ) : trips?.length === 0 ? (
           <Card className="p-8 text-center cutesy-border bg-card/90">
-            <img 
+            <motion.img 
               src={mascotCutesy} 
               alt="Cute cat mascot" 
               className="w-24 h-24 object-contain mx-auto mb-4 opacity-80"
+              animate={floatAnimation}
             />
             <p className="text-muted-foreground">
               No trips planned yet. Create your first adventure! ✨
