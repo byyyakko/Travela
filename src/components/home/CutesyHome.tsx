@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Search, MapPin, Users, Compass, ChevronRight } from "lucide-react";
+import mascotCutesy from "@/assets/mascot-cutesy.png";
 
 // Category filter pills with hand-drawn style colors
 const categoryFilters = [
@@ -65,13 +66,23 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   return (
     <div className="space-y-6">
       {/* Personalized Greeting with dotted grid background */}
-      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95">
-        <h1 className="text-2xl font-bold text-primary mb-1">
-          Hello, {displayName || "Traveler"}! 👋
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Where would you like to explore today?
-        </p>
+      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-primary mb-1">
+              Hello, {displayName || "Traveler"}! 👋
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Where would you like to explore today?
+            </p>
+          </div>
+          {/* Mascot */}
+          <img 
+            src={mascotCutesy} 
+            alt="Cute cat mascot" 
+            className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md"
+          />
+        </div>
 
         {/* Search bar with hand-drawn style */}
         <div className="relative mt-4">
@@ -137,6 +148,11 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           </div>
         ) : posts?.length === 0 ? (
           <Card className="text-center py-12 cutesy-border bg-card/90">
+            <img 
+              src={mascotCutesy} 
+              alt="Cute cat mascot" 
+              className="w-24 h-24 object-contain mx-auto mb-4 opacity-80"
+            />
             <p className="text-muted-foreground">
               No posts yet. Be the first to share your travel experience! ✨
             </p>
