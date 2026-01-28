@@ -168,49 +168,34 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
     <>
       <Card className={cn(
         "overflow-hidden",
-        theme === "cutesy" && "bg-white border-pink-200 shadow-pink-100",
-        theme === "anime" && "bg-purple-900/50 border-purple-500/30"
+        theme === "cutesy" && "bg-card/90 border-primary/30",
+        theme === "anime" && "bg-card/80 border-primary/30"
       )}>
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className={cn(
               "w-10 h-10",
-              theme === "cutesy" && "ring-2 ring-pink-200",
-              theme === "anime" && "ring-2 ring-purple-500"
+              theme === "cutesy" && "ring-2 ring-primary/30",
+              theme === "anime" && "ring-2 ring-primary/50"
             )}>
               <AvatarImage src={post.profiles?.avatar_url || ""} />
-              <AvatarFallback className={cn(
-                theme === "cutesy" && "bg-pink-100 text-pink-600",
-                theme === "anime" && "bg-purple-700 text-cyan-400"
-              )}>
+              <AvatarFallback className="bg-primary/10 text-primary">
                 {displayName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className={cn(
-                "font-medium",
-                theme === "anime" && "text-white"
-              )}>
+              <p className="font-medium text-foreground">
                 {displayName}
               </p>
               <div className="flex items-center gap-2 text-sm">
-                <span className={cn(
-                  theme === "anime" ? "text-purple-300" : "text-muted-foreground"
-                )}>
+                <span className="text-muted-foreground">
                   {timeAgo}
                 </span>
                 {post.location_tag && (
                   <>
-                    <span className={cn(
-                      theme === "anime" ? "text-purple-500" : "text-muted-foreground"
-                    )}>·</span>
-                    <span className={cn(
-                      "flex items-center gap-1",
-                      theme === "minimalist" && "text-primary",
-                      theme === "cutesy" && "text-pink-500",
-                      theme === "anime" && "text-cyan-400"
-                    )}>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="flex items-center gap-1 text-primary">
                       <MapPin className="w-3 h-3" />
                       {post.location_tag}
                     </span>
@@ -223,21 +208,16 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
           {isOwnPost && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className={cn(
-                  theme === "anime" && "text-purple-300 hover:text-white hover:bg-purple-800/50"
-                )}>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
                   <MoreHorizontal className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className={cn(
-                theme === "anime" && "bg-purple-900 border-purple-500/30"
+                theme === "anime" && "bg-card border-primary/30"
               )}>
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
-                  className={cn(
-                    "text-destructive cursor-pointer",
-                    theme === "anime" && "text-red-400 focus:bg-purple-800 focus:text-red-400"
-                  )}
+                  className="text-destructive cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete post
@@ -249,10 +229,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
 
         {/* Content */}
         <div className="px-4 pb-3">
-          <p className={cn(
-            "whitespace-pre-wrap",
-            theme === "anime" && "text-purple-100"
-          )}>
+          <p className="whitespace-pre-wrap text-foreground">
             {post.content}
           </p>
         </div>
@@ -265,8 +242,8 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
               alt="Post"
               className={cn(
                 "w-full rounded-xl object-cover max-h-96",
-                theme === "cutesy" && "ring-2 ring-pink-200",
-                theme === "anime" && "ring-2 ring-purple-500/50"
+                theme === "cutesy" && "ring-2 ring-primary/20",
+                theme === "anime" && "ring-2 ring-primary/30"
               )}
             />
           </div>
@@ -275,8 +252,8 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
         {/* Actions */}
         <div className={cn(
           "px-4 py-3 flex items-center justify-between border-t",
-          theme === "cutesy" && "border-pink-100",
-          theme === "anime" && "border-purple-500/20"
+          theme === "cutesy" && "border-primary/20",
+          theme === "anime" && "border-primary/20"
         )}>
           <div className="flex items-center gap-4">
             <Button
@@ -285,10 +262,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
               onClick={handleLike}
               className={cn(
                 "gap-2",
-                isLiked && theme === "minimalist" && "text-red-500",
-                isLiked && theme === "cutesy" && "text-pink-500",
-                isLiked && theme === "anime" && "text-pink-400",
-                !isLiked && theme === "anime" && "text-purple-300 hover:text-pink-400"
+                isLiked ? "text-red-500" : "text-muted-foreground hover:text-red-500"
               )}
             >
               <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
@@ -298,10 +272,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
             <Button
               variant="ghost"
               size="sm"
-              className={cn(
-                "gap-2",
-                theme === "anime" && "text-purple-300 hover:text-cyan-400"
-              )}
+              className="gap-2 text-muted-foreground hover:text-accent"
             >
               <MessageCircle className="w-5 h-5" />
               {post.post_comments.length > 0 && post.post_comments.length}
@@ -313,10 +284,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
             size="sm"
             onClick={handleBookmark}
             className={cn(
-              isBookmarked && theme === "minimalist" && "text-primary",
-              isBookmarked && theme === "cutesy" && "text-pink-500",
-              isBookmarked && theme === "anime" && "text-cyan-400",
-              !isBookmarked && theme === "anime" && "text-purple-300 hover:text-cyan-400"
+              isBookmarked ? "text-accent" : "text-muted-foreground hover:text-accent"
             )}
           >
             <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
@@ -327,27 +295,17 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className={cn(
-          theme === "anime" && "bg-purple-900 border-purple-500/30"
+          theme === "anime" && "bg-card border-primary/30"
         )}>
           <AlertDialogHeader>
-            <AlertDialogTitle className={cn(
-              theme === "anime" && "text-white"
-            )}>
-              Delete this post?
-            </AlertDialogTitle>
-            <AlertDialogDescription className={cn(
-              theme === "anime" && "text-purple-300"
-            )}>
+            <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+            <AlertDialogDescription>
               This action cannot be undone. This will permanently delete your post
               and remove it from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={cn(
-              theme === "anime" && "bg-purple-800 border-purple-500/30 text-white hover:bg-purple-700"
-            )}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
