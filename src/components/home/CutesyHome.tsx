@@ -21,6 +21,16 @@ const floatAnimation = {
   },
 };
 
+// Random mascot messages
+const mascotMessages = [
+  "Welcome to Travela! Where are we going today?",
+  "Hope you are having fun! Tell me more so I can guide you!",
+  "Stay safe! Make sure you're all packed for your upcoming journey!",
+  "Feed me! I'm hungry! Feed me some information on countries!",
+];
+
+const getRandomMessage = () => mascotMessages[Math.floor(Math.random() * mascotMessages.length)];
+
 // Category filter pills with hand-drawn style colors
 const categoryFilters = [
   { label: "Local Favorites", color: "cutesy-pill-yellow" },
@@ -43,6 +53,7 @@ interface CutesyHomeProps {
 const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [mascotMessage] = useState(() => getRandomMessage());
 
   const { data: posts, isLoading, refetch } = useQuery({
     queryKey: ["posts"],
@@ -97,7 +108,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
               transition={{ delay: 0.3, duration: 0.4 }}
             >
               <p className="text-xs text-primary font-medium leading-snug">
-                Welcome to Travela! Where are we going today?
+                {mascotMessage}
               </p>
               {/* Speech bubble tail */}
               <div className="absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
