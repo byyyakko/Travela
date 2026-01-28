@@ -55,7 +55,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <header className={cn(
         "fixed top-0 left-0 right-0 z-40 px-4 py-3 md:left-20",
         theme === "minimalist" && "bg-background/80 backdrop-blur-md border-b border-border/50",
-        theme === "cutesy" && "bg-card/90 backdrop-blur-md border-b-2 border-primary/30",
+        theme === "cutesy" && "cutesy-grid-bg bg-card/95 backdrop-blur-md border-b-[3px] border-primary",
         theme === "anime" && "bg-card/90 backdrop-blur-md border-b border-primary/30"
       )}>
         <div className="max-w-4xl mx-auto flex items-center gap-4">
@@ -66,7 +66,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               theme === "cutesy" && "text-primary",
               theme === "anime" && "text-primary"
             )}>
-              Travela
+              {theme === "cutesy" ? "✈️ Travela" : "Travela"}
             </span>
           </div>
           <div className="flex-1 max-w-md">
@@ -79,7 +79,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 placeholder="Search destinations, locals..."
                 className={cn(
                   "pl-10",
-                  theme === "cutesy" && "bg-background border-primary/30 focus:border-primary rounded-full",
+                  theme === "cutesy" && "bg-background border-2 border-primary/50 focus:border-primary rounded-full",
                   theme === "anime" && "bg-background border-primary/30 focus:border-primary rounded-lg"
                 )}
               />
@@ -87,7 +87,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
           <Link to="/settings">
             <Button variant="ghost" size="icon" className={cn(
-              "text-muted-foreground hover:text-foreground"
+              "text-muted-foreground hover:text-foreground",
+              theme === "cutesy" && "hover:bg-secondary"
             )}>
               <Settings className="w-5 h-5" />
             </Button>
@@ -106,7 +107,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <nav className={cn(
         "fixed bottom-0 left-0 right-0 z-50 md:hidden",
         theme === "minimalist" && "bg-background/95 backdrop-blur-md border-t border-border/50",
-        theme === "cutesy" && "bg-card/95 backdrop-blur-md border-t-2 border-primary/30",
+        theme === "cutesy" && "cutesy-grid-bg bg-card/98 backdrop-blur-md border-t-[3px] border-primary",
         theme === "anime" && "bg-card/95 backdrop-blur-md border-t border-primary/30"
       )}>
         <div className="flex justify-around py-2">
@@ -118,10 +119,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 to={item.path}
                 className={cn(
                   "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all",
-                  isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+                  theme === "cutesy" && isActive && "text-primary",
+                  theme === "cutesy" && !isActive && "text-muted-foreground",
+                  theme !== "cutesy" && isActive && "text-primary bg-primary/10",
+                  theme !== "cutesy" && !isActive && "text-muted-foreground"
                 )}
               >
-                <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
+                <div className={cn(
+                  theme === "cutesy" && isActive && "bg-secondary p-2 rounded-full border-2 border-primary -mt-6 shadow-md"
+                )}>
+                  <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
+                </div>
                 <span className="text-xs font-medium">{item.label}</span>
               </Link>
             );
@@ -133,13 +141,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <nav className={cn(
         "fixed left-0 top-0 bottom-0 w-20 hidden md:flex flex-col items-center py-6 z-50",
         theme === "minimalist" && "bg-background border-r border-border/50",
-        theme === "cutesy" && "bg-card/95 backdrop-blur-md border-r-2 border-primary/30",
+        theme === "cutesy" && "cutesy-grid-bg bg-card/98 backdrop-blur-md border-r-[3px] border-primary",
         theme === "anime" && "bg-card/95 backdrop-blur-md border-r border-primary/30"
       )}>
         <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center mb-8 bg-primary text-primary-foreground"
+          "w-10 h-10 rounded-xl flex items-center justify-center mb-8",
+          theme === "cutesy" ? "bg-secondary border-2 border-primary" : "bg-primary text-primary-foreground"
         )}>
-          <span className="font-display font-bold text-lg">T</span>
+          <span className={cn(
+            "font-display font-bold text-lg",
+            theme === "cutesy" && "text-primary"
+          )}>✈️</span>
         </div>
 
         <div className="flex flex-col gap-2 flex-1">
@@ -151,7 +163,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 to={item.path}
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-xl transition-all",
-                  isActive ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"
+                  theme === "cutesy" && isActive && "bg-secondary border-2 border-primary text-primary",
+                  theme === "cutesy" && !isActive && "text-muted-foreground hover:bg-secondary",
+                  theme !== "cutesy" && isActive && "bg-primary/15 text-primary",
+                  theme !== "cutesy" && !isActive && "text-muted-foreground hover:bg-muted"
                 )}
               >
                 <item.icon className="w-5 h-5" />

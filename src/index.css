@@ -109,53 +109,60 @@
   }
 }
 
-/* Cutesy Theme - Sunny meadow, bright greens & warm yellows */
+/* Cutesy Theme - Hand-drawn notebook doodle aesthetic */
 body.theme-cutesy {
-  --background: 120 30% 96%;
-  --foreground: 140 30% 15%;
+  --background: 48 50% 97%;
+  --foreground: 30 60% 20%;
 
   --card: 0 0% 100%;
-  --card-foreground: 140 30% 15%;
+  --card-foreground: 30 60% 20%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 140 30% 15%;
+  --popover-foreground: 30 60% 20%;
 
-  /* Grass green primary */
-  --primary: 130 55% 45%;
+  /* Warm brown primary for hand-drawn style */
+  --primary: 30 50% 35%;
   --primary-foreground: 0 0% 100%;
 
-  /* Sunny yellow secondary */
-  --secondary: 48 90% 88%;
-  --secondary-foreground: 45 80% 25%;
+  /* Light cream secondary */
+  --secondary: 48 60% 92%;
+  --secondary-foreground: 30 50% 25%;
 
-  --muted: 120 20% 92%;
-  --muted-foreground: 140 15% 40%;
+  --muted: 48 30% 90%;
+  --muted-foreground: 30 30% 45%;
 
-  /* Sky blue accent */
-  --accent: 195 85% 55%;
+  /* Soft sky blue accent */
+  --accent: 200 70% 65%;
   --accent-foreground: 0 0% 100%;
+
+  /* Additional cutesy colors */
+  --cutesy-yellow: 48 90% 70%;
+  --cutesy-green: 140 50% 55%;
+  --cutesy-orange: 25 85% 60%;
+  --cutesy-pink: 350 70% 70%;
+  --cutesy-blue: 200 70% 65%;
 
   --destructive: 0 70% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 130 25% 85%;
+  --border: 30 40% 75%;
   --input: 0 0% 100%;
-  --ring: 130 55% 45%;
+  --ring: 30 50% 35%;
 
-  --radius: 1.25rem;
+  --radius: 1.5rem;
 
-  --gradient-warm: linear-gradient(135deg, hsl(130 55% 45%) 0%, hsl(48 90% 65%) 100%);
-  --shadow-card: 0 4px 24px -4px hsla(130, 55%, 45%, 0.15);
-  --shadow-card-hover: 0 12px 36px -8px hsla(130, 55%, 45%, 0.25);
+  --gradient-warm: linear-gradient(135deg, hsl(48 90% 70%) 0%, hsl(200 70% 65%) 100%);
+  --shadow-card: 0 4px 24px -4px hsla(30, 50%, 35%, 0.1);
+  --shadow-card-hover: 0 12px 36px -8px hsla(30, 50%, 35%, 0.15);
 
   --sidebar-background: 0 0% 100%;
-  --sidebar-foreground: 140 30% 15%;
-  --sidebar-primary: 130 55% 45%;
+  --sidebar-foreground: 30 60% 20%;
+  --sidebar-primary: 30 50% 35%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 48 90% 88%;
-  --sidebar-accent-foreground: 45 80% 25%;
-  --sidebar-border: 130 25% 85%;
-  --sidebar-ring: 130 55% 45%;
+  --sidebar-accent: 48 60% 92%;
+  --sidebar-accent-foreground: 30 50% 25%;
+  --sidebar-border: 30 40% 75%;
+  --sidebar-ring: 30 50% 35%;
 
   font-family: "Quicksand", system-ui, sans-serif;
 }
@@ -168,6 +175,55 @@ body.theme-cutesy h5,
 body.theme-cutesy h6 {
   font-family: "Quicksand", system-ui, sans-serif;
   font-weight: 700;
+}
+
+/* Dotted grid background for cutesy theme */
+body.theme-cutesy .cutesy-grid-bg {
+  background-image: 
+    radial-gradient(circle, hsl(30 40% 75% / 0.4) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Hand-drawn border effect */
+body.theme-cutesy .cutesy-border {
+  border: 3px solid hsl(30 50% 35%);
+  border-radius: 24px;
+  box-shadow: 2px 3px 0 hsl(30 50% 35% / 0.3);
+}
+
+/* Squiggly underline effect */
+body.theme-cutesy .cutesy-underline {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23785c42' stroke-width='2.5'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: bottom;
+  background-size: 50px 8px;
+  padding-bottom: 8px;
+}
+
+/* Category pill styles for cutesy theme */
+body.theme-cutesy .cutesy-pill-yellow {
+  background-color: hsl(48 90% 70%);
+  color: hsl(30 60% 20%);
+}
+
+body.theme-cutesy .cutesy-pill-green {
+  background-color: hsl(140 50% 55%);
+  color: white;
+}
+
+body.theme-cutesy .cutesy-pill-orange {
+  background-color: hsl(25 85% 60%);
+  color: white;
+}
+
+body.theme-cutesy .cutesy-pill-pink {
+  background-color: hsl(350 70% 70%);
+  color: white;
+}
+
+body.theme-cutesy .cutesy-pill-blue {
+  background-color: hsl(200 70% 65%);
+  color: white;
 }
 
 /* Anime Theme - Ghibli-style soft greens, sky blues, warm fields */
