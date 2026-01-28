@@ -59,6 +59,59 @@ export type Database = {
         }
         Relationships: []
       }
+      itinerary_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          day_date: string
+          description: string | null
+          id: string
+          location: string | null
+          order_index: number | null
+          time: string | null
+          title: string
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          day_date: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          order_index?: number | null
+          time?: string | null
+          title: string
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          day_date?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          order_index?: number | null
+          time?: string | null
+          title?: string
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itinerary_items_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           action: string

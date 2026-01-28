@@ -27,10 +27,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Plus, MoreHorizontal, MapPin, Check, Trash2, Sparkles, Compass } from "lucide-react";
+import { Plus, MoreHorizontal, MapPin, Check, Trash2, Sparkles, Compass, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import bgAnime from "@/assets/bg-anime.png";
+import TripDetail from "./TripDetail";
 
 const countries = [
   { code: "JP", name: "Japan", flag: "🇯🇵" },
@@ -56,6 +57,7 @@ const AnimePlanner = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<typeof trips extends (infer T)[] | undefined ? T : never | null>(null);
   const [tripName, setTripName] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to?: Date | undefined }>({ from: undefined });
@@ -163,6 +165,16 @@ const AnimePlanner = () => {
         );
     }
   };
+
+  // If a trip is selected, show the detail view
+  if (selectedTrip) {
+    return (
+      <TripDetail
+        trip={selectedTrip}
+        onBack={() => setSelectedTrip(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 relative">
@@ -318,7 +330,8 @@ const AnimePlanner = () => {
             {trips?.map((trip) => (
               <Card
                 key={trip.id}
-                className="p-4 bg-card/80 backdrop-blur-sm border-2 border-primary/20 hover:border-accent/50 transition-all"
+                className="p-4 bg-card/80 backdrop-blur-sm border-2 border-primary/20 hover:border-accent/50 transition-all cursor-pointer"
+                onClick={() => setSelectedTrip(trip)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -343,30 +356,41 @@ const AnimePlanner = () => {
                     {getStatusBadge(trip.status)}
 
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                           <MoreHorizontal className="w-5 h-5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-card/95 backdrop-blur-sm border-primary/30">
                         <DropdownMenuItem
-                          onClick={() => updateTripStatus.mutate({ id: trip.id, status: "active" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTripStatus.mutate({ id: trip.id, status: "active" });
+                          }}
                         >
                           <Sparkles className="w-4 h-4 mr-2 text-accent" /> Set Active
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => updateTripStatus.mutate({ id: trip.id, status: "completed" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTripStatus.mutate({ id: trip.id, status: "completed" });
+                          }}
                         >
                           <Check className="w-4 h-4 mr-2 text-primary" /> Mark Completed
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => deleteTrip.mutate(trip.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTrip.mutate(trip.id);
+                          }}
                           className="text-destructive"
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
                 </div>
 

@@ -27,9 +27,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Plus, MoreHorizontal, MapPin, Check, Trash2, Plane } from "lucide-react";
+import { Plus, MoreHorizontal, MapPin, Check, Trash2, Plane, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import TripDetail from "./TripDetail";
 
 const countries = [
   { code: "JP", name: "Japan", flag: "🇯🇵" },
@@ -55,6 +56,7 @@ const MinimalistPlanner = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<typeof trips extends (infer T)[] | undefined ? T : never | null>(null);
   const [tripName, setTripName] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to?: Date | undefined }>({ from: undefined });
@@ -150,6 +152,16 @@ const MinimalistPlanner = () => {
         return <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">Planned</span>;
     }
   };
+
+  // If a trip is selected, show the detail view
+  if (selectedTrip) {
+    return (
+      <TripDetail
+        trip={selectedTrip}
+        onBack={() => setSelectedTrip(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -282,7 +294,8 @@ const MinimalistPlanner = () => {
             {trips?.map((trip) => (
               <Card
                 key={trip.id}
-                className="p-5 bg-card border border-border shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-shadow"
+                className="p-5 bg-card border border-border shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] transition-shadow cursor-pointer"
+                onClick={() => setSelectedTrip(trip)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -304,30 +317,41 @@ const MinimalistPlanner = () => {
                     {getStatusBadge(trip.status)}
 
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon">
                           <MoreHorizontal className="w-5 h-5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => updateTripStatus.mutate({ id: trip.id, status: "active" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTripStatus.mutate({ id: trip.id, status: "active" });
+                          }}
                         >
                           Set Active
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => updateTripStatus.mutate({ id: trip.id, status: "completed" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTripStatus.mutate({ id: trip.id, status: "completed" });
+                          }}
                         >
                           <Check className="w-4 h-4 mr-2" /> Mark Completed
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => deleteTrip.mutate(trip.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTrip.mutate(trip.id);
+                          }}
                           className="text-destructive"
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
                 </div>
 
