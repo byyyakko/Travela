@@ -26,7 +26,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const getBackgroundStyle = () => {
     if (theme === "cutesy") {
       return {
-        backgroundImage: `url(${bgCute})`,
+      backgroundImage: `url(${bgCute})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",
@@ -55,16 +55,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <header className={cn(
         "fixed top-0 left-0 right-0 z-40 px-4 py-3 md:left-20",
         theme === "minimalist" && "bg-background/80 backdrop-blur-md border-b border-border/50",
-        theme === "cutesy" && "bg-white/80 backdrop-blur-md border-b-2 border-pink-200",
-        theme === "anime" && "bg-slate-900/90 backdrop-blur-md border-b border-purple-500/30"
+        theme === "cutesy" && "bg-card/90 backdrop-blur-md border-b-2 border-primary/30",
+        theme === "anime" && "bg-card/90 backdrop-blur-md border-b border-primary/30"
       )}>
         <div className="max-w-4xl mx-auto flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className={cn(
               "text-xl font-display font-bold",
               theme === "minimalist" && "text-primary",
-              theme === "cutesy" && "text-pink-500",
-              theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400"
+              theme === "cutesy" && "text-primary",
+              theme === "anime" && "text-primary"
             )}>
               Travela
             </span>
@@ -73,21 +73,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <div className="relative">
               <Search className={cn(
                 "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
+                "text-muted-foreground"
               )} />
               <Input
                 placeholder="Search destinations, locals..."
                 className={cn(
                   "pl-10",
-                  theme === "cutesy" && "bg-pink-50 border-pink-200 focus:border-pink-400 rounded-full",
-                  theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white placeholder:text-purple-300 rounded-lg"
+                  theme === "cutesy" && "bg-background border-primary/30 focus:border-primary rounded-full",
+                  theme === "anime" && "bg-background border-primary/30 focus:border-primary rounded-lg"
                 )}
               />
             </div>
           </div>
           <Link to="/settings">
             <Button variant="ghost" size="icon" className={cn(
-              theme === "anime" && "text-purple-300 hover:text-white hover:bg-purple-800/50"
+              "text-muted-foreground hover:text-foreground"
             )}>
               <Settings className="w-5 h-5" />
             </Button>
@@ -106,8 +106,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <nav className={cn(
         "fixed bottom-0 left-0 right-0 z-50 md:hidden",
         theme === "minimalist" && "bg-background/95 backdrop-blur-md border-t border-border/50",
-        theme === "cutesy" && "bg-white/95 backdrop-blur-md border-t-2 border-pink-200",
-        theme === "anime" && "bg-slate-900/95 backdrop-blur-md border-t border-purple-500/30"
+        theme === "cutesy" && "bg-card/95 backdrop-blur-md border-t-2 border-primary/30",
+        theme === "anime" && "bg-card/95 backdrop-blur-md border-t border-primary/30"
       )}>
         <div className="flex justify-around py-2">
           {navItems.map((item) => {
@@ -118,9 +118,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 to={item.path}
                 className={cn(
                   "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all",
-                  theme === "minimalist" && (isActive ? "text-primary" : "text-muted-foreground"),
-                  theme === "cutesy" && (isActive ? "text-pink-500 bg-pink-100" : "text-gray-400"),
-                  theme === "anime" && (isActive ? "text-cyan-400 bg-purple-800/50" : "text-purple-300")
+                  isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
                 )}
               >
                 <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
@@ -135,14 +133,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <nav className={cn(
         "fixed left-0 top-0 bottom-0 w-20 hidden md:flex flex-col items-center py-6 z-50",
         theme === "minimalist" && "bg-background border-r border-border/50",
-        theme === "cutesy" && "bg-gradient-to-b from-pink-100 to-purple-100 border-r-2 border-pink-200",
-        theme === "anime" && "bg-gradient-to-b from-slate-900 to-purple-900 border-r border-purple-500/30"
+        theme === "cutesy" && "bg-card/95 backdrop-blur-md border-r-2 border-primary/30",
+        theme === "anime" && "bg-card/95 backdrop-blur-md border-r border-primary/30"
       )}>
         <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center mb-8",
-          theme === "minimalist" && "bg-primary text-primary-foreground",
-          theme === "cutesy" && "bg-pink-400 text-white",
-          theme === "anime" && "bg-gradient-to-br from-pink-500 to-cyan-500 text-white"
+          "w-10 h-10 rounded-xl flex items-center justify-center mb-8 bg-primary text-primary-foreground"
         )}>
           <span className="font-display font-bold text-lg">T</span>
         </div>
@@ -156,9 +151,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 to={item.path}
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-xl transition-all",
-                  theme === "minimalist" && (isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"),
-                  theme === "cutesy" && (isActive ? "bg-pink-200 text-pink-600" : "text-gray-500 hover:bg-pink-100"),
-                  theme === "anime" && (isActive ? "bg-purple-800/50 text-cyan-400" : "text-purple-300 hover:bg-purple-800/30")
+                  isActive ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"
                 )}
               >
                 <item.icon className="w-5 h-5" />
