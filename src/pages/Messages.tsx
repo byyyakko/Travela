@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useRateLimit, RATE_LIMITS } from "@/hooks/useRateLimit";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, MessageCircle, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "@/hooks/use-toast";
 
 interface Conversation {
   id: string;
@@ -39,6 +41,7 @@ interface Message {
 const Messages = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { checkRateLimit } = useRateLimit();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -136,6 +139,17 @@ const Messages = () => {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
+
+    // Check rate limit
+    const allowed = await checkRateLimit(RATE_LIMITS.SEND_MESSAGE);
+    if (!allowed) {
+      toast({
+        title: "Slow down!",
+        description: "You're sending messages too quickly. Please wait a moment.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const { error } = await supabase.from("messages").insert({
       conversation_id: selectedConversation.id,
