@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import AppLayout from "@/components/layout/AppLayout";
 import PostCard from "@/components/posts/PostCard";
 import CreatePost from "@/components/posts/CreatePost";
+import CutesyHome from "@/components/home/CutesyHome";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Compass, TrendingUp } from "lucide-react";
@@ -14,6 +15,21 @@ const Home = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("forYou");
+
+  // Fetch user profile for display name
+  const { data: profile } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: posts, isLoading, refetch } = useQuery({
     queryKey: ["posts"],
@@ -47,6 +63,15 @@ const Home = () => {
     },
   });
 
+  // Use special cutesy home layout
+  if (theme === "cutesy") {
+    return (
+      <AppLayout>
+        <CutesyHome displayName={profile?.display_name || undefined} />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -55,12 +80,10 @@ const Home = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className={cn(
             "w-full grid grid-cols-2",
-            theme === "cutesy" && "bg-secondary/80",
             theme === "anime" && "bg-card/80"
           )}>
             <TabsTrigger value="forYou" className={cn(
               "flex items-center gap-2",
-              theme === "cutesy" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
               theme === "anime" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             )}>
               <Compass className="w-4 h-4" />
@@ -68,7 +91,6 @@ const Home = () => {
             </TabsTrigger>
             <TabsTrigger value="trending" className={cn(
               "flex items-center gap-2",
-              theme === "cutesy" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
               theme === "anime" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             )}>
               <TrendingUp className="w-4 h-4" />
@@ -84,7 +106,6 @@ const Home = () => {
             ) : posts?.length === 0 ? (
               <div className={cn(
                 "text-center py-12 rounded-xl",
-                theme === "cutesy" && "bg-card/80",
                 theme === "anime" && "bg-card/60"
               )}>
                 <p className="text-muted-foreground">
@@ -106,7 +127,6 @@ const Home = () => {
           <TabsContent value="trending" className="space-y-4 mt-4">
             <div className={cn(
               "text-center py-12 rounded-xl",
-              theme === "cutesy" && "bg-card/80",
               theme === "anime" && "bg-card/60"
             )}>
               <TrendingUp className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />

@@ -103,29 +103,32 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   return (
     <Card className={cn(
       "p-4",
-      theme === "cutesy" && "bg-card/90 border-primary/30",
+      theme === "cutesy" && "cutesy-border bg-card/95",
       theme === "anime" && "bg-card/80 border-primary/30"
     )}>
       <div className="flex gap-3">
         <Avatar className={cn(
           "w-10 h-10",
-          theme === "cutesy" && "ring-2 ring-primary/30",
+          theme === "cutesy" && "ring-[3px] ring-primary",
           theme === "anime" && "ring-2 ring-primary/50"
         )}>
           <AvatarImage src="" />
-          <AvatarFallback className="bg-primary/10 text-primary">
+          <AvatarFallback className={cn(
+            "bg-primary/10 text-primary",
+            theme === "cutesy" && "bg-secondary text-primary font-bold"
+          )}>
             {user?.email?.[0].toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 space-y-3">
           <Textarea
-            placeholder="Share your travel experience..."
+            placeholder="Share your travel experience... ✨"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className={cn(
               "min-h-[80px] resize-none",
-              theme === "cutesy" && "bg-background border-primary/30 focus:border-primary",
+              theme === "cutesy" && "bg-background border-2 border-primary/40 focus:border-primary rounded-2xl",
               theme === "anime" && "bg-background border-primary/30 focus:border-primary"
             )}
           />
@@ -157,7 +160,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
                 onChange={(e) => setLocationTag(e.target.value)}
                 className={cn(
                   "pl-9",
-                  theme === "cutesy" && "bg-background border-primary/30",
+                  theme === "cutesy" && "bg-background border-2 border-primary/40 rounded-full",
                   theme === "anime" && "bg-background border-primary/30"
                 )}
               />
@@ -176,7 +179,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               size="icon"
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                theme === "cutesy" && "border-primary/30 text-primary hover:bg-primary/10",
+                theme === "cutesy" && "border-2 border-primary/40 text-primary hover:bg-secondary rounded-full",
                 theme === "anime" && "border-primary/30 text-primary hover:bg-primary/10"
               )}
             >
@@ -187,7 +190,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               onClick={handleSubmit}
               disabled={loading || (!content.trim() && !imageFile)}
               className={cn(
-                theme === "cutesy" && "bg-primary hover:bg-primary/90",
+                theme === "cutesy" && "bg-primary hover:bg-primary/90 rounded-full px-6",
                 theme === "anime" && "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
               )}
             >

@@ -168,7 +168,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
     <>
       <Card className={cn(
         "overflow-hidden",
-        theme === "cutesy" && "bg-card/90 border-primary/30",
+        theme === "cutesy" && "cutesy-border bg-card/95",
         theme === "anime" && "bg-card/80 border-primary/30"
       )}>
         {/* Header */}
@@ -176,11 +176,14 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
           <div className="flex items-center gap-3">
             <Avatar className={cn(
               "w-10 h-10",
-              theme === "cutesy" && "ring-2 ring-primary/30",
+              theme === "cutesy" && "ring-[3px] ring-primary",
               theme === "anime" && "ring-2 ring-primary/50"
             )}>
               <AvatarImage src={post.profiles?.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-primary">
+              <AvatarFallback className={cn(
+                "bg-primary/10 text-primary",
+                theme === "cutesy" && "bg-secondary text-primary font-bold"
+              )}>
                 {displayName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -242,7 +245,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
               alt="Post"
               className={cn(
                 "w-full rounded-xl object-cover max-h-96",
-                theme === "cutesy" && "ring-2 ring-primary/20",
+                theme === "cutesy" && "ring-[3px] ring-primary/40",
                 theme === "anime" && "ring-2 ring-primary/30"
               )}
             />
@@ -252,7 +255,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
         {/* Actions */}
         <div className={cn(
           "px-4 py-3 flex items-center justify-between border-t",
-          theme === "cutesy" && "border-primary/20",
+          theme === "cutesy" && "border-primary/30",
           theme === "anime" && "border-primary/20"
         )}>
           <div className="flex items-center gap-4">
