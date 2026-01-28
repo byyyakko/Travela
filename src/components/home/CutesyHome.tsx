@@ -91,7 +91,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           <motion.img 
             src={mascotCutesy} 
             alt="Cute cat mascot" 
-            className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md"
+            className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md mix-blend-multiply"
             animate={floatAnimation}
           />
         </div>
@@ -163,7 +163,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
             <motion.img 
               src={mascotCutesy} 
               alt="Cute cat mascot" 
-              className="w-24 h-24 object-contain mx-auto mb-4 opacity-80"
+              className="w-24 h-24 object-contain mx-auto mb-4 opacity-80 mix-blend-multiply"
               animate={floatAnimation}
             />
             <p className="text-muted-foreground">
