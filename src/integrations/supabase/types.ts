@@ -355,6 +355,48 @@ export type Database = {
         }
         Relationships: []
       }
+      trips: {
+        Row: {
+          country: string
+          created_at: string
+          end_date: string | null
+          id: string
+          interests: string[] | null
+          name: string
+          notes: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          interests?: string[] | null
+          name: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          interests?: string[] | null
+          name?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_reports: {
         Row: {
           created_at: string
