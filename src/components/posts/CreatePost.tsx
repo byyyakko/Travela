@@ -103,20 +103,17 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   return (
     <Card className={cn(
       "p-4",
-      theme === "cutesy" && "bg-white border-pink-200 shadow-pink-100",
-      theme === "anime" && "bg-purple-900/50 border-purple-500/30"
+      theme === "cutesy" && "bg-card/90 border-primary/30",
+      theme === "anime" && "bg-card/80 border-primary/30"
     )}>
       <div className="flex gap-3">
         <Avatar className={cn(
           "w-10 h-10",
-          theme === "cutesy" && "ring-2 ring-pink-200",
-          theme === "anime" && "ring-2 ring-purple-500"
+          theme === "cutesy" && "ring-2 ring-primary/30",
+          theme === "anime" && "ring-2 ring-primary/50"
         )}>
           <AvatarImage src="" />
-          <AvatarFallback className={cn(
-            theme === "cutesy" && "bg-pink-100 text-pink-600",
-            theme === "anime" && "bg-purple-700 text-cyan-400"
-          )}>
+          <AvatarFallback className="bg-primary/10 text-primary">
             {user?.email?.[0].toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -128,8 +125,8 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             onChange={(e) => setContent(e.target.value)}
             className={cn(
               "min-h-[80px] resize-none",
-              theme === "cutesy" && "bg-pink-50 border-pink-200 focus:border-pink-400",
-              theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white placeholder:text-purple-300"
+              theme === "cutesy" && "bg-background border-primary/30 focus:border-primary",
+              theme === "anime" && "bg-background border-primary/30 focus:border-primary"
             )}
           />
 
@@ -153,18 +150,15 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
 
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
-              <MapPin className={cn(
-                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                theme === "anime" ? "text-purple-400" : "text-muted-foreground"
-              )} />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Add location..."
                 value={locationTag}
                 onChange={(e) => setLocationTag(e.target.value)}
                 className={cn(
                   "pl-9",
-                  theme === "cutesy" && "bg-pink-50 border-pink-200",
-                  theme === "anime" && "bg-purple-900/50 border-purple-500/30 text-white placeholder:text-purple-300"
+                  theme === "cutesy" && "bg-background border-primary/30",
+                  theme === "anime" && "bg-background border-primary/30"
                 )}
               />
             </div>
@@ -182,8 +176,8 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               size="icon"
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                theme === "cutesy" && "border-pink-200 text-pink-500 hover:bg-pink-50",
-                theme === "anime" && "border-purple-500/30 text-purple-300 hover:bg-purple-800/50"
+                theme === "cutesy" && "border-primary/30 text-primary hover:bg-primary/10",
+                theme === "anime" && "border-primary/30 text-primary hover:bg-primary/10"
               )}
             >
               <ImagePlus className="w-4 h-4" />
@@ -193,8 +187,8 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               onClick={handleSubmit}
               disabled={loading || (!content.trim() && !imageFile)}
               className={cn(
-                theme === "cutesy" && "bg-pink-500 hover:bg-pink-600",
-                theme === "anime" && "bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-600 hover:to-cyan-600"
+                theme === "cutesy" && "bg-primary hover:bg-primary/90",
+                theme === "anime" && "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
               )}
             >
               {loading ? (

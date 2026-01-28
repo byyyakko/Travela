@@ -55,19 +55,21 @@ const Home = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className={cn(
             "w-full grid grid-cols-2",
-            theme === "cutesy" && "bg-pink-100",
-            theme === "anime" && "bg-purple-900/50"
+            theme === "cutesy" && "bg-secondary/80",
+            theme === "anime" && "bg-card/80"
           )}>
             <TabsTrigger value="forYou" className={cn(
               "flex items-center gap-2",
-              theme === "anime" && "data-[state=active]:bg-purple-700 data-[state=active]:text-cyan-400"
+              theme === "cutesy" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+              theme === "anime" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             )}>
               <Compass className="w-4 h-4" />
               For You
             </TabsTrigger>
             <TabsTrigger value="trending" className={cn(
               "flex items-center gap-2",
-              theme === "anime" && "data-[state=active]:bg-purple-700 data-[state=active]:text-cyan-400"
+              theme === "cutesy" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+              theme === "anime" && "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             )}>
               <TrendingUp className="w-4 h-4" />
               Trending
@@ -77,22 +79,15 @@ const Home = () => {
           <TabsContent value="forYou" className="space-y-4 mt-4">
             {isLoading ? (
               <div className="text-center py-12">
-                <div className={cn(
-                  "inline-block w-8 h-8 border-4 border-t-transparent rounded-full animate-spin",
-                  theme === "minimalist" && "border-primary",
-                  theme === "cutesy" && "border-pink-400",
-                  theme === "anime" && "border-cyan-400"
-                )} />
+                <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : posts?.length === 0 ? (
               <div className={cn(
                 "text-center py-12 rounded-xl",
-                theme === "cutesy" && "bg-pink-50",
-                theme === "anime" && "bg-purple-900/30"
+                theme === "cutesy" && "bg-card/80",
+                theme === "anime" && "bg-card/60"
               )}>
-                <p className={cn(
-                  theme === "anime" ? "text-purple-300" : "text-muted-foreground"
-                )}>
+                <p className="text-muted-foreground">
                   No posts yet. Be the first to share your travel experience!
                 </p>
               </div>
@@ -111,18 +106,11 @@ const Home = () => {
           <TabsContent value="trending" className="space-y-4 mt-4">
             <div className={cn(
               "text-center py-12 rounded-xl",
-              theme === "cutesy" && "bg-pink-50",
-              theme === "anime" && "bg-purple-900/30"
+              theme === "cutesy" && "bg-card/80",
+              theme === "anime" && "bg-card/60"
             )}>
-              <TrendingUp className={cn(
-                "w-12 h-12 mx-auto mb-4",
-                theme === "minimalist" && "text-muted-foreground",
-                theme === "cutesy" && "text-pink-300",
-                theme === "anime" && "text-purple-400"
-              )} />
-              <p className={cn(
-                theme === "anime" ? "text-purple-300" : "text-muted-foreground"
-              )}>
+              <TrendingUp className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">
                 Trending posts will appear here as the community grows!
               </p>
             </div>
