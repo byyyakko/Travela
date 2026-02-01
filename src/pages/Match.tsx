@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import type { Tables } from "@/integrations/supabase/types";
 
 // Sample demo profiles for testing when no real users exist
@@ -92,12 +91,13 @@ const DEMO_PROFILES: Partial<Tables<"profiles">>[] = [
     date_of_birth: "1993-09-25",
   },
 ];
+
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Heart, MapPin, Sparkles, RefreshCw, Search, Globe } from "lucide-react";
+import { X, Heart, MapPin, Sparkles, RefreshCw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -106,7 +106,6 @@ import ReportBlockDialog from "@/components/ReportBlockDialog";
 
 const Match = () => {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
@@ -288,24 +287,14 @@ const Match = () => {
     <AppLayout>
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center mb-4">
-          <h1 className={cn(
-            "text-2xl font-display font-bold mb-2",
-            theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent"
-          )}>
+          <h1 className="text-2xl font-display font-bold mb-2">
             Find Locals
           </h1>
-          <p className={cn(
-            theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
-          )}>
+          <p className="text-muted-foreground">
             Swipe right to connect with locals in your destination
           </p>
           {isDemo && (
-            <p className={cn(
-              "text-xs mt-2 px-3 py-1 rounded-full inline-block",
-              theme === "minimalist" && "bg-amber-100 text-amber-700",
-              theme === "cutesy" && "bg-secondary text-primary",
-              theme === "anime" && "bg-secondary/50 text-primary border border-primary/30"
-            )}>
+            <p className="text-xs mt-2 px-3 py-1 rounded-full inline-block bg-secondary text-primary">
               ✨ Demo Mode - Sample Profiles
             </p>
           )}
@@ -313,59 +302,29 @@ const Match = () => {
 
         {/* Location Search */}
         <div className="relative">
-          <Search className={cn(
-            "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-            theme === "anime" ? "text-primary" : "text-muted-foreground"
-          )} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by location..."
             value={locationFilter}
             onChange={(e) => { setLocationFilter(e.target.value); setCurrentIndex(0); }}
-            className={cn(
-              "pl-9",
-              theme === "cutesy" && "bg-secondary/50 border-primary/30",
-              theme === "anime" && "bg-card/80 border-primary/30 text-foreground placeholder:text-muted-foreground"
-            )}
+            className="pl-9 bg-secondary/50 border-primary/30"
           />
         </div>
 
         {isLoading ? (
           <div className="text-center py-20">
-            <div className={cn(
-              "inline-block w-12 h-12 border-4 border-t-transparent rounded-full animate-spin",
-              theme === "minimalist" && "border-primary",
-              theme === "cutesy" && "border-primary",
-              theme === "anime" && "border-accent"
-            )} />
+            <div className="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : !currentProfile ? (
-          <Card className={cn(
-            "p-12 text-center",
-            theme === "cutesy" && "bg-secondary/50 border-primary/30",
-            theme === "anime" && "bg-card/80 border-primary/30"
-          )}>
-            <Sparkles className={cn(
-              "w-16 h-16 mx-auto mb-4",
-              theme === "minimalist" && "text-muted-foreground",
-              theme === "cutesy" && "text-primary/60",
-              theme === "anime" && "text-accent"
-            )} />
-            <h3 className={cn(
-              "text-xl font-display font-semibold mb-2",
-              theme === "anime" && "text-foreground"
-            )}>
+          <Card className="p-12 text-center bg-secondary/50 border-primary/30">
+            <Sparkles className="w-16 h-16 mx-auto mb-4 text-primary/60" />
+            <h3 className="text-xl font-display font-semibold mb-2">
               No More Locals
             </h3>
-            <p className={cn(
-              "mb-6",
-              theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
-            )}>
+            <p className="text-muted-foreground mb-6">
               You've seen all available locals. Check back later!
             </p>
-            <Button onClick={handleRefresh} className={cn(
-              theme === "cutesy" && "bg-primary hover:bg-primary/90",
-              theme === "anime" && "bg-gradient-to-r from-primary to-accent"
-            )}>
+            <Button onClick={handleRefresh} className="bg-primary hover:bg-primary/90">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
@@ -379,17 +338,9 @@ const Match = () => {
               exit={{ opacity: 0, x: -300 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className={cn(
-                "overflow-hidden",
-                theme === "cutesy" && "border-primary/30 shadow-primary/10",
-                theme === "anime" && "border-primary/30 bg-card/80"
-              )}>
+              <Card className="overflow-hidden border-primary/30 shadow-primary/10">
                 {/* Profile Image */}
-                <div className={cn(
-                  "aspect-[3/4] relative",
-                  theme === "cutesy" && "bg-gradient-to-br from-secondary to-accent/20",
-                  theme === "anime" && "bg-gradient-to-br from-primary/20 to-accent/20"
-                )}>
+                <div className="aspect-[3/4] relative bg-gradient-to-br from-secondary to-accent/20">
                   {/* Report/Block Button */}
                   <ReportBlockDialog
                     targetUserId={currentProfile.user_id}
@@ -406,11 +357,7 @@ const Match = () => {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Avatar className="w-32 h-32">
-                        <AvatarFallback className={cn(
-                          "text-4xl",
-                          theme === "cutesy" && "bg-secondary text-primary",
-                          theme === "anime" && "bg-primary/30 text-accent"
-                        )}>
+                        <AvatarFallback className="text-4xl bg-secondary text-primary">
                           {(currentProfile.display_name || "L")[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -449,54 +396,30 @@ const Match = () => {
                         {currentProfile.interests.slice(0, 4).map((interest, i) => (
                           <span
                             key={i}
-                            className={cn(
-                              "px-2 py-1 rounded-full text-xs",
-                              theme === "minimalist" && "bg-white/20",
-                              theme === "cutesy" && "bg-primary/40",
-                              theme === "anime" && "bg-accent/30 border border-accent/50"
-                            )}
+                            className="px-2 py-1 rounded-full text-xs bg-white/20"
                           >
                             {interest}
                           </span>
                         ))}
                       </div>
                     )}
-                    {currentProfile.languages && currentProfile.languages.length > 0 && (
-                      <div className="flex items-center gap-2 mt-2 text-white/70 text-xs">
-                        <Globe className="w-3 h-3" />
-                        <span>{currentProfile.languages.join(", ")}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 {/* Action buttons */}
-                <div className={cn(
-                  "p-6 flex justify-center gap-6",
-                  theme === "anime" && "bg-card/80"
-                )}>
+                <div className="flex justify-center gap-6 p-6 bg-card">
                   <Button
                     size="lg"
                     variant="outline"
-                    className={cn(
-                      "w-16 h-16 rounded-full",
-                      theme === "cutesy" && "border-primary/30 hover:bg-secondary/50",
-                      theme === "anime" && "border-primary/30 hover:bg-primary/20 text-foreground"
-                    )}
+                    className="w-16 h-16 rounded-full border-2 border-red-300 text-red-500 hover:bg-red-50 hover:border-red-400"
                     onClick={() => handleSwipe("pass")}
                     disabled={matchMutation.isPending}
                   >
                     <X className="w-8 h-8" />
                   </Button>
-
                   <Button
                     size="lg"
-                    className={cn(
-                      "w-16 h-16 rounded-full",
-                      theme === "minimalist" && "bg-primary hover:bg-primary/90",
-                      theme === "cutesy" && "bg-primary hover:bg-primary/90",
-                      theme === "anime" && "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                    )}
+                    className="w-16 h-16 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
                     onClick={() => handleSwipe("like")}
                     disabled={matchMutation.isPending}
                   >

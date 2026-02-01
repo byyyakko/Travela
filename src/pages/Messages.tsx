@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,6 @@ interface Message {
 
 const Messages = () => {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -151,43 +149,23 @@ const Messages = () => {
   if (selectedConversation) {
     return (
       <AppLayout>
-        <Card className={cn(
-          "h-[calc(100vh-12rem)] flex flex-col",
-          theme === "cutesy" && "border-primary/30",
-          theme === "anime" && "border-primary/30 bg-card/80"
-        )}>
+        <Card className="h-[calc(100vh-12rem)] flex flex-col border-primary/30">
           {/* Chat header */}
-          <div className={cn(
-            "p-4 border-b flex items-center gap-3",
-            theme === "cutesy" && "border-primary/30",
-            theme === "anime" && "border-primary/30"
-          )}>
+          <div className="p-4 border-b border-primary/30 flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSelectedConversation(null)}
-              className={cn(
-                theme === "anime" && "text-foreground hover:text-foreground"
-              )}
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <Avatar className={cn(
-              theme === "cutesy" && "ring-2 ring-primary/30",
-              theme === "anime" && "ring-2 ring-primary"
-            )}>
+            <Avatar className="ring-2 ring-primary/30">
               <AvatarImage src={selectedConversation.otherUser?.avatar_url || ""} />
-              <AvatarFallback className={cn(
-                theme === "cutesy" && "bg-secondary text-primary",
-                theme === "anime" && "bg-primary/30 text-accent"
-              )}>
+              <AvatarFallback className="bg-secondary text-primary">
                 {(selectedConversation.otherUser?.display_name || "U")[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className={cn(
-              "font-medium",
-              theme === "anime" && "text-foreground"
-            )}>
+            <span className="font-medium">
               {selectedConversation.otherUser?.display_name || "User"}
             </span>
           </div>
@@ -207,12 +185,8 @@ const Messages = () => {
                   >
                     <div className={cn(
                       "max-w-[70%] px-4 py-2 rounded-2xl",
-                      isOwn && theme === "minimalist" && "bg-primary text-primary-foreground",
-                      isOwn && theme === "cutesy" && "bg-primary text-primary-foreground",
-                      isOwn && theme === "anime" && "bg-gradient-to-r from-primary to-accent text-primary-foreground",
-                      !isOwn && theme === "minimalist" && "bg-muted",
-                      !isOwn && theme === "cutesy" && "bg-secondary",
-                      !isOwn && theme === "anime" && "bg-card text-foreground"
+                      isOwn && "bg-primary text-primary-foreground",
+                      !isOwn && "bg-secondary"
                     )}>
                       <p className="text-sm">{msg.content}</p>
                       <span className={cn(
@@ -230,28 +204,18 @@ const Messages = () => {
           </ScrollArea>
 
           {/* Message input */}
-          <div className={cn(
-            "p-4 border-t flex gap-2",
-            theme === "cutesy" && "border-primary/30",
-            theme === "anime" && "border-primary/30"
-          )}>
+          <div className="p-4 border-t border-primary/30 flex gap-2">
             <Input
               placeholder="Type a message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-              className={cn(
-                theme === "cutesy" && "bg-secondary/50 border-primary/30",
-                theme === "anime" && "bg-card/80 border-primary/30 text-foreground placeholder:text-muted-foreground"
-              )}
+              className="bg-secondary/50 border-primary/30"
             />
             <Button
               onClick={handleSendMessage}
               disabled={!newMessage.trim()}
-              className={cn(
-                theme === "cutesy" && "bg-primary hover:bg-primary/90",
-                theme === "anime" && "bg-gradient-to-r from-primary to-accent"
-              )}
+              className="bg-primary hover:bg-primary/90"
             >
               <Send className="w-4 h-4" />
             </Button>
@@ -264,43 +228,21 @@ const Messages = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <h1 className={cn(
-          "text-2xl font-display font-bold",
-          theme === "anime" && "text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent"
-        )}>
+        <h1 className="text-2xl font-display font-bold">
           Messages
         </h1>
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className={cn(
-              "inline-block w-8 h-8 border-4 border-t-transparent rounded-full animate-spin",
-              theme === "minimalist" && "border-primary",
-              theme === "cutesy" && "border-primary",
-              theme === "anime" && "border-accent"
-            )} />
+            <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : conversations?.length === 0 ? (
-          <Card className={cn(
-            "p-12 text-center",
-            theme === "cutesy" && "bg-secondary/50 border-primary/30",
-            theme === "anime" && "bg-card/80 border-primary/30"
-          )}>
-            <MessageCircle className={cn(
-              "w-16 h-16 mx-auto mb-4",
-              theme === "minimalist" && "text-muted-foreground",
-              theme === "cutesy" && "text-primary/60",
-              theme === "anime" && "text-accent"
-            )} />
-            <h3 className={cn(
-              "text-xl font-display font-semibold mb-2",
-              theme === "anime" && "text-foreground"
-            )}>
+          <Card className="p-12 text-center bg-secondary/50 border-primary/30">
+            <MessageCircle className="w-16 h-16 mx-auto mb-4 text-primary/60" />
+            <h3 className="text-xl font-display font-semibold mb-2">
               No Messages Yet
             </h3>
-            <p className={cn(
-              theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
-            )}>
+            <p className="text-muted-foreground">
               Match with locals to start a conversation!
             </p>
           </Card>
@@ -309,47 +251,28 @@ const Messages = () => {
             {conversations?.map((conv) => (
               <Card
                 key={conv.id}
-                className={cn(
-                  "p-4 cursor-pointer transition-all hover:shadow-md",
-                  theme === "cutesy" && "border-primary/30 hover:bg-secondary/50",
-                  theme === "anime" && "border-primary/30 bg-card/80 hover:bg-card"
-                )}
+                className="p-4 cursor-pointer transition-all hover:shadow-md border-primary/30 hover:bg-secondary/50"
                 onClick={() => setSelectedConversation(conv)}
               >
                 <div className="flex items-center gap-3">
-                  <Avatar className={cn(
-                    theme === "cutesy" && "ring-2 ring-primary/30",
-                    theme === "anime" && "ring-2 ring-primary"
-                  )}>
+                  <Avatar className="ring-2 ring-primary/30">
                     <AvatarImage src={conv.otherUser?.avatar_url || ""} />
-                    <AvatarFallback className={cn(
-                      theme === "cutesy" && "bg-secondary text-primary",
-                      theme === "anime" && "bg-primary/30 text-accent"
-                    )}>
+                    <AvatarFallback className="bg-secondary text-primary">
                       {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "font-medium",
-                      theme === "anime" && "text-foreground"
-                    )}>
+                    <p className="font-medium">
                       {conv.otherUser?.display_name || "User"}
                     </p>
                     {conv.lastMessage && (
-                      <p className={cn(
-                        "text-sm truncate",
-                        theme === "anime" ? "text-foreground/80" : "text-muted-foreground"
-                      )}>
+                      <p className="text-sm truncate text-muted-foreground">
                         {conv.lastMessage.content}
                       </p>
                     )}
                   </div>
                   {conv.lastMessage && (
-                    <span className={cn(
-                      "text-xs",
-                      theme === "anime" ? "text-muted-foreground" : "text-muted-foreground"
-                    )}>
+                    <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true })}
                     </span>
                   )}
