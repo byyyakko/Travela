@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTheme } from "@/contexts/ThemeContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,7 +45,6 @@ interface PostCardProps {
 }
 
 const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
-  const { theme } = useTheme();
   const [isLiked, setIsLiked] = useState(
     post.post_likes.some((like) => like.user_id === currentUserId)
   );
@@ -166,24 +164,13 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
 
   return (
     <>
-      <Card className={cn(
-        "overflow-hidden",
-        theme === "cutesy" && "cutesy-border bg-card/95",
-        theme === "anime" && "bg-card/80 border-primary/30"
-      )}>
+      <Card className="overflow-hidden cutesy-border bg-card/95">
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className={cn(
-              "w-10 h-10",
-              theme === "cutesy" && "ring-[3px] ring-primary",
-              theme === "anime" && "ring-2 ring-primary/50"
-            )}>
+            <Avatar className="w-10 h-10 ring-[3px] ring-primary">
               <AvatarImage src={post.profiles?.avatar_url || ""} />
-              <AvatarFallback className={cn(
-                "bg-primary/10 text-primary",
-                theme === "cutesy" && "bg-secondary text-primary font-bold"
-              )}>
+              <AvatarFallback className="bg-secondary text-primary font-bold">
                 {displayName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -215,9 +202,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
                   <MoreHorizontal className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={cn(
-                theme === "anime" && "bg-card border-primary/30"
-              )}>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
                   className="text-destructive cursor-pointer"
@@ -243,21 +228,13 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
             <img
               src={post.image_url}
               alt="Post"
-              className={cn(
-                "w-full rounded-xl object-cover max-h-96",
-                theme === "cutesy" && "ring-[3px] ring-primary/40",
-                theme === "anime" && "ring-2 ring-primary/30"
-              )}
+              className="w-full rounded-xl object-cover max-h-96 ring-[3px] ring-primary/40"
             />
           </div>
         )}
 
         {/* Actions */}
-        <div className={cn(
-          "px-4 py-3 flex items-center justify-between border-t",
-          theme === "cutesy" && "border-primary/30",
-          theme === "anime" && "border-primary/20"
-        )}>
+        <div className="px-4 py-3 flex items-center justify-between border-t border-primary/30">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -297,9 +274,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className={cn(
-          theme === "anime" && "bg-card border-primary/30"
-        )}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this post?</AlertDialogTitle>
             <AlertDialogDescription>

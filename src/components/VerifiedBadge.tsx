@@ -1,5 +1,4 @@
 import { BadgeCheck } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -13,8 +12,6 @@ interface VerifiedBadgeProps {
 }
 
 const VerifiedBadge = ({ className, size = "md" }: VerifiedBadgeProps) => {
-  const { theme } = useTheme();
-
   const sizeClasses = {
     sm: "w-3 h-3",
     md: "w-4 h-4",
@@ -27,9 +24,7 @@ const VerifiedBadge = ({ className, size = "md" }: VerifiedBadgeProps) => {
         <BadgeCheck
           className={cn(
             sizeClasses[size],
-            theme === "minimalist" && "text-blue-500",
-            theme === "cutesy" && "text-pink-500",
-            theme === "anime" && "text-cyan-400",
+            "text-pink-500",
             className
           )}
         />

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -34,7 +33,6 @@ const REPORT_REASONS = [
 
 const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBlockDialogProps) => {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "report" | "block">("menu");
   const [reason, setReason] = useState("");
@@ -100,26 +98,19 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
         <Button
           variant="ghost"
           size="icon"
-          className={cn(
-            "absolute top-2 right-2 z-10 rounded-full bg-black/30 hover:bg-black/50 text-white",
-            theme === "cutesy" && "hover:bg-pink-500/50",
-            theme === "anime" && "hover:bg-purple-500/50"
-          )}
+          className="absolute top-2 right-2 z-10 rounded-full bg-black/30 hover:bg-pink-500/50 text-white"
         >
           <Flag className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className={cn(
-        theme === "cutesy" && "border-pink-200",
-        theme === "anime" && "border-purple-500/30 bg-slate-900"
-      )}>
+      <DialogContent className="border-pink-200">
         <DialogHeader>
-          <DialogTitle className={cn(theme === "anime" && "text-white")}>
+          <DialogTitle>
             {mode === "menu" && "Report or Block"}
             {mode === "report" && "Report User"}
             {mode === "block" && "Block User"}
           </DialogTitle>
-          <DialogDescription className={theme === "anime" ? "text-purple-300" : ""}>
+          <DialogDescription>
             {mode === "menu" && "What would you like to do?"}
             {mode === "report" && "Help us understand what happened."}
             {mode === "block" && `Are you sure you want to block ${targetUserName}?`}
@@ -130,11 +121,7 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
           <div className="space-y-3 pt-4">
             <Button
               variant="outline"
-              className={cn(
-                "w-full justify-start gap-3",
-                theme === "cutesy" && "border-pink-200 hover:bg-pink-50",
-                theme === "anime" && "border-purple-500/30 hover:bg-purple-800 text-white"
-              )}
+              className="w-full justify-start gap-3 border-pink-200 hover:bg-pink-50"
               onClick={() => setMode("report")}
             >
               <Flag className="w-4 h-4" />
@@ -142,10 +129,7 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
             </Button>
             <Button
               variant="outline"
-              className={cn(
-                "w-full justify-start gap-3 text-destructive border-destructive/50 hover:bg-destructive/10",
-                theme === "anime" && "border-red-500/50 hover:bg-red-900/30"
-              )}
+              className="w-full justify-start gap-3 text-destructive border-destructive/50 hover:bg-destructive/10"
               onClick={() => setMode("block")}
             >
               <Ban className="w-4 h-4" />
@@ -157,12 +141,12 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
         {mode === "report" && (
           <div className="space-y-4 pt-4">
             <div className="space-y-3">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>Reason for reporting</Label>
+              <Label>Reason for reporting</Label>
               <RadioGroup value={reason} onValueChange={setReason}>
                 {REPORT_REASONS.map((r) => (
                   <div key={r.value} className="flex items-center space-x-2">
                     <RadioGroupItem value={r.value} id={r.value} />
-                    <Label htmlFor={r.value} className={cn("font-normal cursor-pointer", theme === "anime" && "text-white")}>
+                    <Label htmlFor={r.value} className="font-normal cursor-pointer">
                       {r.label}
                     </Label>
                   </div>
@@ -171,15 +155,12 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
             </div>
 
             <div className="space-y-2">
-              <Label className={theme === "anime" ? "text-purple-200" : ""}>Additional details (optional)</Label>
+              <Label>Additional details (optional)</Label>
               <Textarea
                 placeholder="Describe what happened..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className={cn(
-                  theme === "cutesy" && "border-pink-200",
-                  theme === "anime" && "bg-slate-800 border-purple-500/30 text-white"
-                )}
+                className="border-pink-200"
               />
             </div>
 
@@ -190,11 +171,7 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
               <Button
                 onClick={handleReport}
                 disabled={!reason || submitting}
-                className={cn(
-                  "flex-1",
-                  theme === "cutesy" && "bg-pink-500 hover:bg-pink-600",
-                  theme === "anime" && "bg-gradient-to-r from-pink-500 to-purple-500"
-                )}
+                className="flex-1 bg-pink-500 hover:bg-pink-600"
               >
                 {submitting ? "Submitting..." : "Submit Report"}
               </Button>
@@ -204,29 +181,13 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
 
         {mode === "block" && (
           <div className="space-y-4 pt-4">
-            <div className={cn(
-              "flex items-start gap-3 p-4 rounded-lg",
-              theme === "minimalist" && "bg-destructive/10",
-              theme === "cutesy" && "bg-pink-100",
-              theme === "anime" && "bg-red-900/30 border border-red-500/30"
-            )}>
-              <AlertTriangle className={cn(
-                "w-5 h-5 mt-0.5",
-                theme === "minimalist" && "text-destructive",
-                theme === "cutesy" && "text-pink-600",
-                theme === "anime" && "text-red-400"
-              )} />
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-pink-100">
+              <AlertTriangle className="w-5 h-5 mt-0.5 text-pink-600" />
               <div>
-                <p className={cn(
-                  "text-sm font-medium",
-                  theme === "anime" && "text-white"
-                )}>
+                <p className="text-sm font-medium">
                   This action cannot be undone easily
                 </p>
-                <p className={cn(
-                  "text-sm mt-1",
-                  theme === "anime" ? "text-purple-300" : "text-muted-foreground"
-                )}>
+                <p className="text-sm mt-1 text-muted-foreground">
                   You won't see this user in your matches or feed.
                 </p>
               </div>

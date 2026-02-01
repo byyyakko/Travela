@@ -9,7 +9,6 @@ import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
-import ThemeSelect from "./pages/ThemeSelect";
 import Home from "./pages/Home";
 import Match from "./pages/Match";
 import Messages from "./pages/Messages";
@@ -70,13 +69,14 @@ const AppRoutes = () => {
       <Route path="/" element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>} />
-      <Route path="/theme" element={<ProtectedRoute><ThemeSelect /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
       <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      {/* Redirect old theme route to home */}
+      <Route path="/theme" element={<Navigate to="/home" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,6 @@ interface CreatePostProps {
 
 const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [content, setContent] = useState("");
   const [locationTag, setLocationTag] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -101,22 +99,11 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   };
 
   return (
-    <Card className={cn(
-      "p-4",
-      theme === "cutesy" && "cutesy-border bg-card/95",
-      theme === "anime" && "bg-card/80 border-primary/30"
-    )}>
+    <Card className="p-4 cutesy-border bg-card/95">
       <div className="flex gap-3">
-        <Avatar className={cn(
-          "w-10 h-10",
-          theme === "cutesy" && "ring-[3px] ring-primary",
-          theme === "anime" && "ring-2 ring-primary/50"
-        )}>
+        <Avatar className="w-10 h-10 ring-[3px] ring-primary">
           <AvatarImage src="" />
-          <AvatarFallback className={cn(
-            "bg-primary/10 text-primary",
-            theme === "cutesy" && "bg-secondary text-primary font-bold"
-          )}>
+          <AvatarFallback className="bg-secondary text-primary font-bold">
             {user?.email?.[0].toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -126,11 +113,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             placeholder="Share your travel experience... ✨"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className={cn(
-              "min-h-[80px] resize-none",
-              theme === "cutesy" && "bg-background border-2 border-primary/40 focus:border-primary rounded-2xl",
-              theme === "anime" && "bg-background border-primary/30 focus:border-primary"
-            )}
+            className="min-h-[80px] resize-none bg-background border-2 border-primary/40 focus:border-primary rounded-2xl"
           />
 
           {imagePreview && (
@@ -158,11 +141,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
                 placeholder="Add location..."
                 value={locationTag}
                 onChange={(e) => setLocationTag(e.target.value)}
-                className={cn(
-                  "pl-9",
-                  theme === "cutesy" && "bg-background border-2 border-primary/40 rounded-full",
-                  theme === "anime" && "bg-background border-primary/30"
-                )}
+                className="pl-9 bg-background border-2 border-primary/40 rounded-full"
               />
             </div>
 
@@ -178,10 +157,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               variant="outline"
               size="icon"
               onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                theme === "cutesy" && "border-2 border-primary/40 text-primary hover:bg-secondary rounded-full",
-                theme === "anime" && "border-primary/30 text-primary hover:bg-primary/10"
-              )}
+              className="border-2 border-primary/40 text-primary hover:bg-secondary rounded-full"
             >
               <ImagePlus className="w-4 h-4" />
             </Button>
@@ -189,10 +165,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             <Button
               onClick={handleSubmit}
               disabled={loading || (!content.trim() && !imageFile)}
-              className={cn(
-                theme === "cutesy" && "bg-primary hover:bg-primary/90 rounded-full px-6",
-                theme === "anime" && "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-              )}
+              className="bg-primary hover:bg-primary/90 rounded-full px-6"
             >
               {loading ? (
                 "Posting..."
