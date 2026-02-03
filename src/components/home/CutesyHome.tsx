@@ -7,7 +7,7 @@ import CreatePost from "@/components/posts/CreatePost";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Search, MapPin, Users, ChevronRight, Crown } from "lucide-react";
+import { Search, MapPin, Users, ChevronRight, Crown, Map as MapIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 
@@ -43,6 +43,7 @@ const categoryFilters = [
 const quickActions = [
   { icon: Users, label: "Connect", path: "/match" },
   { icon: MapPin, label: "Plan", path: "/planner" },
+  { icon: MapIcon, label: "Map", path: "/map" },
   { icon: Crown, label: "Subscribe", path: "/subscription" },
 ];
 
