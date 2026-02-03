@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Store, Phone, Save, Loader2, Search } from "lucide-react";
+import { MapPin, Store, Phone, Save, Loader2, Search, Map } from "lucide-react";
 
 const MerchantMapPreview = lazy(() => import("@/components/map/MerchantMapPreview"));
 
@@ -281,17 +281,20 @@ const MerchantSettings = () => {
                 variant="outline"
                 onClick={handlePreviewLocation}
                 disabled={previewLoading || !formData.address.trim()}
-                className="border-pink-300 text-pink-600 hover:bg-pink-50 shrink-0"
+                className="border-pink-300 text-pink-600 hover:bg-pink-50 shrink-0 gap-2"
               >
                 {previewLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Search className="w-4 h-4" />
+                  <>
+                    <Map className="w-5 h-5" />
+                    <span className="hidden sm:inline">Find on Map</span>
+                  </>
                 )}
               </Button>
             </div>
             <p className="text-xs text-pink-400">
-              Click the search button to preview your location on the map
+              Click the <Map className="w-3 h-3 inline" /> map button to preview your location
             </p>
           </div>
 
