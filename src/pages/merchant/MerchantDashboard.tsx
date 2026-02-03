@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, NavLink, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Store, Home, BarChart3, Crown, LogOut, Menu, X } from "lucide-react";
+import { Store, Home, BarChart3, Crown, LogOut, Menu, X, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,7 @@ const MerchantDashboard = () => {
 
   const navItems = [
     { to: "/merchant-dashboard", icon: Home, label: "Home", end: true },
+    { to: "/merchant-dashboard/products", icon: Package, label: "Products" },
     { to: "/merchant-dashboard/insights", icon: BarChart3, label: "Insights" },
     { to: "/merchant-dashboard/plan", icon: Crown, label: "Plan" },
   ];

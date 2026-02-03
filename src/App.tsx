@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import MerchantAuth from "./pages/MerchantAuth";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
 import MerchantHome from "./pages/merchant/MerchantHome";
+import MerchantProducts from "./pages/merchant/MerchantProducts";
 import MerchantInsights from "./pages/merchant/MerchantInsights";
 import MerchantPlan from "./pages/merchant/MerchantPlan";
 import ResetPassword from "./pages/ResetPassword";
@@ -87,6 +88,7 @@ const AppRoutes = () => {
       {/* Merchant Dashboard Routes */}
       <Route path="/merchant-dashboard" element={<ProtectedRoute skipOnboardingCheck><MerchantDashboard /></ProtectedRoute>}>
         <Route index element={<MerchantHome />} />
+        <Route path="products" element={<MerchantProducts />} />
         <Route path="insights" element={<MerchantInsights />} />
         <Route path="plan" element={<MerchantPlan />} />
       </Route>
