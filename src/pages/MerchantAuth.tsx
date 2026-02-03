@@ -45,6 +45,7 @@ const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
 const MerchantAuth = () => {
   const [storeName, setStoreName] = useState("");
   const [storeType, setStoreType] = useState<StoreType>("food");
+  const [storeAddress, setStoreAddress] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -137,6 +138,7 @@ const MerchantAuth = () => {
         storeName: storeName.trim(),
         storeType: storeType,
         phone: phone.trim() || null,
+        address: storeAddress.trim() || null,
       }));
     }
 
@@ -318,6 +320,20 @@ const MerchantAuth = () => {
                           </button>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Store Address */}
+                    <div className="space-y-2">
+                      <Label htmlFor="store-address" className="text-pink-700">Store Address</Label>
+                      <Input
+                        id="store-address"
+                        type="text"
+                        placeholder="123 Main Street, City, Country"
+                        value={storeAddress}
+                        onChange={(e) => setStoreAddress(e.target.value)}
+                        className="border-pink-200 focus:border-pink-400 focus:ring-pink-400"
+                      />
+                      <p className="text-xs text-pink-400">This helps travelers find you on the map</p>
                     </div>
 
                     {/* Registration Method Toggle */}

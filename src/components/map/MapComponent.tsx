@@ -19,6 +19,7 @@ interface Place {
   id: string;
   name: string;
   type: "store" | "local" | "itinerary";
+  storeType?: "food" | "attractions" | "entertainment";
   lat: number;
   lng: number;
   description?: string;
@@ -119,8 +120,29 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
 
     // Add new markers
     places.forEach((place) => {
-      const markerColor = place.type === "store" ? "#3b82f6" : "#22c55e";
-      const markerEmoji = place.type === "store" ? "🏪" : "📋";
+      // Determine icon based on store type
+      let markerColor = "#22c55e"; // Default green for itinerary
+      let markerEmoji = "📋";
+      
+      if (place.type === "store") {
+        switch (place.storeType) {
+          case "food":
+            markerColor = "#f97316"; // Orange for food
+            markerEmoji = "🍜";
+            break;
+          case "attractions":
+            markerColor = "#8b5cf6"; // Purple for attractions
+            markerEmoji = "🏛️";
+            break;
+          case "entertainment":
+            markerColor = "#ec4899"; // Pink for entertainment
+            markerEmoji = "🎮";
+            break;
+          default:
+            markerColor = "#3b82f6"; // Blue fallback
+            markerEmoji = "🏪";
+        }
+      }
 
       const placeIcon = L.divIcon({
         className: "place-marker",
@@ -155,7 +177,7 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
               background: #f3f4f6;
               border-radius: 12px;
               font-size: 11px;
-            ">${markerEmoji} ${place.type === "store" ? "Store" : "Itinerary"}</span>
+            ">${markerEmoji} ${place.type === "store" ? (place.storeType || "Store") : "Itinerary"}</span>
           </div>
         `);
 
