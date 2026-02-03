@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,72 +6,10 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { Icon, LatLngExpression } from "leaflet";
 import { Navigation, MapPin, Locate, Users, Store, ArrowLeft, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import "leaflet/dist/leaflet.css";
-
-// Fix for default marker icons in Leaflet with bundlers
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-// Custom marker icons
-const userIcon = new Icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const placeIcon = new Icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: "hue-rotate-180", // Blue tint for places
-});
-
-// Component to recenter map
-const RecenterMap = ({ position }: { position: LatLngExpression }) => {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(position, map.getZoom());
-  }, [position, map]);
-  return null;
-};
-
-// Component to handle user location updates
-const LocationMarker = ({ 
-  onLocationFound 
-}: { 
-  onLocationFound: (lat: number, lng: number) => void 
-}) => {
-  const map = useMap();
-
-  useEffect(() => {
-    map.locate({ watch: true, enableHighAccuracy: true });
-    
-    map.on("locationfound", (e) => {
-      onLocationFound(e.latlng.lat, e.latlng.lng);
-    });
-
-    return () => {
-      map.stopLocate();
-    };
-  }, [map, onLocationFound]);
-
-  return null;
-};
 
 interface Place {
   id: string;
@@ -81,6 +19,9 @@ interface Place {
   lng: number;
   description?: string;
 }
+
+// Lazy load the map component to avoid SSR issues
+const LazyMapComponent = lazy(() => import("@/components/map/MapComponent"));
 
 const MapView = () => {
   const { user } = useAuth();
@@ -129,7 +70,7 @@ const MapView = () => {
   // Generate mock coordinates for places (in real app, you'd geocode addresses)
   const places: Place[] = [
     // Mock stores around Singapore
-    ...(stores?.slice(0, 5).map((store, i) => ({
+    ...(stores?.slice(0, 5).map((store) => ({
       id: store.id,
       name: store.store_name,
       type: "store" as const,
@@ -138,7 +79,7 @@ const MapView = () => {
       description: store.store_type,
     })) || []),
     // Mock itinerary locations
-    ...(itineraryItems?.filter(item => item.location).slice(0, 3).map((item, i) => ({
+    ...(itineraryItems?.filter(item => item.location).slice(0, 3).map((item) => ({
       id: item.id,
       name: item.title,
       type: "itinerary" as const,
@@ -148,10 +89,10 @@ const MapView = () => {
     })) || []),
   ];
 
-  const handleLocationFound = (lat: number, lng: number) => {
+  const handleLocationFound = useCallback((lat: number, lng: number) => {
     setUserPosition([lat, lng]);
     setIsLocating(false);
-  };
+  }, []);
 
   const handleLocateMe = () => {
     setIsLocating(true);
@@ -244,55 +185,18 @@ const MapView = () => {
 
         {/* Map Container */}
         <Card className="cutesy-border overflow-hidden h-[60vh] relative">
-          <MapContainer
-            center={mapCenter}
-            zoom={14}
-            scrollWheelZoom={true}
-            className="h-full w-full z-0"
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          <Suspense fallback={
+            <div className="h-full w-full flex items-center justify-center bg-muted">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+          }>
+            <LazyMapComponent
+              center={mapCenter}
+              userPosition={userPosition}
+              places={filteredPlaces}
+              onLocationFound={handleLocationFound}
             />
-            
-            {/* Track user location */}
-            <LocationMarker onLocationFound={handleLocationFound} />
-            
-            {/* Recenter when position changes */}
-            {userPosition && <RecenterMap position={userPosition} />}
-
-            {/* User position marker */}
-            {userPosition && (
-              <Marker position={userPosition} icon={userIcon}>
-                <Popup>
-                  <div className="text-center">
-                    <p className="font-semibold">📍 You are here</p>
-                  </div>
-                </Popup>
-              </Marker>
-            )}
-
-            {/* Place markers */}
-            {filteredPlaces.map((place) => (
-              <Marker
-                key={place.id}
-                position={[place.lat, place.lng]}
-                icon={placeIcon}
-              >
-                <Popup>
-                  <div className="min-w-[150px]">
-                    <p className="font-semibold text-sm">{place.name}</p>
-                    {place.description && (
-                      <p className="text-xs text-gray-600 mt-1">{place.description}</p>
-                    )}
-                    <Badge variant="secondary" className="mt-2 text-xs">
-                      {place.type === "store" ? "🏪 Store" : "📋 Itinerary"}
-                    </Badge>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+          </Suspense>
 
           {/* Loading overlay */}
           {isLocating && (
