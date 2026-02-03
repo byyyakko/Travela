@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
+import RoleSelect from "./pages/RoleSelect";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
@@ -66,7 +67,8 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path="/" element={<PublicRoute><RoleSelect /></PublicRoute>} />
+      <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
