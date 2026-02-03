@@ -108,6 +108,7 @@ const Onboarding = () => {
 
     try {
       let finalAvatarUrl = null;
+      const safeDisplayName = displayName.trim() || (user.email ? user.email.split("@")[0] : "");
 
       // Upload avatar if selected
       if (avatarFile) {
@@ -131,7 +132,9 @@ const Onboarding = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          display_name: displayName.trim() || null,
+          // Ensure onboarding can complete even if the user leaves fields blank
+          // (prevents redirect loops caused by an "empty" profile)
+          display_name: safeDisplayName || null,
           avatar_url: finalAvatarUrl,
           bio: bio.trim() || null,
           interests: interests.length > 0 ? interests : null,
@@ -143,8 +146,13 @@ const Onboarding = () => {
 
       if (error) throw error;
 
-      // Invalidate the onboarding check cache so ProtectedRoute sees updated profile
-      await queryClient.invalidateQueries({ queryKey: ["onboarding-check", user.id] });
+      // Immediately unblock ProtectedRoute + refresh dependent queries
+      queryClient.setQueryData(["onboarding-check", user.id], false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["onboarding-check", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["userProfile", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["profile", user.id] }),
+      ]);
 
       toast({
         title: "Welcome to Travela! 🎉",
