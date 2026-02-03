@@ -22,6 +22,7 @@ import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Planner from "./pages/Planner";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
 
@@ -85,6 +86,7 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
       {/* Merchant Dashboard Routes */}
       <Route path="/merchant-dashboard" element={<ProtectedRoute skipOnboardingCheck><MerchantDashboard /></ProtectedRoute>}>
         <Route index element={<MerchantHome />} />
