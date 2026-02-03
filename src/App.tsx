@@ -14,6 +14,7 @@ import MerchantHome from "./pages/merchant/MerchantHome";
 import MerchantProducts from "./pages/merchant/MerchantProducts";
 import MerchantInsights from "./pages/merchant/MerchantInsights";
 import MerchantPlan from "./pages/merchant/MerchantPlan";
+import MerchantSettings from "./pages/merchant/MerchantSettings";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
@@ -95,6 +96,7 @@ const AppRoutes = () => {
         <Route path="products" element={<MerchantProducts />} />
         <Route path="insights" element={<MerchantInsights />} />
         <Route path="plan" element={<MerchantPlan />} />
+        <Route path="settings" element={<MerchantSettings />} />
       </Route>
       {/* Redirect old theme route to home */}
       <Route path="/theme" element={<Navigate to="/home" replace />} />
