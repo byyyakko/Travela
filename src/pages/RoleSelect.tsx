@@ -8,7 +8,7 @@ const RoleSelect = () => {
 
   const handleRoleSelect = (role: "user" | "merchant") => {
     localStorage.setItem("selectedRole", role);
-    navigate("/auth");
+    navigate(role === "merchant" ? "/merchant-auth" : "/auth");
   };
 
   return (

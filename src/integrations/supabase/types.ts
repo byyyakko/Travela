@@ -408,6 +408,33 @@ export type Database = {
         }
         Relationships: []
       }
+      stores: {
+        Row: {
+          created_at: string
+          id: string
+          phone: string | null
+          store_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone?: string | null
+          store_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone?: string | null
+          store_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           country: string
@@ -483,6 +510,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -497,8 +545,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "user" | "merchant"
       user_theme: "minimalist" | "cutesy" | "anime"
     }
     CompositeTypes: {
@@ -627,6 +683,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["user", "merchant"],
       user_theme: ["minimalist", "cutesy", "anime"],
     },
   },

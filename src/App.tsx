@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import RoleSelect from "./pages/RoleSelect";
 import Auth from "./pages/Auth";
+import MerchantAuth from "./pages/MerchantAuth";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
@@ -69,6 +70,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<PublicRoute><RoleSelect /></PublicRoute>} />
       <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path="/merchant-auth" element={<PublicRoute><MerchantAuth /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
