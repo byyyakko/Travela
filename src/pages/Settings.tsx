@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Bell, Shield, HelpCircle, LogOut } from "lucide-react";
+import { Bell, Shield, HelpCircle, LogOut } from "lucide-react";
 
 const Settings = () => {
   const { signOut } = useAuth();
@@ -19,18 +19,9 @@ const Settings = () => {
   return (
     <AppLayout>
       <div className="space-y-6 max-w-lg mx-auto">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-2xl font-display font-bold">
-            Settings
-          </h1>
-        </div>
+        <h1 className="text-2xl font-display font-bold">
+          Settings
+        </h1>
 
         <Card className="border-pink-200">
           <CardHeader>

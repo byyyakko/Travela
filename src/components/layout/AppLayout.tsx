@@ -4,6 +4,7 @@ import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays } from
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import BackButton from "@/components/layout/BackButton";
 import bgCute from "@/assets/bg-cute.png";
 
 interface AppLayoutProps {
@@ -34,6 +35,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       {/* Top bar with search */}
       <header className="fixed top-0 left-0 right-0 z-40 px-4 py-3 md:left-20 cutesy-grid-bg bg-card/95 backdrop-blur-md border-b-[3px] border-primary">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
+          {/* Back Button - shows on non-primary routes */}
+          <BackButton className="text-muted-foreground hover:text-foreground hover:bg-secondary shrink-0" />
+          
           <div className="flex items-center gap-2">
             <span className="text-xl font-display font-bold text-primary">
               ✈️ Travela
