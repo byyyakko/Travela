@@ -206,6 +206,16 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
       <div className="w-full max-w-md space-y-8">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/")}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+
         {/* Logo */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
