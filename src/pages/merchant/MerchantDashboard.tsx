@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, NavLink, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Store, Home, BarChart3, Crown, LogOut, Menu, X, Package, Settings } from "lucide-react";
+import { Store, Home, BarChart3, Crown, LogOut, Menu, X, Package, Settings, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -73,6 +73,15 @@ const MerchantDashboard = () => {
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between p-4 bg-white/80 backdrop-blur border-b border-pink-200">
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/")}
+            className="text-pink-600 hover:bg-pink-50"
+            aria-label="Go back to role selection"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center">
             <Store className="w-4 h-4 text-pink-500" />
           </div>
@@ -102,6 +111,15 @@ const MerchantDashboard = () => {
             {/* Store Info */}
             <div className="p-6 border-b border-pink-100 hidden lg:block">
               <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/")}
+                  className="text-pink-600 hover:bg-pink-50 shrink-0"
+                  aria-label="Go back to role selection"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
                 <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
                   <Store className="w-6 h-6 text-pink-500" />
                 </div>
