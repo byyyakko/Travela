@@ -26,12 +26,14 @@ const MerchantSettings = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [formData, setFormData] = useState({
     store_name: "",
     store_type: "food" as "food" | "attractions" | "entertainment",
     phone: "",
     address: "",
   });
+  const [originalAddress, setOriginalAddress] = useState("");
 
   useEffect(() => {
     const fetchStoreDetails = async () => {
@@ -57,6 +59,7 @@ const MerchantSettings = () => {
           phone: data.phone || "",
           address: data.address || "",
         });
+        setOriginalAddress(data.address || "");
       }
       setLoading(false);
     };
@@ -69,14 +72,55 @@ const MerchantSettings = () => {
     
     setSaving(true);
     
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+
+    // Geocode the address if it changed
+    if (formData.address && formData.address !== originalAddress) {
+      setGeocoding(true);
+      try {
+        const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke(
+          'geocode-address',
+          { body: { address: formData.address } }
+        );
+
+        if (geocodeError) {
+          console.error('Geocoding error:', geocodeError);
+          toast({
+            title: "Warning",
+            description: "Could not geocode address. Store will be saved without map coordinates.",
+            variant: "destructive",
+          });
+        } else if (geocodeData?.latitude && geocodeData?.longitude) {
+          latitude = geocodeData.latitude;
+          longitude = geocodeData.longitude;
+          toast({
+            title: "📍 Location Found",
+            description: `Coordinates: ${latitude?.toFixed(4)}, ${longitude?.toFixed(4)}`,
+          });
+        }
+      } catch (err) {
+        console.error('Geocoding failed:', err);
+      }
+      setGeocoding(false);
+    }
+    
+    const updateData: Record<string, unknown> = {
+      store_name: formData.store_name,
+      store_type: formData.store_type,
+      phone: formData.phone,
+      address: formData.address,
+    };
+
+    // Only update coordinates if we got new ones
+    if (latitude !== null && longitude !== null) {
+      updateData.latitude = latitude;
+      updateData.longitude = longitude;
+    }
+
     const { error } = await supabase
       .from("stores")
-      .update({
-        store_name: formData.store_name,
-        store_type: formData.store_type,
-        phone: formData.phone,
-        address: formData.address,
-      })
+      .update(updateData)
       .eq("id", store.id);
 
     if (error) {
@@ -91,8 +135,7 @@ const MerchantSettings = () => {
         title: "Success",
         description: "Store settings saved successfully!",
       });
-      // Refresh the page to update the sidebar
-      window.location.reload();
+      setOriginalAddress(formData.address);
     }
     
     setSaving(false);
@@ -187,13 +230,13 @@ const MerchantSettings = () => {
 
       <Button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || geocoding}
         className="w-full bg-pink-500 hover:bg-pink-600 text-white"
       >
-        {saving ? (
+        {saving || geocoding ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Saving...
+            {geocoding ? "Finding location..." : "Saving..."}
           </>
         ) : (
           <>
