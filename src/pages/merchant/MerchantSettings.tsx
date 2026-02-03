@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Store, Phone, Save, Loader2 } from "lucide-react";
+import { MapPin, Store, Phone, Save, Loader2, Search } from "lucide-react";
+
+const MerchantMapPreview = lazy(() => import("@/components/map/MerchantMapPreview"));
 
 interface StoreContext {
   store: {
@@ -34,14 +36,15 @@ const MerchantSettings = () => {
     address: "",
   });
   const [originalAddress, setOriginalAddress] = useState("");
-
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   useEffect(() => {
     const fetchStoreDetails = async () => {
       if (!user) return;
 
       const { data, error } = await supabase
         .from("stores")
-        .select("store_name, store_type, phone, address")
+        .select("store_name, store_type, phone, address, latitude, longitude")
         .eq("user_id", user.id)
         .single();
 
@@ -60,6 +63,9 @@ const MerchantSettings = () => {
           address: data.address || "",
         });
         setOriginalAddress(data.address || "");
+        if (data.latitude && data.longitude) {
+          setCoordinates({ lat: data.latitude, lng: data.longitude });
+        }
       }
       setLoading(false);
     };
@@ -67,16 +73,61 @@ const MerchantSettings = () => {
     fetchStoreDetails();
   }, [user]);
 
+  const handlePreviewLocation = async () => {
+    if (!formData.address.trim()) {
+      toast({
+        title: "Address required",
+        description: "Please enter an address to preview on the map.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPreviewLoading(true);
+    try {
+      const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke(
+        'geocode-address',
+        { body: { address: formData.address } }
+      );
+
+      if (geocodeError) {
+        throw new Error(geocodeError.message);
+      }
+
+      if (geocodeData?.latitude && geocodeData?.longitude) {
+        setCoordinates({ lat: geocodeData.latitude, lng: geocodeData.longitude });
+        toast({
+          title: "📍 Location Found",
+          description: geocodeData.formattedAddress || "Location displayed on map",
+        });
+      } else {
+        toast({
+          title: "Location not found",
+          description: "Could not find this address. Please try a more specific address.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error('Preview geocoding failed:', err);
+      toast({
+        title: "Error",
+        description: "Could not find location. Please try again.",
+        variant: "destructive",
+      });
+    }
+    setPreviewLoading(false);
+  };
+
   const handleSave = async () => {
     if (!user || !store?.id) return;
     
     setSaving(true);
     
-    let latitude: number | null = null;
-    let longitude: number | null = null;
+    let latitude: number | null = coordinates?.lat || null;
+    let longitude: number | null = coordinates?.lng || null;
 
-    // Geocode the address if it changed
-    if (formData.address && formData.address !== originalAddress) {
+    // Geocode the address if it changed and we don't have coordinates
+    if (formData.address && formData.address !== originalAddress && !coordinates) {
       setGeocoding(true);
       try {
         const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke(
@@ -94,10 +145,7 @@ const MerchantSettings = () => {
         } else if (geocodeData?.latitude && geocodeData?.longitude) {
           latitude = geocodeData.latitude;
           longitude = geocodeData.longitude;
-          toast({
-            title: "📍 Location Found",
-            description: `Coordinates: ${latitude?.toFixed(4)}, ${longitude?.toFixed(4)}`,
-          });
+          setCoordinates({ lat: latitude, lng: longitude });
         }
       } catch (err) {
         console.error('Geocoding failed:', err);
@@ -112,7 +160,7 @@ const MerchantSettings = () => {
       address: formData.address,
     };
 
-    // Only update coordinates if we got new ones
+    // Update coordinates
     if (latitude !== null && longitude !== null) {
       updateData.latitude = latitude;
       updateData.longitude = longitude;
@@ -214,17 +262,60 @@ const MerchantSettings = () => {
               <MapPin className="w-4 h-4 inline mr-1" />
               Store Address
             </Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="border-pink-200 focus:border-pink-400 focus:ring-pink-400"
-              placeholder="Enter your store address"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => {
+                  setFormData({ ...formData, address: e.target.value });
+                  // Clear coordinates when address changes
+                  if (e.target.value !== originalAddress) {
+                    setCoordinates(null);
+                  }
+                }}
+                className="border-pink-200 focus:border-pink-400 focus:ring-pink-400"
+                placeholder="Enter your store address"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePreviewLocation}
+                disabled={previewLoading || !formData.address.trim()}
+                className="border-pink-300 text-pink-600 hover:bg-pink-50 shrink-0"
+              >
+                {previewLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
             <p className="text-xs text-pink-400">
-              This address will be used to show your store location on the map
+              Click the search button to preview your location on the map
             </p>
           </div>
+
+          {/* Map Preview */}
+          {coordinates && (
+            <div className="space-y-2">
+              <Label className="text-pink-600">📍 Location Preview</Label>
+              <Suspense fallback={
+                <div className="w-full h-64 rounded-lg border-2 border-pink-200 flex items-center justify-center bg-pink-50">
+                  <Loader2 className="w-6 h-6 animate-spin text-pink-500" />
+                </div>
+              }>
+                <MerchantMapPreview
+                  latitude={coordinates.lat}
+                  longitude={coordinates.lng}
+                  storeName={formData.store_name || "Your Store"}
+                  storeType={formData.store_type}
+                />
+              </Suspense>
+              <p className="text-xs text-pink-400 text-center">
+                ✓ Location verified at {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
