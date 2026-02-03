@@ -15,6 +15,7 @@ interface Place {
   id: string;
   name: string;
   type: "store" | "local" | "itinerary";
+  storeType?: "food" | "attractions" | "entertainment";
   lat: number;
   lng: number;
   description?: string;
@@ -41,7 +42,7 @@ const MapView = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, store_name, store_type, phone");
+        .select("id, store_name, store_type, phone, address, latitude, longitude");
       
       if (error) throw error;
       return data || [];
@@ -67,18 +68,20 @@ const MapView = () => {
     enabled: !!user?.id,
   });
 
-  // Generate mock coordinates for places (in real app, you'd geocode addresses)
+  // Generate coordinates for places
   const places: Place[] = [
-    // Mock stores around Singapore
-    ...(stores?.slice(0, 5).map((store) => ({
+    // Stores - use real coordinates if available, otherwise generate mock ones
+    ...(stores?.map((store) => ({
       id: store.id,
       name: store.store_name,
       type: "store" as const,
-      lat: 1.3521 + (Math.random() - 0.5) * 0.05,
-      lng: 103.8198 + (Math.random() - 0.5) * 0.05,
-      description: store.store_type,
+      storeType: store.store_type as "food" | "attractions" | "entertainment",
+      // Use real coordinates if available, otherwise generate random ones around Singapore
+      lat: store.latitude || (1.3521 + (Math.random() - 0.5) * 0.05),
+      lng: store.longitude || (103.8198 + (Math.random() - 0.5) * 0.05),
+      description: store.address || store.store_type,
     })) || []),
-    // Mock itinerary locations
+    // Itinerary locations
     ...(itineraryItems?.filter(item => item.location).slice(0, 3).map((item) => ({
       id: item.id,
       name: item.title,

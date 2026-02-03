@@ -492,8 +492,11 @@ export type Database = {
       }
       stores: {
         Row: {
+          address: string | null
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
           phone: string | null
           store_name: string
           store_type: Database["public"]["Enums"]["store_type"]
@@ -502,8 +505,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address?: string | null
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           phone?: string | null
           store_name: string
           store_type?: Database["public"]["Enums"]["store_type"]
@@ -512,8 +518,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address?: string | null
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           phone?: string | null
           store_name?: string
           store_type?: Database["public"]["Enums"]["store_type"]

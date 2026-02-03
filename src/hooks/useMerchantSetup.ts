@@ -8,6 +8,7 @@ interface PendingMerchantData {
   storeName: string;
   storeType: "attractions" | "food" | "entertainment";
   phone: string | null;
+  address: string | null;
 }
 
 /**
@@ -63,6 +64,7 @@ export const useMerchantSetup = () => {
           store_name: pendingData.storeName,
           store_type: pendingData.storeType,
           phone: pendingData.phone,
+          address: pendingData.address,
         });
 
         if (storeError) throw storeError;
