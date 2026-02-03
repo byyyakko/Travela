@@ -6,6 +6,8 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isMerchant: boolean;
+  checkMerchantStatus: () => Promise<boolean>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -17,6 +19,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMerchant, setIsMerchant] = useState(false);
+
+  const checkMerchantStatus = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "merchant")
+      .single();
+    
+    const hasMerchantRole = !!data;
+    setIsMerchant(hasMerchantRole);
+    return hasMerchantRole;
+  };
 
   useEffect(() => {
     // Set up auth state listener BEFORE getting session
@@ -37,6 +55,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Check merchant status when user changes
+  useEffect(() => {
+    if (user) {
+      checkMerchantStatus();
+    } else {
+      setIsMerchant(false);
+    }
+  }, [user]);
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({
@@ -59,10 +86,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setIsMerchant(false);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, isMerchant, checkMerchantStatus, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

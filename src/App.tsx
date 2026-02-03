@@ -9,6 +9,10 @@ import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import RoleSelect from "./pages/RoleSelect";
 import Auth from "./pages/Auth";
 import MerchantAuth from "./pages/MerchantAuth";
+import MerchantDashboard from "./pages/merchant/MerchantDashboard";
+import MerchantHome from "./pages/merchant/MerchantHome";
+import MerchantInsights from "./pages/merchant/MerchantInsights";
+import MerchantPlan from "./pages/merchant/MerchantPlan";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
@@ -18,6 +22,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Planner from "./pages/Planner";
 import NotFound from "./pages/NotFound";
+import MerchantSetupHandler from "./components/MerchantSetupHandler";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +84,12 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      {/* Merchant Dashboard Routes */}
+      <Route path="/merchant-dashboard" element={<ProtectedRoute skipOnboardingCheck><MerchantDashboard /></ProtectedRoute>}>
+        <Route index element={<MerchantHome />} />
+        <Route path="insights" element={<MerchantInsights />} />
+        <Route path="plan" element={<MerchantPlan />} />
+      </Route>
       {/* Redirect old theme route to home */}
       <Route path="/theme" element={<Navigate to="/home" replace />} />
       <Route path="*" element={<NotFound />} />
@@ -94,7 +105,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ThemeProvider>
-            <AppRoutes />
+            <MerchantSetupHandler>
+              <AppRoutes />
+            </MerchantSetupHandler>
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>

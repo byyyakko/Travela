@@ -6,11 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, Check, X, Mail, ArrowLeft, Phone } from "lucide-react";
+import { Store, Check, X, Mail, ArrowLeft, Phone, Landmark, Utensils, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import mascotImage from "@/assets/mascot-cutesy.png";
+
+type StoreType = "attractions" | "food" | "entertainment";
+
+const storeTypeOptions = [
+  { value: "attractions" as StoreType, label: "Attractions", icon: Landmark, description: "Museums, landmarks, tours" },
+  { value: "food" as StoreType, label: "Food", icon: Utensils, description: "Restaurants, cafes, bars" },
+  { value: "entertainment" as StoreType, label: "Entertainment", icon: Gamepad2, description: "Shows, games, activities" },
+];
 
 // Password validation rules
 const validatePassword = (password: string) => {
@@ -36,6 +44,7 @@ const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
 
 const MerchantAuth = () => {
   const [storeName, setStoreName] = useState("");
+  const [storeType, setStoreType] = useState<StoreType>("food");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -126,6 +135,7 @@ const MerchantAuth = () => {
       // Store the merchant data in localStorage temporarily for after verification
       localStorage.setItem("pendingMerchantData", JSON.stringify({
         storeName: storeName.trim(),
+        storeType: storeType,
         phone: phone.trim() || null,
       }));
     }
@@ -273,6 +283,41 @@ const MerchantAuth = () => {
                         maxLength={100}
                         required
                       />
+                    </div>
+
+                    {/* Store Type Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-pink-700">What type of store is this?</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {storeTypeOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setStoreType(option.value)}
+                            className={cn(
+                              "p-3 rounded-lg border-2 transition-all text-center",
+                              storeType === option.value
+                                ? "border-pink-500 bg-pink-50"
+                                : "border-pink-200 hover:border-pink-300 bg-white"
+                            )}
+                          >
+                            <option.icon
+                              className={cn(
+                                "w-6 h-6 mx-auto mb-1",
+                                storeType === option.value ? "text-pink-500" : "text-pink-400"
+                              )}
+                            />
+                            <p
+                              className={cn(
+                                "text-xs font-medium",
+                                storeType === option.value ? "text-pink-700" : "text-pink-500"
+                              )}
+                            >
+                              {option.label}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Registration Method Toggle */}

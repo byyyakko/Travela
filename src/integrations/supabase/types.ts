@@ -408,12 +408,49 @@ export type Database = {
         }
         Relationships: []
       }
+      store_visits: {
+        Row: {
+          id: string
+          page_viewed: string | null
+          store_id: string
+          visited_at: string
+          visitor_country: string | null
+          visitor_user_id: string | null
+        }
+        Insert: {
+          id?: string
+          page_viewed?: string | null
+          store_id: string
+          visited_at?: string
+          visitor_country?: string | null
+          visitor_user_id?: string | null
+        }
+        Update: {
+          id?: string
+          page_viewed?: string | null
+          store_id?: string
+          visited_at?: string
+          visitor_country?: string | null
+          visitor_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_visits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           created_at: string
           id: string
           phone: string | null
           store_name: string
+          store_type: Database["public"]["Enums"]["store_type"]
+          subscription_tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
           user_id: string
         }
@@ -422,6 +459,8 @@ export type Database = {
           id?: string
           phone?: string | null
           store_name: string
+          store_type?: Database["public"]["Enums"]["store_type"]
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id: string
         }
@@ -430,6 +469,8 @@ export type Database = {
           id?: string
           phone?: string | null
           store_name?: string
+          store_type?: Database["public"]["Enums"]["store_type"]
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id?: string
         }
@@ -555,6 +596,8 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "merchant"
+      store_type: "attractions" | "food" | "entertainment"
+      subscription_tier: "tier_0" | "tier_1" | "tier_2"
       user_theme: "minimalist" | "cutesy" | "anime"
     }
     CompositeTypes: {
@@ -684,6 +727,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "merchant"],
+      store_type: ["attractions", "food", "entertainment"],
+      subscription_tier: ["tier_0", "tier_1", "tier_2"],
       user_theme: ["minimalist", "cutesy", "anime"],
     },
   },
