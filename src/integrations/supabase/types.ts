@@ -329,6 +329,7 @@ export type Database = {
           location: string | null
           max_age_preference: number | null
           min_age_preference: number | null
+          subscription_tier: Database["public"]["Enums"]["user_subscription_tier"]
           theme: Database["public"]["Enums"]["user_theme"]
           travel_end_date: string | null
           travel_start_date: string | null
@@ -351,6 +352,7 @@ export type Database = {
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
+          subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
           travel_end_date?: string | null
           travel_start_date?: string | null
@@ -373,6 +375,7 @@ export type Database = {
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
+          subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
           travel_end_date?: string | null
           travel_start_date?: string | null
@@ -642,6 +645,7 @@ export type Database = {
       app_role: "user" | "merchant"
       store_type: "attractions" | "food" | "entertainment"
       subscription_tier: "tier_0" | "tier_1" | "tier_2"
+      user_subscription_tier: "tier_0" | "tier_1" | "tier_2"
       user_theme: "minimalist" | "cutesy" | "anime"
     }
     CompositeTypes: {
@@ -773,6 +777,7 @@ export const Constants = {
       app_role: ["user", "merchant"],
       store_type: ["attractions", "food", "entertainment"],
       subscription_tier: ["tier_0", "tier_1", "tier_2"],
+      user_subscription_tier: ["tier_0", "tier_1", "tier_2"],
       user_theme: ["minimalist", "cutesy", "anime"],
     },
   },
