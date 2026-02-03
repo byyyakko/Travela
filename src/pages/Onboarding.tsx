@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const SUGGESTED_INTERESTS = [
 const Onboarding = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -140,6 +142,9 @@ const Onboarding = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      // Invalidate the onboarding check cache so ProtectedRoute sees updated profile
+      await queryClient.invalidateQueries({ queryKey: ["onboarding-check", user.id] });
 
       toast({
         title: "Welcome to Travela! 🎉",
