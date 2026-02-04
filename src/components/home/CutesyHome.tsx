@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import PostCard from "@/components/posts/PostCard";
 import CreatePost from "@/components/posts/CreatePost";
+import DestinationSearch from "@/components/home/DestinationSearch";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Search, MapPin, Users, ChevronRight, Crown, Map as MapIcon } from "lucide-react";
+import { MapPin, Users, ChevronRight, Crown, Map as MapIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 
@@ -125,15 +125,6 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           </div>
         </div>
 
-        {/* Search bar with hand-drawn style */}
-        <div className="relative mt-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Where would you like to visit?"
-            className="pl-10 bg-background border-2 border-primary/50 rounded-full h-11 text-sm"
-          />
-        </div>
-
         {/* Quick action icons */}
         <div className="flex justify-center gap-8 mt-6">
           {quickActions.map((action) => (
@@ -150,6 +141,9 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           ))}
         </div>
       </Card>
+
+      {/* Destination Search with Premium Recommendations */}
+      <DestinationSearch />
 
       {/* For You section with category filters */}
       <div>
