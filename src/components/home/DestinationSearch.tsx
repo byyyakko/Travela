@@ -121,39 +121,51 @@ const DestinationSearch = () => {
         exit={{ opacity: 0, y: -10 }}
         onClick={() => setSelectedStore(store)}
         className={cn(
-          "p-4 rounded-2xl border-2 bg-card transition-all hover:shadow-md cursor-pointer",
+          "relative rounded-2xl border-2 bg-card transition-all hover:shadow-lg cursor-pointer overflow-hidden",
           isPremium 
-            ? "border-amber-400 bg-gradient-to-br from-amber-50/80 to-orange-50/50 hover:border-amber-500" 
+            ? "border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 hover:border-amber-500 shadow-md shadow-amber-100" 
             : "border-primary/30 hover:border-primary/50"
         )}
       >
-        <div className="flex items-start gap-3">
-          <div className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center border-2 shrink-0",
-            storeTypeColors[store.store_type]
-          )}>
-            <Icon className="w-6 h-6" />
+        {/* Premium Side Banner */}
+        {isPremium && (
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-b from-amber-400 to-orange-400 flex flex-col items-center justify-center gap-1">
+            <Star className="w-4 h-4 text-white fill-white" />
+            <span className="text-[9px] font-bold text-white uppercase tracking-wide writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+              Travela Recommends
+            </span>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-bold text-foreground truncate">{store.store_name}</h4>
-              {isPremium && (
-                <Badge className="bg-gradient-to-r from-amber-400 to-orange-400 text-white border-0 text-xs gap-1">
-                  <Star className="w-3 h-3 fill-current" />
-                  Featured
-                </Badge>
-              )}
+        )}
+        
+        <div className={cn("p-4", isPremium && "pl-12")}>
+          <div className="flex items-start gap-3">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center border-2 shrink-0",
+              storeTypeColors[store.store_type]
+            )}>
+              <Icon className="w-6 h-6" />
             </div>
-            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate">{store.address || "Address not available"}</span>
-            </p>
-            <Badge 
-              variant="outline" 
-              className={cn("mt-2 text-xs capitalize", storeTypeColors[store.store_type])}
-            >
-              {store.store_type}
-            </Badge>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="font-bold text-foreground truncate">{store.store_name}</h4>
+                {isPremium && (
+                  <Badge className="bg-gradient-to-r from-amber-400 to-orange-400 text-white border-0 text-xs gap-1 shrink-0">
+                    <Star className="w-3 h-3 fill-current" />
+                    Featured
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="truncate">{store.address || "Address not available"}</span>
+              </p>
+              <Badge 
+                variant="outline" 
+                className={cn("mt-2 text-xs capitalize", storeTypeColors[store.store_type])}
+              >
+                {storeTypeLabels[store.store_type]}
+              </Badge>
+            </div>
           </div>
         </div>
       </motion.div>
