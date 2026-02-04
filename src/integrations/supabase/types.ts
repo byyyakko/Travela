@@ -531,6 +531,7 @@ export type Database = {
           country: string | null
           created_at: string
           description: string | null
+          dietary_options: string[] | null
           id: string
           latitude: number | null
           longitude: number | null
@@ -547,6 +548,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           description?: string | null
+          dietary_options?: string[] | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -563,6 +565,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           description?: string | null
+          dietary_options?: string[] | null
           id?: string
           latitude?: number | null
           longitude?: number | null
