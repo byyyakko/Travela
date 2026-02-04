@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, MapPin, Star, Sparkles, UtensilsCrossed, Landmark, Wine, Phone, Navigation, X } from "lucide-react";
+import { Search, MapPin, Star, Sparkles, UtensilsCrossed, Landmark, Wine, Phone, Navigation, X, Leaf } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,15 @@ interface Store {
   phone: string | null;
   latitude: number | null;
   longitude: number | null;
+  dietary_options: string[] | null;
 }
+
+const dietaryFilters = [
+  { value: "vegan", label: "Vegan", emoji: "🌱" },
+  { value: "vegetarian", label: "Vegetarian", emoji: "🥬" },
+  { value: "halal", label: "Halal", emoji: "☪️" },
+  { value: "non-halal", label: "Non-Halal", emoji: "🍖" },
+];
 
 type StoreType = "food" | "attractions" | "entertainment";
 
@@ -60,6 +68,7 @@ const DestinationSearch = () => {
   const [activeSearch, setActiveSearch] = useState("");
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [activeTypeFilter, setActiveTypeFilter] = useState<StoreType | null>(null);
+  const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
 
   const { data: stores, isLoading, isFetched } = useQuery({
     queryKey: ["destination-stores", activeSearch],
@@ -68,7 +77,7 @@ const DestinationSearch = () => {
 
       const { data, error } = await supabase
         .from("stores")
-        .select("id, store_name, address, country, store_type, subscription_tier, phone, latitude, longitude")
+        .select("id, store_name, address, country, store_type, subscription_tier, phone, latitude, longitude, dietary_options")
         .ilike("country", `%${activeSearch}%`)
         .order("subscription_tier", { ascending: false });
 
@@ -98,12 +107,33 @@ const DestinationSearch = () => {
 
   const toggleTypeFilter = (type: StoreType) => {
     setActiveTypeFilter(activeTypeFilter === type ? null : type);
+    // Clear dietary filters when switching away from food
+    if (type !== "food") {
+      setActiveDietaryFilters([]);
+    }
   };
 
-  // Filter stores by type if a filter is active
-  const filteredStores = activeTypeFilter
-    ? stores?.filter((s) => s.store_type === activeTypeFilter)
-    : stores;
+  const toggleDietaryFilter = (value: string) => {
+    setActiveDietaryFilters((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
+  // Filter stores by type and dietary options
+  const filteredStores = stores?.filter((s) => {
+    // Type filter
+    if (activeTypeFilter && s.store_type !== activeTypeFilter) {
+      return false;
+    }
+    // Dietary filters (only apply to food stores)
+    if (activeDietaryFilters.length > 0) {
+      if (s.store_type !== "food") return false;
+      if (!s.dietary_options) return false;
+      // Store must have ALL selected dietary options
+      return activeDietaryFilters.every((filter) => s.dietary_options?.includes(filter));
+    }
+    return true;
+  });
 
   // Separate premium (tier_2) stores from regular stores
   const premiumStores = filteredStores?.filter((s) => s.subscription_tier === "tier_2") || [];
@@ -111,6 +141,7 @@ const DestinationSearch = () => {
 
   const hasResults = (filteredStores?.length || 0) > 0;
   const hasNoFilteredResults = stores && stores.length > 0 && filteredStores?.length === 0;
+  const showDietaryFilters = activeTypeFilter === "food" || (!activeTypeFilter && stores?.some((s) => s.store_type === "food"));
 
   const StoreCard = ({ store, isPremium = false }: { store: Store; isPremium?: boolean }) => {
     const Icon = storeTypeIcons[store.store_type];
@@ -237,6 +268,43 @@ const DestinationSearch = () => {
                 <button
                   onClick={() => setActiveTypeFilter(null)}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Dietary Filters - Show when food stores are visible */}
+          {activeSearch && stores && stores.length > 0 && showDietaryFilters && (
+            <div className="flex gap-2 flex-wrap items-center">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Leaf className="w-3 h-3" />
+                Dietary:
+              </span>
+              {dietaryFilters.map((filter) => {
+                const isActive = activeDietaryFilters.includes(filter.value);
+                return (
+                  <button
+                    key={filter.value}
+                    onClick={() => toggleDietaryFilter(filter.value)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                      isActive
+                        ? "bg-green-100 text-green-700 border-green-300 ring-1 ring-green-400/50"
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                    )}
+                  >
+                    <span>{filter.emoji}</span>
+                    {filter.label}
+                  </button>
+                );
+              })}
+              {activeDietaryFilters.length > 0 && (
+                <button
+                  onClick={() => setActiveDietaryFilters([])}
+                  className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="w-3 h-3" />
                   Clear
