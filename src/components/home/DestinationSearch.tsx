@@ -38,6 +38,7 @@ interface Store {
   id: string;
   store_name: string;
   address: string | null;
+  country: string | null;
   store_type: "food" | "attractions" | "entertainment";
   subscription_tier: "tier_0" | "tier_1" | "tier_2";
   phone: string | null;
@@ -67,8 +68,8 @@ const DestinationSearch = () => {
 
       const { data, error } = await supabase
         .from("stores")
-        .select("id, store_name, address, store_type, subscription_tier, phone, latitude, longitude")
-        .ilike("address", `%${activeSearch}%`)
+        .select("id, store_name, address, country, store_type, subscription_tier, phone, latitude, longitude")
+        .ilike("country", `%${activeSearch}%`)
         .order("subscription_tier", { ascending: false });
 
       if (error) throw error;

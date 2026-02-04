@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Store, Phone, Save, Loader2, Search, Map } from "lucide-react";
+import { MapPin, Store, Phone, Save, Loader2, Map, Globe } from "lucide-react";
 
 const MerchantMapPreview = lazy(() => import("@/components/map/MerchantMapPreview"));
 
@@ -34,6 +34,7 @@ const MerchantSettings = () => {
     store_type: "food" as "food" | "attractions" | "entertainment",
     phone: "",
     address: "",
+    country: "",
   });
   const [originalAddress, setOriginalAddress] = useState("");
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -44,7 +45,7 @@ const MerchantSettings = () => {
 
       const { data, error } = await supabase
         .from("stores")
-        .select("store_name, store_type, phone, address, latitude, longitude")
+        .select("store_name, store_type, phone, address, country, latitude, longitude")
         .eq("user_id", user.id)
         .single();
 
@@ -61,6 +62,7 @@ const MerchantSettings = () => {
           store_type: data.store_type || "food",
           phone: data.phone || "",
           address: data.address || "",
+          country: data.country || "",
         });
         setOriginalAddress(data.address || "");
         if (data.latitude && data.longitude) {
@@ -158,6 +160,7 @@ const MerchantSettings = () => {
       store_type: formData.store_type,
       phone: formData.phone,
       address: formData.address,
+      country: formData.country,
     };
 
     // Update coordinates
@@ -240,6 +243,23 @@ const MerchantSettings = () => {
                 <SelectItem value="entertainment">🎮 Entertainment</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="country" className="text-pink-600">
+              <Globe className="w-4 h-4 inline mr-1" />
+              Country
+            </Label>
+            <Input
+              id="country"
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              className="border-pink-200 focus:border-pink-400 focus:ring-pink-400"
+              placeholder="e.g. Singapore, Japan, Thailand"
+            />
+            <p className="text-xs text-pink-400">
+              This helps travelers find your store when searching by destination
+            </p>
           </div>
 
           <div className="space-y-2">
