@@ -12,14 +12,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, MapPin, Star, Sparkles, UtensilsCrossed, Landmark, Gamepad2, Phone, Navigation, X } from "lucide-react";
+import { Search, MapPin, Star, Sparkles, UtensilsCrossed, Landmark, Wine, Phone, Navigation, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const storeTypeIcons = {
   food: UtensilsCrossed,
   attractions: Landmark,
-  entertainment: Gamepad2,
+  entertainment: Wine,
 };
 
 const storeTypeColors = {
@@ -31,7 +31,7 @@ const storeTypeColors = {
 const storeTypeLabels = {
   food: "Food & Dining",
   attractions: "Attractions",
-  entertainment: "Entertainment",
+  entertainment: "Nightlife",
 };
 
 interface Store {
@@ -50,7 +50,7 @@ type StoreType = "food" | "attractions" | "entertainment";
 const storeTypeFilters: { type: StoreType; label: string; icon: typeof UtensilsCrossed }[] = [
   { type: "food", label: "Food", icon: UtensilsCrossed },
   { type: "attractions", label: "Attractions", icon: Landmark },
-  { type: "entertainment", label: "Entertainment", icon: Gamepad2 },
+  { type: "entertainment", label: "Nightlife", icon: Wine },
 ];
 
 const DestinationSearch = () => {

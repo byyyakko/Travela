@@ -13,7 +13,7 @@ const getMarkerIcon = (storeType: string) => {
   const iconMap: Record<string, { emoji: string; color: string }> = {
     food: { emoji: "🍜", color: "#f97316" },
     attractions: { emoji: "🏛️", color: "#8b5cf6" },
-    entertainment: { emoji: "🎮", color: "#ec4899" },
+    entertainment: { emoji: "🍷", color: "#ec4899" },
   };
   
   const { emoji, color } = iconMap[storeType] || iconMap.food;
