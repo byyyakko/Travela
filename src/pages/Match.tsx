@@ -4,94 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
 
-// Sample demo profiles for testing when no real users exist
-const DEMO_PROFILES: Partial<Tables<"profiles">>[] = [
-  {
-    id: "demo-1",
-    user_id: "demo-user-1",
-    email: "sofia@demo.com",
-    display_name: "Sofia Martinez",
-    avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
-    bio: "Born and raised in the Gothic Quarter. I'll show you the Barcelona tourists never see! Love tapas, hidden bars, and local markets.",
-    location: "Barcelona, Spain",
-    is_local: true,
-    is_verified: true,
-    interests: ["Tapas Tours", "Hidden Bars", "Local Markets", "Photography"],
-    languages: ["Spanish", "English", "Catalan"],
-    date_of_birth: "1995-03-15",
-  },
-  {
-    id: "demo-2",
-    user_id: "demo-user-2",
-    email: "kenji@demo.com",
-    display_name: "Kenji Tanaka",
-    avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
-    bio: "Food photographer by day, izakaya explorer by night. Let's find the best hidden ramen spots together!",
-    location: "Tokyo, Japan",
-    is_local: true,
-    is_verified: true,
-    interests: ["Ramen Spots", "Night Photography", "Sake Tasting", "Street Food"],
-    languages: ["Japanese", "English"],
-    date_of_birth: "1992-08-22",
-  },
-  {
-    id: "demo-3",
-    user_id: "demo-user-3",
-    email: "amara@demo.com",
-    display_name: "Amara Okonkwo",
-    avatar_url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=400&fit=crop&crop=face",
-    bio: "Third-generation spice merchant. I'll take you through the real Medina experience and share our family recipes.",
-    location: "Marrakech, Morocco",
-    is_local: true,
-    is_verified: false,
-    interests: ["Spice Markets", "Traditional Cuisine", "Artisan Crafts", "Tea Ceremonies"],
-    languages: ["Arabic", "French", "English"],
-    date_of_birth: "1990-11-08",
-  },
-  {
-    id: "demo-4",
-    user_id: "demo-user-4",
-    email: "marco@demo.com",
-    display_name: "Marco Rossi",
-    avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face",
-    bio: "Chef and history buff. Discover Rome through its food and forgotten stories. Pasta making is my passion!",
-    location: "Rome, Italy",
-    is_local: true,
-    is_verified: true,
-    interests: ["Pasta Making", "Wine Cellars", "Ancient History", "Local Trattorias"],
-    languages: ["Italian", "English"],
-    date_of_birth: "1988-06-30",
-  },
-  {
-    id: "demo-5",
-    user_id: "demo-user-5",
-    email: "priya@demo.com",
-    display_name: "Priya Sharma",
-    avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face",
-    bio: "From dabbawalas to dance bars, I know every corner of this incredible city. Let me show you the real Mumbai!",
-    location: "Mumbai, India",
-    is_local: true,
-    is_verified: false,
-    interests: ["Street Food", "Bollywood Tours", "Temple Visits", "Markets"],
-    languages: ["Hindi", "English", "Marathi"],
-    date_of_birth: "1996-01-12",
-  },
-  {
-    id: "demo-6",
-    user_id: "demo-user-6",
-    email: "lucas@demo.com",
-    display_name: "Lucas Chen",
-    avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
-    bio: "Tech worker turned full-time food guide. My mission: find you the perfect xiaolongbao and bubble tea!",
-    location: "Taipei, Taiwan",
-    is_local: true,
-    is_verified: true,
-    interests: ["Night Markets", "Tea Culture", "Mountain Hikes", "Bubble Tea"],
-    languages: ["Mandarin", "English"],
-    date_of_birth: "1993-09-25",
-  },
-];
-
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -189,11 +101,6 @@ const Match = () => {
         return age >= minAge && age <= maxAge;
       });
 
-      // If no real profiles found, return demo profiles for testing
-      if (filteredProfiles.length === 0) {
-        return DEMO_PROFILES as Tables<"profiles">[];
-      }
-
       return filteredProfiles;
     },
     enabled: !!user && userProfile !== undefined && blockedUsers !== undefined,
@@ -210,8 +117,6 @@ const Match = () => {
     );
   }, [profiles, locationFilter]);
 
-  // Check if we're viewing demo profiles
-  const isDemo = filteredProfiles?.some(p => p.id?.startsWith("demo-"));
 
   const matchMutation = useMutation({
     mutationFn: async ({ targetUserId, action }: { targetUserId: string; action: "like" | "pass" }) => {
@@ -256,19 +161,6 @@ const Match = () => {
 
   const handleSwipe = (action: "like" | "pass") => {
     if (!currentProfile) return;
-    
-    // For demo profiles, just move to next without saving
-    if (currentProfile.id?.startsWith("demo-")) {
-      if (action === "like") {
-        toast({
-          title: "Demo Mode",
-          description: "This is a sample profile. Real matches will be saved when you find actual locals!",
-        });
-      }
-      setCurrentIndex((prev) => prev + 1);
-      return;
-    }
-    
     matchMutation.mutate({ targetUserId: currentProfile.user_id, action });
   };
 
@@ -293,11 +185,6 @@ const Match = () => {
           <p className="text-muted-foreground">
             Swipe right to connect with locals in your destination
           </p>
-          {isDemo && (
-            <p className="text-xs mt-2 px-3 py-1 rounded-full inline-block bg-secondary text-primary">
-              ✨ Demo Mode - Sample Profiles
-            </p>
-          )}
         </div>
 
         {/* Location Search */}
