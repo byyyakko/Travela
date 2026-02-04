@@ -493,6 +493,7 @@ export type Database = {
       stores: {
         Row: {
           address: string | null
+          country: string | null
           created_at: string
           id: string
           latitude: number | null
@@ -506,6 +507,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           latitude?: number | null
@@ -519,6 +521,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           latitude?: number | null
