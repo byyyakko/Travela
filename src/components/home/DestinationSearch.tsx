@@ -45,11 +45,20 @@ interface Store {
   longitude: number | null;
 }
 
+type StoreType = "food" | "attractions" | "entertainment";
+
+const storeTypeFilters: { type: StoreType; label: string; icon: typeof UtensilsCrossed }[] = [
+  { type: "food", label: "Food", icon: UtensilsCrossed },
+  { type: "attractions", label: "Attractions", icon: Landmark },
+  { type: "entertainment", label: "Entertainment", icon: Gamepad2 },
+];
+
 const DestinationSearch = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [activeTypeFilter, setActiveTypeFilter] = useState<StoreType | null>(null);
 
   const { data: stores, isLoading, isFetched } = useQuery({
     queryKey: ["destination-stores", activeSearch],
@@ -86,9 +95,21 @@ const DestinationSearch = () => {
     }
   };
 
+  const toggleTypeFilter = (type: StoreType) => {
+    setActiveTypeFilter(activeTypeFilter === type ? null : type);
+  };
+
+  // Filter stores by type if a filter is active
+  const filteredStores = activeTypeFilter
+    ? stores?.filter((s) => s.store_type === activeTypeFilter)
+    : stores;
+
   // Separate premium (tier_2) stores from regular stores
-  const premiumStores = stores?.filter((s) => s.subscription_tier === "tier_2") || [];
-  const regularStores = stores?.filter((s) => s.subscription_tier !== "tier_2") || [];
+  const premiumStores = filteredStores?.filter((s) => s.subscription_tier === "tier_2") || [];
+  const regularStores = filteredStores?.filter((s) => s.subscription_tier !== "tier_2") || [];
+
+  const hasResults = (filteredStores?.length || 0) > 0;
+  const hasNoFilteredResults = stores && stores.length > 0 && filteredStores?.length === 0;
 
   const StoreCard = ({ store, isPremium = false }: { store: Store; isPremium?: boolean }) => {
     const Icon = storeTypeIcons[store.store_type];
@@ -169,6 +190,48 @@ const DestinationSearch = () => {
             </Button>
           </div>
 
+          {/* Store Type Filters */}
+          {activeSearch && stores && stores.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {storeTypeFilters.map((filter) => {
+                const Icon = filter.icon;
+                const isActive = activeTypeFilter === filter.type;
+                const count = stores.filter((s) => s.store_type === filter.type).length;
+                
+                return (
+                  <button
+                    key={filter.type}
+                    onClick={() => toggleTypeFilter(filter.type)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all border-2",
+                      isActive
+                        ? cn(storeTypeColors[filter.type], "ring-2 ring-offset-1 ring-primary/50")
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {filter.label}
+                    <span className={cn(
+                      "text-xs px-1.5 py-0.5 rounded-full",
+                      isActive ? "bg-white/50" : "bg-background"
+                    )}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+              {activeTypeFilter && (
+                <button
+                  onClick={() => setActiveTypeFilter(null)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Results */}
           <AnimatePresence mode="wait">
             {isLoading && (
@@ -196,7 +259,25 @@ const DestinationSearch = () => {
               </motion.div>
             )}
 
-            {!isLoading && stores && stores.length > 0 && (
+            {!isLoading && hasNoFilteredResults && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-8"
+              >
+                <MapPin className="w-10 h-10 text-muted-foreground/50 mx-auto mb-2" />
+                <p className="text-muted-foreground">No {activeTypeFilter} places found</p>
+                <button 
+                  onClick={() => setActiveTypeFilter(null)}
+                  className="text-sm text-primary hover:underline mt-1"
+                >
+                  Clear filter to see all results
+                </button>
+              </motion.div>
+            )}
+
+            {!isLoading && hasResults && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
