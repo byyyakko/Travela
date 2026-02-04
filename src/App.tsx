@@ -25,6 +25,7 @@ import Settings from "./pages/Settings";
 import Planner from "./pages/Planner";
 import Subscription from "./pages/Subscription";
 import MapView from "./pages/MapView";
+import StoreView from "./pages/StoreView";
 import NotFound from "./pages/NotFound";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
 
@@ -90,6 +91,7 @@ const AppRoutes = () => {
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
       <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
+      <Route path="/store/:storeId" element={<ProtectedRoute><StoreView /></ProtectedRoute>} />
       {/* Merchant Dashboard Routes */}
       <Route path="/merchant-dashboard" element={<ProtectedRoute skipOnboardingCheck><MerchantDashboard /></ProtectedRoute>}>
         <Route index element={<MerchantHome />} />

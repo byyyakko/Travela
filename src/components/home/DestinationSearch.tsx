@@ -120,7 +120,7 @@ const DestinationSearch = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        onClick={() => setSelectedStore(store)}
+        onClick={() => navigate(`/store/${store.id}`)}
         className={cn(
           "relative rounded-2xl border-2 bg-card transition-all hover:shadow-lg cursor-pointer overflow-hidden",
           isPremium 

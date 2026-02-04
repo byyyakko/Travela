@@ -411,6 +411,41 @@ export type Database = {
         }
         Relationships: []
       }
+      store_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          image_url: string
+          store_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url: string
+          store_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_images_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_items: {
         Row: {
           created_at: string
@@ -495,6 +530,7 @@ export type Database = {
           address: string | null
           country: string | null
           created_at: string
+          description: string | null
           id: string
           latitude: number | null
           longitude: number | null
@@ -504,11 +540,13 @@ export type Database = {
           subscription_tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
           address?: string | null
           country?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -518,11 +556,13 @@ export type Database = {
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
           address?: string | null
           country?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -532,6 +572,7 @@ export type Database = {
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id?: string
+          website_url?: string | null
         }
         Relationships: []
       }
