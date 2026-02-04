@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Store, Phone, Save, Loader2, Map, Globe } from "lucide-react";
+import { MapPin, Store, Phone, Save, Loader2, Map, Globe, Link2, FileText, ImagePlus, X, Trash2 } from "lucide-react";
 
 const MerchantMapPreview = lazy(() => import("@/components/map/MerchantMapPreview"));
 
@@ -21,6 +22,13 @@ interface StoreContext {
   } | null;
 }
 
+interface StoreImage {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  display_order: number;
+}
+
 const MerchantSettings = () => {
   const { user } = useAuth();
   const { store } = useOutletContext<StoreContext>();
@@ -29,23 +37,28 @@ const MerchantSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     store_name: "",
     store_type: "food" as "food" | "attractions" | "entertainment",
     phone: "",
     address: "",
     country: "",
+    description: "",
+    website_url: "",
   });
+  const [storeImages, setStoreImages] = useState<StoreImage[]>([]);
   const [originalAddress, setOriginalAddress] = useState("");
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
   useEffect(() => {
     const fetchStoreDetails = async () => {
       if (!user) return;
 
       const { data, error } = await supabase
         .from("stores")
-        .select("store_name, store_type, phone, address, country, latitude, longitude")
+        .select("store_name, store_type, phone, address, country, description, website_url, latitude, longitude")
         .eq("user_id", user.id)
         .single();
 
@@ -63,6 +76,8 @@ const MerchantSettings = () => {
           phone: data.phone || "",
           address: data.address || "",
           country: data.country || "",
+          description: data.description || "",
+          website_url: data.website_url || "",
         });
         setOriginalAddress(data.address || "");
         if (data.latitude && data.longitude) {
@@ -72,8 +87,25 @@ const MerchantSettings = () => {
       setLoading(false);
     };
 
+    const fetchStoreImages = async () => {
+      if (!store?.id) return;
+
+      const { data, error } = await supabase
+        .from("store_images")
+        .select("*")
+        .eq("store_id", store.id)
+        .order("display_order", { ascending: true });
+
+      if (!error && data) {
+        setStoreImages(data);
+      }
+    };
+
     fetchStoreDetails();
-  }, [user]);
+    if (store?.id) {
+      fetchStoreImages();
+    }
+  }, [user, store?.id]);
 
   const handlePreviewLocation = async () => {
     if (!formData.address.trim()) {
@@ -120,6 +152,95 @@ const MerchantSettings = () => {
     setPreviewLoading(false);
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !store?.id) return;
+
+    if (storeImages.length >= 5) {
+      toast({
+        title: "Limit reached",
+        description: "You can upload a maximum of 5 store images.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${store.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("store-items")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("store-items")
+        .getPublicUrl(fileName);
+
+      const { data: imageData, error: insertError } = await supabase
+        .from("store_images")
+        .insert({
+          store_id: store.id,
+          image_url: urlData.publicUrl,
+          display_order: storeImages.length,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setStoreImages([...storeImages, imageData]);
+      toast({
+        title: "Image uploaded",
+        description: "Your store image has been added.",
+      });
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      toast({
+        title: "Upload failed",
+        description: "Could not upload image. Please try again.",
+        variant: "destructive",
+      });
+    }
+    setUploadingImage(false);
+    e.target.value = "";
+  };
+
+  const handleDeleteImage = async (imageId: string, imageUrl: string) => {
+    try {
+      // Extract file path from URL
+      const urlParts = imageUrl.split("/store-items/");
+      const filePath = urlParts[1];
+
+      if (filePath) {
+        await supabase.storage.from("store-items").remove([filePath]);
+      }
+
+      const { error } = await supabase
+        .from("store_images")
+        .delete()
+        .eq("id", imageId);
+
+      if (error) throw error;
+
+      setStoreImages(storeImages.filter(img => img.id !== imageId));
+      toast({
+        title: "Image deleted",
+        description: "Store image has been removed.",
+      });
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast({
+        title: "Delete failed",
+        description: "Could not delete image.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSave = async () => {
     if (!user || !store?.id) return;
     
@@ -161,6 +282,8 @@ const MerchantSettings = () => {
       phone: formData.phone,
       address: formData.address,
       country: formData.country,
+      description: formData.description,
+      website_url: formData.website_url,
     };
 
     // Update coordinates
@@ -240,9 +363,38 @@ const MerchantSettings = () => {
               <SelectContent>
                 <SelectItem value="food">🍜 Food</SelectItem>
                 <SelectItem value="attractions">🏛️ Attractions</SelectItem>
-                <SelectItem value="entertainment">🎮 Entertainment</SelectItem>
+                <SelectItem value="entertainment">🍷 Nightlife</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-pink-600">
+              <FileText className="w-4 h-4 inline mr-1" />
+              Store Description
+            </Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="border-pink-200 focus:border-pink-400 focus:ring-pink-400 min-h-[100px]"
+              placeholder="Tell travelers about your store, what makes it special, and what they can expect..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="website_url" className="text-pink-600">
+              <Link2 className="w-4 h-4 inline mr-1" />
+              Website URL (Optional)
+            </Label>
+            <Input
+              id="website_url"
+              type="url"
+              value={formData.website_url}
+              onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+              className="border-pink-200 focus:border-pink-400 focus:ring-pink-400"
+              placeholder="https://your-website.com"
+            />
           </div>
 
           <div className="space-y-2">
@@ -338,6 +490,63 @@ const MerchantSettings = () => {
                 ✓ Location verified at {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
               </p>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Store Images Card */}
+      <Card className="border-pink-200 bg-white/80 backdrop-blur">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2 text-pink-700">
+            <ImagePlus className="w-5 h-5" />
+            Store Photos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-pink-500">
+            Add photos of your storefront, products, or ambiance (max 5 images)
+          </p>
+
+          {/* Existing Images */}
+          {storeImages.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {storeImages.map((image) => (
+                <div key={image.id} className="relative group">
+                  <img
+                    src={image.image_url}
+                    alt="Store"
+                    className="w-full h-24 object-cover rounded-lg border-2 border-pink-200"
+                  />
+                  <button
+                    onClick={() => handleDeleteImage(image.id, image.image_url)}
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Upload Button */}
+          {storeImages.length < 5 && (
+            <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-pink-300 rounded-lg cursor-pointer hover:bg-pink-50 transition-colors">
+              {uploadingImage ? (
+                <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
+              ) : (
+                <>
+                  <ImagePlus className="w-5 h-5 text-pink-500" />
+                  <span className="text-pink-600 font-medium">Add Photo</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+                className="hidden"
+              />
+            </label>
           )}
         </CardContent>
       </Card>
