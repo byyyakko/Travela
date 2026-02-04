@@ -51,7 +51,15 @@ interface Store {
   subscription_tier: string;
   latitude: number | null;
   longitude: number | null;
+  dietary_options: string[] | null;
 }
+
+const dietaryLabels: Record<string, { label: string; emoji: string; color: string }> = {
+  vegan: { label: "Vegan Friendly", emoji: "🌱", color: "bg-green-100 text-green-700 border-green-300" },
+  vegetarian: { label: "Vegetarian", emoji: "🥬", color: "bg-emerald-100 text-emerald-700 border-emerald-300" },
+  halal: { label: "Halal", emoji: "☪️", color: "bg-teal-100 text-teal-700 border-teal-300" },
+  "non-halal": { label: "Non-Halal", emoji: "🍖", color: "bg-orange-100 text-orange-700 border-orange-300" },
+};
 
 interface StoreImage {
   id: string;
@@ -266,6 +274,25 @@ const StoreView = () => {
                 </Badge>
               </div>
             </div>
+
+            {/* Dietary Options */}
+            {store.store_type === "food" && store.dietary_options && store.dietary_options.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {store.dietary_options.map((option) => {
+                  const dietary = dietaryLabels[option];
+                  if (!dietary) return null;
+                  return (
+                    <Badge
+                      key={option}
+                      variant="outline"
+                      className={cn("text-xs", dietary.color)}
+                    >
+                      {dietary.emoji} {dietary.label}
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Description */}
             {store.description && (

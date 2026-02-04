@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Store, Phone, Save, Loader2, Map, Globe, Link2, FileText, ImagePlus, X, Trash2 } from "lucide-react";
+import { MapPin, Store, Phone, Save, Loader2, Map, Globe, Link2, FileText, ImagePlus, X, Trash2, Leaf } from "lucide-react";
 
 const MerchantMapPreview = lazy(() => import("@/components/map/MerchantMapPreview"));
 
@@ -46,6 +47,7 @@ const MerchantSettings = () => {
     country: "",
     description: "",
     website_url: "",
+    dietary_options: [] as string[],
   });
   const [storeImages, setStoreImages] = useState<StoreImage[]>([]);
   const [originalAddress, setOriginalAddress] = useState("");
@@ -58,7 +60,7 @@ const MerchantSettings = () => {
 
       const { data, error } = await supabase
         .from("stores")
-        .select("store_name, store_type, phone, address, country, description, website_url, latitude, longitude")
+        .select("store_name, store_type, phone, address, country, description, website_url, dietary_options, latitude, longitude")
         .eq("user_id", user.id)
         .single();
 
@@ -78,6 +80,7 @@ const MerchantSettings = () => {
           country: data.country || "",
           description: data.description || "",
           website_url: data.website_url || "",
+          dietary_options: data.dietary_options || [],
         });
         setOriginalAddress(data.address || "");
         if (data.latitude && data.longitude) {
@@ -284,6 +287,7 @@ const MerchantSettings = () => {
       country: formData.country,
       description: formData.description,
       website_url: formData.website_url,
+      dietary_options: formData.dietary_options,
     };
 
     // Update coordinates
@@ -368,6 +372,53 @@ const MerchantSettings = () => {
             </Select>
           </div>
 
+          {/* Dietary Options - Only show for food stores */}
+          {formData.store_type === "food" && (
+            <div className="space-y-3">
+              <Label className="text-pink-600">
+                <Leaf className="w-4 h-4 inline mr-1" />
+                Dietary Options
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value: "vegan", label: "🌱 Vegan Friendly" },
+                  { value: "vegetarian", label: "🥬 Vegetarian" },
+                  { value: "halal", label: "☪️ Halal" },
+                  { value: "non-halal", label: "🍖 Non-Halal" },
+                ].map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-2 p-3 rounded-lg border border-pink-200 bg-pink-50/50 hover:bg-pink-100/50 transition-colors"
+                  >
+                    <Checkbox
+                      id={option.value}
+                      checked={formData.dietary_options.includes(option.value)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData({
+                            ...formData,
+                            dietary_options: [...formData.dietary_options, option.value],
+                          });
+                        } else {
+                          setFormData({
+                            ...formData,
+                            dietary_options: formData.dietary_options.filter((v) => v !== option.value),
+                          });
+                        }
+                      }}
+                      className="border-pink-300 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+                    />
+                    <Label htmlFor={option.value} className="text-sm text-pink-700 cursor-pointer">
+                      {option.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-pink-400">
+                Select all that apply to help travelers find suitable food options
+              </p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="description" className="text-pink-600">
               <FileText className="w-4 h-4 inline mr-1" />
