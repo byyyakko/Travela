@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, Eye } from "lucide-react";
-import { format, subDays, startOfDay } from "date-fns";
+import { format } from "date-fns";
 
 interface StoreContext {
   store: {
@@ -16,50 +14,13 @@ interface StoreContext {
 
 const MerchantHome = () => {
   const { store } = useOutletContext<StoreContext>();
-  const [stats, setStats] = useState({
-    totalVisits: 0,
-    todayVisits: 0,
-    weekVisits: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchVisitStats = async () => {
-      if (!store?.id) return;
-
-      const today = startOfDay(new Date()).toISOString();
-      const weekAgo = startOfDay(subDays(new Date(), 7)).toISOString();
-
-      // Fetch total visits
-      const { count: totalCount } = await supabase
-        .from("store_visits")
-        .select("*", { count: "exact", head: true })
-        .eq("store_id", store.id);
-
-      // Fetch today's visits
-      const { count: todayCount } = await supabase
-        .from("store_visits")
-        .select("*", { count: "exact", head: true })
-        .eq("store_id", store.id)
-        .gte("visited_at", today);
-
-      // Fetch this week's visits
-      const { count: weekCount } = await supabase
-        .from("store_visits")
-        .select("*", { count: "exact", head: true })
-        .eq("store_id", store.id)
-        .gte("visited_at", weekAgo);
-
-      setStats({
-        totalVisits: totalCount || 0,
-        todayVisits: todayCount || 0,
-        weekVisits: weekCount || 0,
-      });
-      setLoading(false);
-    };
-
-    fetchVisitStats();
-  }, [store?.id]);
+  // Simulated stats for showcase
+  const stats = {
+    totalVisits: 1247,
+    todayVisits: 38,
+    weekVisits: 305,
+  };
+  const loading = false;
 
   const getTierBadge = (tier: string) => {
     switch (tier) {

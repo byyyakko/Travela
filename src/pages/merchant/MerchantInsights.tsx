@@ -1,11 +1,7 @@
-import { useState, useEffect } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Lock, Globe, TrendingUp, Calendar, Star, MapPin } from "lucide-react";
-import { format, subDays, eachDayOfInterval, startOfDay } from "date-fns";
+import { Globe, TrendingUp, Star, MapPin, Users, Utensils } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { useOutletContext } from "react-router-dom";
 
 interface StoreContext {
   store: {
@@ -18,135 +14,72 @@ interface StoreContext {
 
 const COLORS = ["#f472b6", "#c084fc", "#60a5fa", "#34d399", "#fbbf24"];
 
+// Simulated weekly traffic data
+const SIMULATED_WEEKLY = [
+  { day: "Mon", visits: 24 },
+  { day: "Tue", visits: 31 },
+  { day: "Wed", visits: 18 },
+  { day: "Thu", visits: 42 },
+  { day: "Fri", visits: 56 },
+  { day: "Sat", visits: 73 },
+  { day: "Sun", visits: 61 },
+];
+
+// Simulated visitor origins
+const SIMULATED_COUNTRIES = [
+  { name: "Japan", value: 38 },
+  { name: "USA", value: 27 },
+  { name: "South Korea", value: 19 },
+  { name: "Germany", value: 12 },
+  { name: "Australia", value: 9 },
+];
+
+// Simulated popular items
+const SIMULATED_POPULAR_ITEMS = [
+  { name: "Matcha Latte", orders: 142 },
+  { name: "Tonkotsu Ramen", orders: 118 },
+  { name: "Mochi Set", orders: 97 },
+  { name: "Green Tea Cake", orders: 84 },
+  { name: "Onigiri Platter", orders: 71 },
+];
+
 const MerchantInsights = () => {
   const { store } = useOutletContext<StoreContext>();
-  const navigate = useNavigate();
-  const [weeklyData, setWeeklyData] = useState<{ day: string; visits: number }[]>([]);
-  const [countryData, setCountryData] = useState<{ name: string; value: number }[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const isTier0 = store?.subscription_tier === "tier_0";
-  const isTier1OrAbove = store?.subscription_tier === "tier_1" || store?.subscription_tier === "tier_2";
+  const totalWeekly = SIMULATED_WEEKLY.reduce((sum, d) => sum + d.visits, 0);
+  const busiestDay = SIMULATED_WEEKLY.reduce((max, d) => (d.visits > max.visits ? d : max), SIMULATED_WEEKLY[0]);
+  const topCountry = SIMULATED_COUNTRIES[0];
 
-  useEffect(() => {
-    const fetchInsights = async () => {
-      if (!store?.id || isTier0) {
-        setLoading(false);
-        return;
-      }
-
-      const weekAgo = startOfDay(subDays(new Date(), 6));
-      const today = new Date();
-
-      // Fetch visits for the past week
-      const { data: visits } = await supabase
-        .from("store_visits")
-        .select("visited_at, visitor_country")
-        .eq("store_id", store.id)
-        .gte("visited_at", weekAgo.toISOString());
-
-      // Process weekly data
-      const days = eachDayOfInterval({ start: weekAgo, end: today });
-      const dailyVisits = days.map((day) => {
-        const dayStr = format(day, "yyyy-MM-dd");
-        const count = visits?.filter(
-          (v) => format(new Date(v.visited_at), "yyyy-MM-dd") === dayStr
-        ).length || 0;
-        return {
-          day: format(day, "EEE"),
-          visits: count,
-        };
-      });
-      setWeeklyData(dailyVisits);
-
-      // Process country data
-      const countryCounts: Record<string, number> = {};
-      visits?.forEach((v) => {
-        const country = v.visitor_country || "Unknown";
-        countryCounts[country] = (countryCounts[country] || 0) + 1;
-      });
-      const countryArray = Object.entries(countryCounts)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 5);
-      setCountryData(countryArray);
-
-      setLoading(false);
-    };
-
-    fetchInsights();
-  }, [store?.id, isTier0]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Tier 0 - Locked state
-  if (isTier0) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-pink-700">Insights</h1>
-          <p className="text-pink-500 mt-1">Detailed analytics for your store</p>
-        </div>
-
-        <Card className="border-pink-200 bg-white/80 backdrop-blur">
-          <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 mx-auto rounded-full bg-pink-100 flex items-center justify-center mb-4">
-              <Lock className="w-8 h-8 text-pink-400" />
-            </div>
-            <h2 className="text-xl font-semibold text-pink-700 mb-2">
-              Unlock Detailed Insights
-            </h2>
-            <p className="text-pink-500 max-w-md mx-auto mb-6">
-              Upgrade to Pro to see where your visitors come from, track monthly footfall trends, 
-              and discover your most popular offerings.
-            </p>
-            <Button
-              onClick={() => navigate("/merchant-dashboard/plan")}
-              className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
-            >
-              Upgrade to Pro - $40/month
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Preview of locked features */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { icon: Globe, title: "Visitor Origins", desc: "See which countries your visitors come from" },
-            { icon: TrendingUp, title: "Footfall Trends", desc: "Track daily and monthly visitor patterns" },
-            { icon: Calendar, title: "Peak Times", desc: "Discover your busiest days and hours" },
-            { icon: Star, title: "Popular Items", desc: "Find out what customers love most" },
-          ].map((feature, i) => (
-            <Card key={i} className="border-pink-200 bg-white/40 backdrop-blur opacity-60">
-              <CardContent className="py-6 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
-                  <feature.icon className="w-6 h-6 text-pink-400" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-pink-700">{feature.title}</h3>
-                  <p className="text-sm text-pink-400">{feature.desc}</p>
-                </div>
-                <Lock className="w-5 h-5 text-pink-300 ml-auto" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Tier 1+ - Full insights
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-pink-700">Insights</h1>
-        <p className="text-pink-500 mt-1">Detailed analytics for {store?.store_name}</p>
+        <p className="text-pink-500 mt-1">
+          Detailed analytics for {store?.store_name || "your store"}
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-600">
+            Simulated Data
+          </span>
+        </p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Weekly Visitors", value: totalWeekly.toString(), icon: Users, accent: "from-pink-500 to-rose-500" },
+          { label: "Busiest Day", value: busiestDay.day, icon: TrendingUp, accent: "from-purple-500 to-indigo-500" },
+          { label: "Top Country", value: topCountry.name, icon: Globe, accent: "from-blue-500 to-cyan-500" },
+          { label: "Avg Daily", value: Math.round(totalWeekly / 7).toString(), icon: MapPin, accent: "from-emerald-500 to-teal-500" },
+        ].map((stat) => (
+          <Card key={stat.label} className="border-pink-200 bg-white/80 backdrop-blur overflow-hidden">
+            <CardContent className="p-4">
+              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${stat.accent} flex items-center justify-center mb-3`}>
+                <stat.icon className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-pink-700">{stat.value}</p>
+              <p className="text-xs text-pink-400 mt-0.5">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Weekly Traffic Chart */}
@@ -160,7 +93,7 @@ const MerchantInsights = () => {
         <CardContent>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
+              <BarChart data={SIMULATED_WEEKLY}>
                 <XAxis dataKey="day" stroke="#f472b6" />
                 <YAxis stroke="#f472b6" />
                 <Tooltip
@@ -187,69 +120,88 @@ const MerchantInsights = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {countryData.length > 0 ? (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={countryData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {countryData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-pink-400">
-                <div className="text-center">
-                  <MapPin className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>No visitor data yet</p>
-                </div>
-              </div>
-            )}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={SIMULATED_COUNTRIES}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {SIMULATED_COUNTRIES.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Top Stats */}
+        {/* Popular Items */}
         <Card className="border-pink-200 bg-white/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="text-lg text-pink-700 flex items-center gap-2">
-              <Star className="w-5 h-5" />
-              Quick Stats
+              <Utensils className="w-5 h-5" />
+              Popular Items
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-pink-50 rounded-lg">
-              <p className="text-sm text-pink-500">Most Active Day</p>
-              <p className="text-lg font-semibold text-pink-700">
-                {weeklyData.reduce((max, d) => (d.visits > max.visits ? d : max), weeklyData[0])?.day || "N/A"}
-              </p>
-            </div>
-            <div className="p-4 bg-pink-50 rounded-lg">
-              <p className="text-sm text-pink-500">Top Visitor Country</p>
-              <p className="text-lg font-semibold text-pink-700">
-                {countryData[0]?.name || "N/A"}
-              </p>
-            </div>
-            <div className="p-4 bg-pink-50 rounded-lg">
-              <p className="text-sm text-pink-500">Weekly Total</p>
-              <p className="text-lg font-semibold text-pink-700">
-                {weeklyData.reduce((sum, d) => sum + d.visits, 0)} visitors
-              </p>
-            </div>
+          <CardContent className="space-y-3">
+            {SIMULATED_POPULAR_ITEMS.map((item, i) => (
+              <div key={item.name} className="flex items-center gap-3">
+                <span className="text-sm font-bold text-pink-400 w-6">#{i + 1}</span>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-pink-700">{item.name}</span>
+                    <span className="text-xs text-pink-400">{item.orders} orders</span>
+                  </div>
+                  <div className="h-2 bg-pink-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-pink-400 to-purple-400 rounded-full"
+                      style={{ width: `${(item.orders / SIMULATED_POPULAR_ITEMS[0].orders) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
+
+      {/* Quick Stats */}
+      <Card className="border-pink-200 bg-white/80 backdrop-blur">
+        <CardHeader>
+          <CardTitle className="text-lg text-pink-700 flex items-center gap-2">
+            <Star className="w-5 h-5" />
+            Peak Time Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-pink-50 rounded-lg">
+              <p className="text-sm text-pink-500">Busiest Hour</p>
+              <p className="text-lg font-semibold text-pink-700">12:00 – 1:00 PM</p>
+              <p className="text-xs text-pink-400 mt-1">Lunch rush</p>
+            </div>
+            <div className="p-4 bg-pink-50 rounded-lg">
+              <p className="text-sm text-pink-500">Quietest Day</p>
+              <p className="text-lg font-semibold text-pink-700">Wednesday</p>
+              <p className="text-xs text-pink-400 mt-1">18 visitors avg</p>
+            </div>
+            <div className="p-4 bg-pink-50 rounded-lg">
+              <p className="text-sm text-pink-500">Return Visitors</p>
+              <p className="text-lg font-semibold text-pink-700">34%</p>
+              <p className="text-xs text-pink-400 mt-1">Came back within 7 days</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
