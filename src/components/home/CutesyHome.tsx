@@ -30,7 +30,8 @@ const mascotMessages = [
   "Feed me! I'm hungry! Feed me some information on countries!",
 ];
 
-const getRandomMessage = () => mascotMessages[Math.floor(Math.random() * mascotMessages.length)];
+const TORI_TAN_GREETING = mascotMessages[0];
+const getRandomMessage = () => mascotMessages[Math.floor(Math.random() * (mascotMessages.length - 1)) + 1];
 
 // Category filter pills with hand-drawn style colors
 const categoryFilters = [
@@ -130,7 +131,16 @@ interface CutesyHomeProps {
 const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [mascotMessage] = useState(() => getRandomMessage());
+  const [hasSeenGreeting, setHasSeenGreeting] = useState(() => {
+    return sessionStorage.getItem('toriTanGreeted') === 'true';
+  });
+  const [mascotMessage] = useState(() => {
+    if (!hasSeenGreeting) {
+      sessionStorage.setItem('toriTanGreeted', 'true');
+      return TORI_TAN_GREETING;
+    }
+    return getRandomMessage();
+  });
 
   const { data: posts, isLoading, refetch } = useQuery({
     queryKey: ["posts"],
