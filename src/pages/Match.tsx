@@ -16,6 +16,69 @@ import { motion, AnimatePresence } from "framer-motion";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import ReportBlockDialog from "@/components/ReportBlockDialog";
 
+const DEMO_LOCALS = [
+  {
+    id: "demo-1",
+    user_id: "demo-1",
+    display_name: "Mei Lin",
+    date_of_birth: "1996-03-15",
+    avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop&crop=face",
+    location: "Singapore",
+    bio: "Born & raised in Singapore! I love showing travelers the hidden hawker stalls and secret rooftop bars. Let's explore the real SG together 🇸🇬",
+    interests: ["Street Food", "Nightlife", "Photography", "Architecture"],
+    is_verified: true,
+    is_local: true,
+  },
+  {
+    id: "demo-2",
+    user_id: "demo-2",
+    display_name: "Haruki",
+    date_of_birth: "1994-07-22",
+    avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop&crop=face",
+    location: "Tokyo, Japan",
+    bio: "Ramen hunter & vinyl collector. I know every hidden izakaya in Shimokitazawa. Let me show you Tokyo beyond the tourist spots 🍜",
+    interests: ["Ramen", "Music", "Night Photography", "Sake"],
+    is_verified: true,
+    is_local: true,
+  },
+  {
+    id: "demo-3",
+    user_id: "demo-3",
+    display_name: "Amara",
+    date_of_birth: "1998-11-08",
+    avatar_url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=500&fit=crop&crop=face",
+    location: "Bali, Indonesia",
+    bio: "Surf instructor & temple guide. I'll take you to the waterfalls and rice terraces that aren't on Instagram yet 🌴",
+    interests: ["Surfing", "Yoga", "Local Cuisine", "Temples"],
+    is_verified: false,
+    is_local: true,
+  },
+  {
+    id: "demo-4",
+    user_id: "demo-4",
+    display_name: "Sofia",
+    date_of_birth: "1995-05-30",
+    avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop&crop=face",
+    location: "Barcelona, Spain",
+    bio: "Art student who moonlights as a tapas tour guide. The Gothic Quarter is my backyard — let me share its secrets with you 🎨",
+    interests: ["Tapas", "Art", "Flamenco", "Hidden Bars"],
+    is_verified: true,
+    is_local: true,
+  },
+  {
+    id: "demo-5",
+    user_id: "demo-5",
+    display_name: "Kwame",
+    date_of_birth: "1993-01-12",
+    avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=500&fit=crop&crop=face",
+    location: "Accra, Ghana",
+    bio: "Chef & storyteller. I'll take you on a jollof rice journey and show you Accra's booming art scene 🌍",
+    interests: ["Cooking", "Art Markets", "Music", "History"],
+    is_verified: false,
+    is_local: true,
+  },
+];
+
 const Match = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -106,16 +169,22 @@ const Match = () => {
     enabled: !!user && userProfile !== undefined && blockedUsers !== undefined,
   });
 
+  // Use demo locals when no real profiles are available
+  const allProfiles = useMemo(() => {
+    if (profiles && profiles.length > 0) return profiles;
+    return DEMO_LOCALS as any[];
+  }, [profiles]);
+
   // Filter profiles by location search
   const filteredProfiles = useMemo(() => {
-    if (!profiles) return [];
-    if (!locationFilter.trim()) return profiles;
+    if (!allProfiles) return [];
+    if (!locationFilter.trim()) return allProfiles;
     
     const searchTerm = locationFilter.toLowerCase().trim();
-    return profiles.filter(profile => 
+    return allProfiles.filter(profile => 
       profile.location?.toLowerCase().includes(searchTerm)
     );
-  }, [profiles, locationFilter]);
+  }, [allProfiles, locationFilter]);
 
 
   const matchMutation = useMutation({
