@@ -21,13 +21,13 @@ export function useAnalytics(page: string) {
     (eventType: string, eventData?: EventData) => {
       supabase
         .from("analytics_events")
-        .insert({
+        .insert([{
           user_id: user?.id ?? null,
           event_type: eventType,
           event_data: eventData ?? {},
           page,
           session_id: getSessionId(),
-        })
+        }] as any)
         .then(({ error }) => {
           if (error) console.warn("[analytics]", error.message);
         });
