@@ -23,6 +23,7 @@ const floatAnimation = {
 
 // Random mascot messages
 const mascotMessages = [
+  "Hi! I am Tori-Tan! Nice to meet you hope I can be of help in any way!!",
   "Welcome to Travela! Where are we going today?",
   "Hope you are having fun! Tell me more so I can guide you!",
   "Stay safe! Make sure you're all packed for your upcoming journey!",
