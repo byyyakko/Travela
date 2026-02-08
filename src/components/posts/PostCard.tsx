@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/hooks/use-toast";
@@ -52,7 +54,19 @@ const categoryColorMap: Record<string, string> = {
   "Foodie Finds": "bg-pink-200 text-pink-900",
 };
 
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  profile?: {
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
 const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) => {
+  const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(
     post.post_likes.some((like) => like.user_id === currentUserId)
   );
@@ -60,13 +74,87 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
 
   const isOwnPost = currentUserId === post.user_id;
+  const isDemo = post.id.startsWith("demo-");
+
+  // Fetch comments when expanded
+  const { data: comments = [], isLoading: commentsLoading } = useQuery({
+    queryKey: ["comments", post.id],
+    queryFn: async () => {
+      if (isDemo) return [];
+      
+      const { data, error } = await supabase
+        .from("post_comments")
+        .select("id, content, created_at, user_id")
+        .eq("post_id", post.id)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      // Fetch profiles for commenters
+      const userIds = [...new Set(data.map(c => c.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, avatar_url")
+        .in("user_id", userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      return data.map(c => ({
+        ...c,
+        profile: profileMap.get(c.user_id) || null,
+      })) as Comment[];
+    },
+    enabled: showComments && !isDemo,
+  });
+
+  // Add comment mutation
+  const addCommentMutation = useMutation({
+    mutationFn: async (content: string) => {
+      if (!currentUserId) throw new Error("Not authenticated");
+      
+      const { error } = await supabase.from("post_comments").insert({
+        post_id: post.id,
+        user_id: currentUserId,
+        content,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: ["comments", post.id] });
+      onUpdate(); // Refresh post comment count
+      toast({ title: "Comment added!" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const { error } = await supabase
+        .from("post_comments")
+        .delete()
+        .eq("id", commentId)
+        .eq("user_id", currentUserId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", post.id] });
+      onUpdate();
+      toast({ title: "Comment deleted" });
+    },
+  });
 
   // Check if post is bookmarked on mount
   useEffect(() => {
     const checkBookmark = async () => {
-      if (!currentUserId) return;
+      if (!currentUserId || isDemo) return;
       
       const { data } = await supabase
         .from("post_bookmarks")
@@ -79,10 +167,10 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
     };
     
     checkBookmark();
-  }, [post.id, currentUserId]);
+  }, [post.id, currentUserId, isDemo]);
 
   const handleLike = async () => {
-    if (!currentUserId) return;
+    if (!currentUserId || isDemo) return;
 
     if (isLiked) {
       await supabase
@@ -102,7 +190,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   };
 
   const handleBookmark = async () => {
-    if (!currentUserId) return;
+    if (!currentUserId || isDemo) return;
 
     if (isBookmarked) {
       await supabase
@@ -133,7 +221,6 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
     setIsDeleting(true);
     
     try {
-      // If post has an image, delete it from storage
       if (post.image_url) {
         const imagePath = post.image_url.split("/post-images/")[1];
         if (imagePath) {
@@ -165,6 +252,12 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
       setIsDeleting(false);
       setShowDeleteDialog(false);
     }
+  };
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim() || isDemo) return;
+    addCommentMutation.mutate(commentText.trim());
   };
 
   const displayName = post.profiles?.display_name || "Traveler";
@@ -270,9 +363,13 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2 text-muted-foreground hover:text-accent"
+              onClick={() => setShowComments(!showComments)}
+              className={cn(
+                "gap-2",
+                showComments ? "text-primary" : "text-muted-foreground hover:text-primary"
+              )}
             >
-              <MessageCircle className="w-5 h-5" />
+              <MessageCircle className={cn("w-5 h-5", showComments && "fill-current")} />
               {post.post_comments.length > 0 && post.post_comments.length}
             </Button>
           </div>
@@ -288,6 +385,82 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
             <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
           </Button>
         </div>
+
+        {/* Comments Section */}
+        {showComments && (
+          <div className="px-4 pb-4 border-t border-primary/20">
+            {/* Comments List */}
+            <div className="space-y-3 mt-3 max-h-60 overflow-y-auto">
+              {isDemo ? (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  Comments are available on real posts. Create a post to start the conversation! 💬
+                </p>
+              ) : commentsLoading ? (
+                <div className="flex justify-center py-3">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : comments.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  No comments yet. Be the first to comment! 💬
+                </p>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="flex items-start gap-2">
+                    <Avatar className="w-7 h-7 ring-2 ring-primary/30 flex-shrink-0">
+                      <AvatarImage src={comment.profile?.avatar_url || ""} />
+                      <AvatarFallback className="bg-secondary text-primary text-xs font-bold">
+                        {(comment.profile?.display_name || "T")[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-secondary/60 rounded-xl px-3 py-2">
+                        <p className="text-xs font-semibold text-primary">
+                          {comment.profile?.display_name || "Traveler"}
+                        </p>
+                        <p className="text-sm text-foreground break-words">
+                          {comment.content}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 px-1">
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                        </span>
+                        {comment.user_id === currentUserId && (
+                          <button
+                            onClick={() => deleteCommentMutation.mutate(comment.id)}
+                            className="text-[10px] text-destructive hover:underline"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Comment Input */}
+            {!isDemo && currentUserId && (
+              <form onSubmit={handleSubmitComment} className="flex items-center gap-2 mt-3">
+                <Input
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="flex-1 text-sm rounded-full border-primary/30 focus-visible:ring-primary"
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={!commentText.trim() || addCommentMutation.isPending}
+                  className="rounded-full w-9 h-9 flex-shrink-0"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* Delete Confirmation Dialog */}

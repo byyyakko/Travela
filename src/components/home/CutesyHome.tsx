@@ -6,9 +6,18 @@ import PostCard from "@/components/posts/PostCard";
 import CreatePost from "@/components/posts/CreatePost";
 import DestinationSearch from "@/components/home/DestinationSearch";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles } from "lucide-react";
+import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 
 // Floating animation for mascot
@@ -43,12 +52,12 @@ const categoryFilters = [
 
 // Quick action icons
 const quickActions = [
-  { icon: Users, label: "Connect", path: "/match" },
-  { icon: MapPin, label: "Plan", path: "/planner" },
-  { icon: BookOpen, label: "Phrases", path: "/common-phrases" },
-  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary" },
-  { icon: MapIcon, label: "Map", path: "/map" },
-  { icon: Crown, label: "Subscribe", path: "/subscription" },
+  { icon: Users, label: "Connect", path: "/match", paid: false },
+  { icon: MapPin, label: "Plan", path: "/planner", paid: false },
+  { icon: BookOpen, label: "Phrases", path: "/common-phrases", paid: false },
+  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: true },
+  { icon: MapIcon, label: "Map", path: "/map", paid: false },
+  { icon: Crown, label: "Subscribe", path: "/subscription", paid: false },
 ];
 
 const DEMO_POSTS = [
@@ -132,7 +141,9 @@ interface CutesyHomeProps {
 
 const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [showPaidDialog, setShowPaidDialog] = useState(false);
   const [hasSeenGreeting, setHasSeenGreeting] = useState(() => {
     return sessionStorage.getItem('toriTanGreeted') === 'true';
   });
@@ -142,6 +153,20 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
       return TORI_TAN_GREETING;
     }
     return getRandomMessage();
+  });
+
+  const { data: subscriptionTier } = useQuery({
+    queryKey: ["userSubscription", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return "tier_0";
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_tier")
+        .eq("user_id", user.id)
+        .single();
+      return data?.subscription_tier || "tier_0";
+    },
+    enabled: !!user?.id,
   });
 
   const { data: posts, isLoading, refetch } = useQuery({
@@ -173,6 +198,14 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
       })) || [];
     },
   });
+
+  const handleQuickAction = (action: typeof quickActions[0]) => {
+    if (action.paid && subscriptionTier !== "tier_1" && subscriptionTier !== "tier_2") {
+      setShowPaidDialog(true);
+      return;
+    }
+    navigate(action.path);
+  };
 
   return (
     <div className="space-y-6">
@@ -216,19 +249,50 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
         {/* Quick action icons */}
         <div className="flex justify-center gap-8 mt-6">
           {quickActions.map((action) => (
-            <a
+            <button
               key={action.label}
-              href={action.path}
+              onClick={() => handleQuickAction(action)}
               className="flex flex-col items-center gap-2 group"
             >
-              <div className="w-16 h-16 rounded-full bg-secondary border-[3px] border-primary flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm">
+              <div className="w-16 h-16 rounded-full bg-secondary border-[3px] border-primary flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm relative">
                 <action.icon className="w-7 h-7 text-primary" />
+                {action.paid && subscriptionTier !== "tier_1" && subscriptionTier !== "tier_2" && (
+                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Lock className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                )}
               </div>
               <span className="text-xs font-semibold text-primary">{action.label}</span>
-            </a>
+            </button>
           ))}
         </div>
       </Card>
+
+      {/* Paid Feature Dialog */}
+      <Dialog open={showPaidDialog} onOpenChange={setShowPaidDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl">Paid Feature</DialogTitle>
+            <DialogDescription className="text-center text-base">
+              Unlock <span className="font-semibold text-primary">Travela Plus</span> for smart AI itineraries, cultural translation, and more!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-2">
+            <Button onClick={() => { setShowPaidDialog(false); navigate("/subscription"); }}>
+              <Crown className="w-4 h-4 mr-2" />
+              View Travela Plus — $5/mo
+            </Button>
+            <Button variant="outline" onClick={() => setShowPaidDialog(false)}>
+              Maybe Later
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Destination Search with Premium Recommendations */}
       <DestinationSearch />
