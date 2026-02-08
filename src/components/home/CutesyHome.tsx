@@ -7,7 +7,7 @@ import CreatePost from "@/components/posts/CreatePost";
 import DestinationSearch from "@/components/home/DestinationSearch";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { MapPin, Users, ChevronRight, Crown, Map as MapIcon } from "lucide-react";
+import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 
@@ -45,6 +45,8 @@ const categoryFilters = [
 const quickActions = [
   { icon: Users, label: "Connect", path: "/match" },
   { icon: MapPin, label: "Plan", path: "/planner" },
+  { icon: BookOpen, label: "Phrases", path: "/common-phrases" },
+  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary" },
   { icon: MapIcon, label: "Map", path: "/map" },
   { icon: Crown, label: "Subscribe", path: "/subscription" },
 ];

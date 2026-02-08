@@ -8,9 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, MessageCircle, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Send, MessageCircle, ArrowLeft, Languages, Star, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 const DEMO_CONVERSATIONS = [
   {
@@ -125,10 +133,52 @@ interface Message {
 
 const Messages = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [culturalDialogOpen, setCulturalDialogOpen] = useState(false);
+  const [selectedMsgForTranslation, setSelectedMsgForTranslation] = useState<string>("");
+  const [culturalResult, setCulturalResult] = useState<{
+    cultural_context: string;
+    suggested_response: string;
+    tips: string[];
+    politeness_level: string;
+  } | null>(null);
+  const [isCulturalLoading, setIsCulturalLoading] = useState(false);
+
+  const handleCulturalTranslation = async (messageContent: string) => {
+    setSelectedMsgForTranslation(messageContent);
+    setCulturalDialogOpen(true);
+    setCulturalResult(null);
+    setIsCulturalLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-travel", {
+        body: {
+          type: "cultural-translation",
+          message: messageContent,
+          destination_country: selectedConversation?.otherUser?.display_name
+            ? "the country the sender is from"
+            : "unknown",
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+        setCulturalDialogOpen(false);
+        return;
+      }
+      setCulturalResult(data);
+    } catch {
+      toast({ title: "Error", description: "Failed to analyze cultural context", variant: "destructive" });
+      setCulturalDialogOpen(false);
+    } finally {
+      setIsCulturalLoading(false);
+    }
+  };
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["conversations", user?.id],
@@ -285,18 +335,29 @@ const Messages = () => {
                       isOwn ? "justify-end" : "justify-start"
                     )}
                   >
-                    <div className={cn(
-                      "max-w-[70%] px-4 py-2 rounded-2xl",
-                      isOwn && "bg-primary text-primary-foreground",
-                      !isOwn && "bg-secondary"
-                    )}>
-                      <p className="text-sm">{msg.content}</p>
-                      <span className={cn(
-                        "text-xs mt-1 block",
-                        isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                    <div className="flex flex-col gap-1">
+                      <div className={cn(
+                        "max-w-[70%] px-4 py-2 rounded-2xl",
+                        isOwn && "bg-primary text-primary-foreground",
+                        !isOwn && "bg-secondary"
                       )}>
-                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                      </span>
+                        <p className="text-sm">{msg.content}</p>
+                        <span className={cn(
+                          "text-xs mt-1 block",
+                          isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                        )}>
+                          {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                      {!isOwn && (
+                        <button
+                          onClick={() => handleCulturalTranslation(msg.content)}
+                          className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors ml-1"
+                        >
+                          <Languages className="w-3 h-3" />
+                          Cultural context
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -323,6 +384,66 @@ const Messages = () => {
             </Button>
           </div>
         </Card>
+
+        {/* Cultural Translation Dialog */}
+        <Dialog open={culturalDialogOpen} onOpenChange={setCulturalDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-primary">
+                <Languages className="w-5 h-5" />
+                Cultural Translation
+                <Badge className="bg-blue-100 text-blue-700 border-blue-200 ml-auto">
+                  <Star className="w-3 h-3 mr-1" /> Plus
+                </Badge>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="mt-2">
+              <Card className="p-3 bg-secondary/50 mb-4">
+                <p className="text-sm italic text-muted-foreground">"{selectedMsgForTranslation}"</p>
+              </Card>
+
+              {isCulturalLoading ? (
+                <div className="flex flex-col items-center py-8 gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Analyzing cultural context...</p>
+                </div>
+              ) : culturalResult ? (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">🌍 Cultural Context</h4>
+                    <p className="text-sm text-muted-foreground">{culturalResult.cultural_context}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">💬 Suggested Response</h4>
+                    <Card className="p-3 bg-primary/5 border-primary/20">
+                      <p className="text-sm">{culturalResult.suggested_response}</p>
+                    </Card>
+                  </div>
+
+                  {culturalResult.tips?.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-1">💡 Tips</h4>
+                      <ul className="space-y-1">
+                        {culturalResult.tips.map((tip, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-primary mt-0.5">•</span>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <Badge variant="outline" className="capitalize">
+                    Tone: {culturalResult.politeness_level}
+                  </Badge>
+                </div>
+              ) : null}
+            </div>
+          </DialogContent>
+        </Dialog>
       </AppLayout>
     );
   }

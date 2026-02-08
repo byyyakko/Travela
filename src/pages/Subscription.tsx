@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Crown, Sparkles, MessageCircle, Map, MapPin, Globe, Wifi, Languages, Heart, Users, ArrowLeft } from "lucide-react";
+import { Check, Star, Sparkles, MessageCircle, Map, MapPin, Globe, Wifi, Languages, Heart, Users, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +43,7 @@ const tiers: TierInfo[] = [
       { text: "Browse locals & hawkers", icon: Users },
       { text: "Chat with locals freely", icon: MessageCircle },
       { text: "See local favorites", icon: Heart },
-      { text: "Read stories & cultural context", icon: Globe },
+      { text: "Common phrases lookup", icon: Languages },
       { text: "Basic maps & discovery", icon: Map },
     ],
   },
@@ -51,8 +51,8 @@ const tiers: TierInfo[] = [
     id: "tier_1",
     name: "Travela Plus",
     tagline: "Travel with confidence",
-    price: "$5–8",
-    priceNote: "per trip",
+    price: "$5",
+    priceNote: "per month",
     icon: Star,
     color: "text-blue-600",
     bgColor: "bg-blue-50",
@@ -63,26 +63,7 @@ const tiers: TierInfo[] = [
       { text: "Cultural translation layer", icon: Languages },
       { text: "Smart local itineraries", icon: MapPin },
       { text: "Offline mode access", icon: Wifi },
-      { text: "Language assist & phrases", icon: MessageCircle },
       { text: "Priority response nudging", icon: Sparkles },
-    ],
-  },
-  {
-    id: "tier_2",
-    name: "Travela Insider",
-    tagline: "Belong like a local",
-    price: "$20–30",
-    priceNote: "per trip",
-    icon: Crown,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-300",
-    features: [
-      { text: "Everything in Plus", icon: Check },
-      { text: "Locals-only experiences", icon: Users },
-      { text: "Trusted local circles", icon: Heart },
-      { text: "Concierge-style help", icon: Star },
-      { text: "Give-back impact summary", icon: Sparkles },
     ],
   },
 ];

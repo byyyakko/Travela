@@ -26,6 +26,8 @@ import Planner from "./pages/Planner";
 import Subscription from "./pages/Subscription";
 import MapView from "./pages/MapView";
 import StoreView from "./pages/StoreView";
+import CommonPhrases from "./pages/CommonPhrases";
+import SmartItinerary from "./pages/SmartItinerary";
 import NotFound from "./pages/NotFound";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
 
@@ -92,6 +94,8 @@ const AppRoutes = () => {
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
       <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
       <Route path="/store/:storeId" element={<ProtectedRoute><StoreView /></ProtectedRoute>} />
+      <Route path="/common-phrases" element={<ProtectedRoute><CommonPhrases /></ProtectedRoute>} />
+      <Route path="/smart-itinerary" element={<ProtectedRoute><SmartItinerary /></ProtectedRoute>} />
       {/* Merchant Dashboard Routes */}
       <Route path="/merchant-dashboard" element={<ProtectedRoute skipOnboardingCheck><MerchantDashboard /></ProtectedRoute>}>
         <Route index element={<MerchantHome />} />
