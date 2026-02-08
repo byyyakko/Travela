@@ -67,7 +67,7 @@ const MerchantInsights = () => {
         {[
           { label: "Weekly Visitors", value: totalWeekly.toString(), icon: Users, accent: "from-pink-500 to-rose-500" },
           { label: "Busiest Day", value: busiestDay.day, icon: TrendingUp, accent: "from-purple-500 to-indigo-500" },
-          { label: "Top Country", value: topCountry.name, icon: Globe, accent: "from-blue-500 to-cyan-500" },
+          { label: "Top Travellers' Country", value: "Japan", icon: Globe, accent: "from-blue-500 to-cyan-500" },
           { label: "Avg Daily", value: Math.round(totalWeekly / 7).toString(), icon: MapPin, accent: "from-emerald-500 to-teal-500" },
         ].map((stat) => (
           <Card key={stat.label} className="border-pink-200 bg-white/80 backdrop-blur overflow-hidden">
