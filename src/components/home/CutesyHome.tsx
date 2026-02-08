@@ -47,6 +47,69 @@ const quickActions = [
   { icon: Crown, label: "Subscribe", path: "/subscription" },
 ];
 
+const DEMO_POSTS = [
+  {
+    id: "demo-post-1",
+    content: "Just discovered the most amazing ramen spot in Shibuya! 🍜 The tonkotsu broth was simmered for 18 hours and the chashu melted in my mouth. If you're ever in Tokyo, this is a MUST visit!",
+    image_url: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&h=400&fit=crop",
+    location_tag: "Tokyo, Japan",
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    user_id: "demo-user-1",
+    profiles: {
+      display_name: "Haruki",
+      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+      location: "Tokyo, Japan",
+    },
+    post_likes: [{ user_id: "a" }, { user_id: "b" }, { user_id: "c" }],
+    post_comments: [{ id: "c1" }, { id: "c2" }],
+  },
+  {
+    id: "demo-post-2",
+    content: "Caught the sunrise at Marina Bay Sands this morning ☀️ Singapore never gets old! The skyline reflecting off the water was absolutely magical. Who else is in SG right now?",
+    image_url: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&h=400&fit=crop",
+    location_tag: "Singapore",
+    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    user_id: "demo-user-2",
+    profiles: {
+      display_name: "Mei Lin",
+      avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
+      location: "Singapore",
+    },
+    post_likes: [{ user_id: "a" }, { user_id: "b" }, { user_id: "c" }, { user_id: "d" }, { user_id: "e" }],
+    post_comments: [{ id: "c1" }, { id: "c2" }, { id: "c3" }],
+  },
+  {
+    id: "demo-post-3",
+    content: "Rice terraces in Ubud are unreal 🌾 Spent the whole day trekking through Tegallalang with a local guide. The views were breathtaking and the stories she shared about Balinese culture were priceless!",
+    image_url: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop",
+    location_tag: "Bali, Indonesia",
+    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    user_id: "demo-user-3",
+    profiles: {
+      display_name: "Amara",
+      avatar_url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop&crop=face",
+      location: "Bali, Indonesia",
+    },
+    post_likes: [{ user_id: "a" }, { user_id: "b" }],
+    post_comments: [{ id: "c1" }],
+  },
+  {
+    id: "demo-post-4",
+    content: "Pro tip: skip the touristy La Rambla restaurants and head to El Born for authentic tapas 🇪🇸 Had the best patatas bravas of my life at a tiny spot with only 6 tables. The locals know best!",
+    location_tag: "Barcelona, Spain",
+    image_url: null,
+    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    user_id: "demo-user-4",
+    profiles: {
+      display_name: "Sofia",
+      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
+      location: "Barcelona, Spain",
+    },
+    post_likes: [{ user_id: "a" }, { user_id: "b" }, { user_id: "c" }, { user_id: "d" }],
+    post_comments: [{ id: "c1" }, { id: "c2" }, { id: "c3" }, { id: "c4" }],
+  },
+];
+
 interface CutesyHomeProps {
   displayName?: string;
 }
@@ -181,23 +244,11 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : posts?.length === 0 ? (
-          <Card className="text-center py-12 cutesy-border bg-card/90">
-            <motion.img 
-              src={mascotCutesy} 
-              alt="Cute cat mascot" 
-              className="w-24 h-24 object-contain mx-auto mb-4 opacity-80 mix-blend-multiply"
-              animate={floatAnimation}
-            />
-            <p className="text-muted-foreground">
-              No posts yet. Be the first to share your travel experience! ✨
-            </p>
-          </Card>
         ) : (
-          posts?.map((post) => (
+          (posts && posts.length > 0 ? posts : DEMO_POSTS).map((post) => (
             <PostCard
               key={post.id}
-              post={post}
+              post={post as any}
               currentUserId={user?.id}
               onUpdate={refetch}
             />
