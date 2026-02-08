@@ -40,7 +40,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <BackButton className="text-muted-foreground hover:text-foreground hover:bg-secondary shrink-0" />
           
           <div className="flex items-center gap-2">
-            <img src={mascotImg} alt="Travela mascot" className="w-10 h-10 object-contain mix-blend-multiply" />
+            <img src={mascotImg} alt="Travela mascot" className="w-16 h-16 object-contain mix-blend-multiply -my-3" />
             <span className="text-xl font-display font-bold text-primary">
               Travela
             </span>
@@ -98,8 +98,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Side navigation (desktop) */}
       <nav className="fixed left-0 top-0 bottom-0 w-20 hidden md:flex flex-col items-center py-6 z-50 cutesy-grid-bg bg-card/98 backdrop-blur-md border-r-[3px] border-primary">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-8 bg-secondary border-2 border-primary">
-          <img src={mascotImg} alt="Travela mascot" className="w-10 h-10 object-contain mix-blend-multiply" />
+        <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-8 bg-secondary border-2 border-primary">
+          <img src={mascotImg} alt="Travela mascot" className="w-14 h-14 object-contain mix-blend-multiply" />
         </div>
 
         <div className="flex flex-col gap-2 flex-1">
