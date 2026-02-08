@@ -27,10 +27,10 @@ const SIMULATED_WEEKLY = [
 
 // Simulated visitor origins
 const SIMULATED_COUNTRIES = [
-  { name: "Japan", value: 38 },
-  { name: "USA", value: 27 },
-  { name: "South Korea", value: 19 },
-  { name: "Germany", value: 12 },
+  { name: "Singapore", value: 41 },
+  { name: "Japan", value: 27 },
+  { name: "USA", value: 19 },
+  { name: "South Korea", value: 12 },
   { name: "Australia", value: 9 },
 ];
 
