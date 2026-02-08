@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const STEPS = [
   { id: 1, title: "Welcome", icon: Sparkles },
@@ -36,6 +37,7 @@ const Onboarding = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { track } = useAnalytics("onboarding");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -153,6 +155,12 @@ const Onboarding = () => {
         queryClient.invalidateQueries({ queryKey: ["userProfile", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["profile", user.id] }),
       ]);
+
+      track("onboarding_complete", {
+        has_avatar: !!finalAvatarUrl,
+        interests_count: interests.length,
+        is_local: isLocal,
+      });
 
       toast({
         title: "Welcome to Travela! 🎉",

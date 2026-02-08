@@ -19,6 +19,7 @@ import { Send, MessageCircle, ArrowLeft, Languages, Star, Loader2 } from "lucide
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const DEMO_CONVERSATIONS = [
   {
@@ -134,6 +135,7 @@ interface Message {
 const Messages = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { track } = useAnalytics("messages");
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -294,6 +296,7 @@ const Messages = () => {
     });
 
     if (!error) {
+      track("message_sent", { conversation_id: selectedConversation.id });
       setNewMessage("");
     }
   };

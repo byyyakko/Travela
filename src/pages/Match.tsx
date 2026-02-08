@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import ReportBlockDialog from "@/components/ReportBlockDialog";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const DEMO_LOCALS = [
   {
@@ -82,6 +83,7 @@ const DEMO_LOCALS = [
 const Match = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { track } = useAnalytics("match");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
 
@@ -255,6 +257,7 @@ const Match = () => {
     },
     onSuccess: (data) => {
       if (data.matched) {
+        track("mutual_match", { target_user_id: currentProfile?.user_id });
         toast({
           title: "🎉 It's a Match!",
           description: "You can now message each other.",
@@ -268,6 +271,10 @@ const Match = () => {
 
   const handleSwipe = (action: "like" | "pass") => {
     if (!currentProfile) return;
+    track(action === "like" ? "swipe_like" : "swipe_pass", {
+      target_user_id: currentProfile.user_id,
+      target_location: currentProfile.location,
+    });
     matchMutation.mutate({ targetUserId: currentProfile.user_id, action });
   };
 

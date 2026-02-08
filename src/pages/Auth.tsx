@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Plane, Globe, Check, X, Mail, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 // Password validation rules
 const validatePassword = (password: string) => {
@@ -43,6 +44,7 @@ const Auth = () => {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const { track } = useAnalytics("auth");
 
   const passwordValidation = validatePassword(password);
   const isPasswordValid = Object.values(passwordValidation).every(Boolean);
@@ -60,9 +62,10 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
+      track("sign_in");
       navigate("/home");
     }
-    
+
     setLoading(false);
   };
 
@@ -89,6 +92,7 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
+      track("sign_up");
       setPendingVerification(true);
       toast({
         title: "Check your email!",

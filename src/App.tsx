@@ -30,6 +30,7 @@ import CommonPhrases from "./pages/CommonPhrases";
 import SmartItinerary from "./pages/SmartItinerary";
 import NotFound from "./pages/NotFound";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
+import { useKeepAlive } from "@/hooks/useKeepAlive";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
+  useKeepAlive();
   return (
     <Routes>
       <Route path="/" element={<PublicRoute><RoleSelect /></PublicRoute>} />

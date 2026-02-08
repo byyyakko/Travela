@@ -3,9 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import CutesyHome from "@/components/home/CutesyHome";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const Home = () => {
   const { user } = useAuth();
+  useAnalytics("home");
 
   // Fetch user profile for display name
   const { data: profile } = useQuery({
