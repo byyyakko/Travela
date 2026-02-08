@@ -40,11 +40,19 @@ interface PostCardProps {
     post_likes: { user_id: string }[];
     post_comments: { id: string }[];
   };
+  category?: string;
   currentUserId?: string;
   onUpdate: () => void;
 }
 
-const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
+const categoryColorMap: Record<string, string> = {
+  "Local Favorites": "bg-yellow-200 text-yellow-900",
+  "Budget Friendly": "bg-green-200 text-green-900",
+  "Must See": "bg-orange-200 text-orange-900",
+  "Foodie Finds": "bg-pink-200 text-pink-900",
+};
+
+const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) => {
   const [isLiked, setIsLiked] = useState(
     post.post_likes.some((like) => like.user_id === currentUserId)
   );
@@ -175,9 +183,19 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium text-foreground">
-                {displayName}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-foreground">
+                  {displayName}
+                </p>
+                {category && (
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-bold",
+                    categoryColorMap[category] || "bg-muted text-muted-foreground"
+                  )}>
+                    {category}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">
                   {timeAgo}
