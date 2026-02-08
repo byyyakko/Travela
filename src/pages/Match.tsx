@@ -85,14 +85,17 @@ const Match = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
 
-  // Fetch current user's age preferences
+  // Backend URL for ML ranking (set in .env or defaults to local dev)
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:10000";
+
+  // Fetch current user's full profile (age prefs + interests for ML ranking)
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data, error } = await supabase
         .from("profiles")
-        .select("min_age_preference, max_age_preference")
+        .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
@@ -163,6 +166,41 @@ const Match = () => {
         if (age === null) return true; // Show profiles without DOB
         return age >= minAge && age <= maxAge;
       });
+
+      // Rank profiles by ML compatibility (fallback to unranked if backend unavailable)
+      if (filteredProfiles.length > 0 && userProfile) {
+        try {
+          const res = await fetch(`${BACKEND_URL}/rank`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user: {
+                user_id: user.id,
+                date_of_birth: userProfile.date_of_birth,
+                interests: userProfile.interests,
+                location: userProfile.location,
+              },
+              candidates: filteredProfiles.map(p => ({
+                user_id: p.user_id,
+                display_name: p.display_name,
+                date_of_birth: p.date_of_birth,
+                interests: p.interests,
+                location: p.location,
+                bio: p.bio,
+                is_local: p.is_local,
+                is_verified: p.is_verified,
+                avatar_url: p.avatar_url,
+              })),
+            }),
+          });
+          if (res.ok) {
+            const { ranked } = await res.json();
+            return ranked;
+          }
+        } catch {
+          // Backend unavailable — fall through to unranked profiles
+        }
+      }
 
       return filteredProfiles;
     },
