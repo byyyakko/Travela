@@ -2,27 +2,38 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Tables } from "@/integrations/supabase/types";
 
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Heart, MapPin, Sparkles, RefreshCw, Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import { X, Heart, MapPin, Sparkles, RefreshCw, Search, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import ReportBlockDialog from "@/components/ReportBlockDialog";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useNavigate } from "react-router-dom";
 
 const Match = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { track } = useAnalytics("match");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
+  const [likePopup, setLikePopup] = useState<{
+    show: boolean;
+    type: "liked" | "matched";
+    profileName: string;
+    avatarUrl: string | null;
+  }>({ show: false, type: "liked", profileName: "", avatarUrl: null });
 
   // Backend URL for ML ranking (set in .env or defaults to local dev)
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:10000";
@@ -102,7 +113,7 @@ const Match = () => {
 
       const filteredProfiles = (data || []).filter(profile => {
         const age = calculateAge(profile.date_of_birth);
-        if (age === null) return true; // Show profiles without DOB
+        if (age === null) return true;
         return age >= minAge && age <= maxAge;
       });
 
@@ -157,7 +168,6 @@ const Match = () => {
     );
   }, [profiles, locationFilter]);
 
-
   const matchMutation = useMutation({
     mutationFn: async ({ targetUserId, action }: { targetUserId: string; action: "like" | "pass" }) => {
       if (!user) throw new Error("Not authenticated");
@@ -186,13 +196,25 @@ const Match = () => {
 
       return { matched: false };
     },
-    onSuccess: (data) => {
-      if (data.matched) {
-        track("mutual_match", { target_user_id: currentProfile?.user_id });
-        toast({
-          title: "🎉 It's a Match!",
-          description: "You can now message each other.",
-        });
+    onSuccess: (data, variables) => {
+      if (variables.action === "like") {
+        const profile = currentProfile;
+        if (data.matched) {
+          track("mutual_match", { target_user_id: profile?.user_id });
+          setLikePopup({
+            show: true,
+            type: "matched",
+            profileName: profile?.display_name || "Local Guide",
+            avatarUrl: profile?.avatar_url || null,
+          });
+        } else {
+          setLikePopup({
+            show: true,
+            type: "liked",
+            profileName: profile?.display_name || "Local Guide",
+            avatarUrl: profile?.avatar_url || null,
+          });
+        }
       }
       setCurrentIndex((prev) => prev + 1);
     },
@@ -218,6 +240,10 @@ const Match = () => {
     queryClient.invalidateQueries({ queryKey: ["blockedUsers"] });
     queryClient.invalidateQueries({ queryKey: ["matchProfiles"] });
     setCurrentIndex(prev => Math.min(prev, (filteredProfiles?.length || 1) - 1));
+  };
+
+  const closeLikePopup = () => {
+    setLikePopup(prev => ({ ...prev, show: false }));
   };
 
   return (
@@ -325,7 +351,7 @@ const Match = () => {
                     )}
                     {currentProfile.interests && currentProfile.interests.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {currentProfile.interests.slice(0, 4).map((interest, i) => (
+                        {currentProfile.interests.slice(0, 4).map((interest: string, i: number) => (
                           <span
                             key={i}
                             className="px-2 py-1 rounded-full text-xs bg-white/20"
@@ -343,7 +369,7 @@ const Match = () => {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-16 h-16 rounded-full border-2 border-red-300 text-red-500 hover:bg-red-50 hover:border-red-400"
+                    className="w-16 h-16 rounded-full border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50"
                     onClick={() => handleSwipe("pass")}
                     disabled={matchMutation.isPending}
                   >
@@ -363,6 +389,93 @@ const Match = () => {
           </AnimatePresence>
         )}
       </div>
+
+      {/* Like Sent / It's a Match Popup */}
+      <Dialog open={likePopup.show} onOpenChange={(open) => !open && closeLikePopup()}>
+        <DialogContent className="max-w-sm text-center">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="flex flex-col items-center gap-4 py-4"
+          >
+            {/* Avatar */}
+            <div className={cn(
+              "relative w-24 h-24 rounded-full ring-4",
+              likePopup.type === "matched" ? "ring-primary" : "ring-primary/40"
+            )}>
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={likePopup.avatarUrl || ""} />
+                <AvatarFallback className="text-3xl bg-secondary text-primary">
+                  {likePopup.profileName[0]?.toUpperCase() || "L"}
+                </AvatarFallback>
+              </Avatar>
+              {likePopup.type === "matched" && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center"
+                >
+                  <Heart className="w-4 h-4 text-primary-foreground fill-current" />
+                </motion.div>
+              )}
+            </div>
+
+            {/* Title */}
+            {likePopup.type === "matched" ? (
+              <>
+                <h2 className="text-2xl font-display font-bold text-primary">
+                  🎉 It's a Match!
+                </h2>
+                <p className="text-muted-foreground">
+                  You and <span className="font-semibold text-foreground">{likePopup.profileName}</span> liked each other! You can now start chatting.
+                </p>
+                <div className="flex gap-3 w-full mt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={closeLikePopup}
+                  >
+                    Keep Swiping
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => {
+                      closeLikePopup();
+                      navigate("/messages");
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <motion.div
+                  initial={{ y: 10 }}
+                  animate={{ y: 0 }}
+                >
+                  <Heart className="w-10 h-10 text-primary fill-primary/20 mx-auto mb-2" />
+                </motion.div>
+                <h2 className="text-xl font-display font-bold">
+                  Like Sent!
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  You liked <span className="font-semibold text-foreground">{likePopup.profileName}</span>. If they like you back, you'll be able to message each other!
+                </p>
+                <Button
+                  className="w-full mt-2"
+                  onClick={closeLikePopup}
+                >
+                  Continue
+                </Button>
+              </>
+            )}
+          </motion.div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
