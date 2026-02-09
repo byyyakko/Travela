@@ -21,94 +21,6 @@ import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
-const DEMO_CONVERSATIONS = [
-  {
-    id: "demo-conv-1",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-1",
-    updated_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Mei Lin",
-      avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "Yes! The hawker center on Smith Street is the best 🍜",
-      created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "demo-conv-2",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-2",
-    updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Haruki",
-      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "I'll send you the address of that izakaya! It's in Shimokitazawa",
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "demo-conv-3",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-3",
-    updated_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Amara",
-      avatar_url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "The sunrise surf session was incredible! Let's do it again tomorrow 🏄‍♀️",
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "demo-conv-4",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-4",
-    updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Sofia",
-      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "Definitely try the patatas bravas at Cal Pep — you won't regret it!",
-      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-];
-
-const DEMO_MESSAGES: Record<string, Message[]> = {
-  "demo-conv-1": [
-    { id: "m1", content: "Hey Mei Lin! I just arrived in Singapore. Any food recommendations?", sender_id: "current-user", created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), read: true },
-    { id: "m2", content: "Welcome!! 🎉 You HAVE to try the chicken rice at Tian Tian in Maxwell Food Centre", sender_id: "demo-user-1", created_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(), read: true },
-    { id: "m3", content: "That sounds amazing! Is it crowded?", sender_id: "current-user", created_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(), read: true },
-    { id: "m4", content: "Go before 11am to avoid the queue. Trust me on this one 😄", sender_id: "demo-user-1", created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(), read: true },
-    { id: "m5", content: "Got it! Any other hidden gems?", sender_id: "current-user", created_at: new Date(Date.now() - 12 * 60 * 1000).toISOString(), read: true },
-    { id: "m6", content: "Yes! The hawker center on Smith Street is the best 🍜", sender_id: "demo-user-1", created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(), read: true },
-  ],
-  "demo-conv-2": [
-    { id: "m7", content: "Haruki! Your ramen post made me so hungry 😭", sender_id: "current-user", created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m8", content: "Haha! You should come to Tokyo then 🍜", sender_id: "demo-user-2", created_at: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m9", content: "Actually I'm planning a trip next month! Any must-visit spots?", sender_id: "current-user", created_at: new Date(Date.now() - 2.3 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m10", content: "I'll send you the address of that izakaya! It's in Shimokitazawa", sender_id: "demo-user-2", created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-  "demo-conv-3": [
-    { id: "m11", content: "Hi Amara! I saw you offer surf lessons in Bali?", sender_id: "current-user", created_at: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m12", content: "Yes! I teach at Canggu beach every morning at 6am 🌊", sender_id: "demo-user-3", created_at: new Date(Date.now() - 25.5 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m13", content: "That sounds perfect. I'm a total beginner though!", sender_id: "current-user", created_at: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m14", content: "No worries, everyone starts somewhere! I'll take care of you 😊", sender_id: "demo-user-3", created_at: new Date(Date.now() - 24.5 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m15", content: "The sunrise surf session was incredible! Let's do it again tomorrow 🏄‍♀️", sender_id: "demo-user-3", created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-  "demo-conv-4": [
-    { id: "m16", content: "Sofia! I'm heading to Barcelona next week. Tapas tips?", sender_id: "current-user", created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m17", content: "Skip La Rambla!! Go to El Born neighborhood instead 🇪🇸", sender_id: "demo-user-4", created_at: new Date(Date.now() - 3.8 * 24 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m18", content: "Definitely try the patatas bravas at Cal Pep — you won't regret it!", sender_id: "demo-user-4", created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-};
-
 interface Conversation {
   id: string;
   participant1_id: string;
@@ -229,23 +141,9 @@ const Messages = () => {
     enabled: !!user,
   });
 
-  const isDemo = selectedConversation?.id.startsWith("demo-");
-
   // Fetch messages for selected conversation
   useEffect(() => {
     if (!selectedConversation) return;
-
-    // If it's a demo conversation, use the demo messages
-    if (selectedConversation.id.startsWith("demo-")) {
-      const userId = user?.id || "current-user";
-      const demoMsgs = DEMO_MESSAGES[selectedConversation.id] || [];
-      // Replace "current-user" sender_id with actual user id for display
-      setMessages(demoMsgs.map(m => ({
-        ...m,
-        sender_id: m.sender_id === "current-user" ? userId : m.sender_id,
-      })));
-      return;
-    }
 
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -328,6 +226,11 @@ const Messages = () => {
           {/* Messages area */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
+              {messages.length === 0 && (
+                <p className="text-center text-muted-foreground text-sm py-8">
+                  No messages yet. Say hello! 👋
+                </p>
+              )}
               {messages.map((msg) => {
                 const isOwn = msg.sender_id === user?.id;
                 return (
@@ -462,9 +365,17 @@ const Messages = () => {
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : !conversations || conversations.length === 0 ? (
+          <Card className="p-12 text-center bg-secondary/50 border-primary/30">
+            <MessageCircle className="w-16 h-16 mx-auto mb-4 text-primary/40" />
+            <h3 className="text-xl font-display font-semibold mb-2">No Conversations Yet</h3>
+            <p className="text-muted-foreground">
+              Match with locals to start chatting! When you both like each other, a conversation will appear here.
+            </p>
+          </Card>
         ) : (
           <div className="space-y-2">
-            {(conversations && conversations.length > 0 ? conversations : DEMO_CONVERSATIONS).map((conv) => (
+            {conversations.map((conv) => (
               <Card
                 key={conv.id}
                 className="p-4 cursor-pointer transition-all hover:shadow-md border-primary/30 hover:bg-secondary/50"
