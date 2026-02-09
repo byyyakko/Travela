@@ -124,7 +124,7 @@ Return a JSON object with this structure:
     }
   ]
 }
-Create 2-3 days with 4-5 activities each. Only return valid JSON, no markdown.`;
+Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
