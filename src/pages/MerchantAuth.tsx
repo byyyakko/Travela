@@ -134,7 +134,7 @@ const MerchantAuth = () => {
     // If we have a user, create their store and role (will work after email verification)
     if (authData.user) {
       // Store the merchant data in localStorage temporarily for after verification
-      localStorage.setItem("pendingMerchantData", JSON.stringify({
+      sessionStorage.setItem("pendingMerchantData", JSON.stringify({
         storeName: storeName.trim(),
         storeType: storeType,
         phone: phone.trim() || null,
