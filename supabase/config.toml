@@ -1,1 +1,7 @@
 project_id = "mpnfpyphwxmnmaosxjao"
+
+[functions.ai-travel]
+verify_jwt = false
+
+[functions.geocode-address]
+verify_jwt = false

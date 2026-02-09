@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,18 +7,85 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_INPUT_LENGTH = 500;
+const MAX_COUNTRY_LENGTH = 100;
+const VALID_TYPES = ["phrases", "itinerary", "cultural-translation"];
+
+function sanitizeInput(input: string, maxLength: number): string {
+  if (typeof input !== "string") return "";
+  return input.trim().slice(0, maxLength);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { type, country, prompt, message, destination_country } = await req.json();
+    // Require authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // Rate limiting: 10 requests per 10 minutes
+    const { data: allowed } = await supabase.rpc("check_rate_limit", {
+      _user_id: userId,
+      _action_type: "ai_travel",
+      _max_requests: 10,
+      _window_minutes: 10,
+    });
+
+    if (allowed === false) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a few minutes." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { type } = body;
+
+    // Validate type
+    if (!type || !VALID_TYPES.includes(type)) {
+      return new Response(JSON.stringify({ error: "Invalid type. Must be one of: " + VALID_TYPES.join(", ") }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) throw new Error("AI service not configured");
 
     let systemPrompt = "";
     let userPrompt = "";
 
     if (type === "phrases") {
+      const country = sanitizeInput(body.country || "", MAX_COUNTRY_LENGTH);
+      if (!country) {
+        return new Response(JSON.stringify({ error: "Country is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       systemPrompt = `You are a travel language expert. Return common useful phrases for travelers in the requested country. 
 Return a JSON object with this structure:
 {
@@ -34,6 +102,13 @@ Return a JSON object with this structure:
 Include 4-6 phrases per category. Only return valid JSON, no markdown.`;
       userPrompt = `Give me common travel phrases for ${country}`;
     } else if (type === "itinerary") {
+      const prompt = sanitizeInput(body.prompt || "", MAX_INPUT_LENGTH);
+      if (!prompt) {
+        return new Response(JSON.stringify({ error: "Prompt is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       systemPrompt = `You are a local travel expert who creates authentic, off-the-beaten-path itineraries. Focus on local experiences, hidden gems, and cultural immersion rather than tourist traps.
 Return a JSON object with this structure:
 {
@@ -52,6 +127,14 @@ Return a JSON object with this structure:
 Create 2-3 days with 4-5 activities each. Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
+      const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
+      const destinationCountry = sanitizeInput(body.destination_country || "", MAX_COUNTRY_LENGTH);
+      if (!message || !destinationCountry) {
+        return new Response(JSON.stringify({ error: "Message and destination_country are required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       systemPrompt = `You are a cultural context translator for travelers. When given a message and destination country, explain the cultural nuances, suggest how to respond appropriately, and flag any potential cultural misunderstandings. Keep your response concise and helpful.
 Return a JSON object:
 {
@@ -61,12 +144,7 @@ Return a JSON object:
   "politeness_level": "casual|polite|formal"
 }
 Only return valid JSON, no markdown.`;
-      userPrompt = `Message: "${message}"\nDestination country: ${destination_country}\nHelp me understand the cultural context and suggest how to respond.`;
-    } else {
-      return new Response(JSON.stringify({ error: "Invalid type" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      userPrompt = `Message: "${message}"\nDestination country: ${destinationCountry}\nHelp me understand the cultural context and suggest how to respond.`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -92,14 +170,13 @@ Only return valid JSON, no markdown.`;
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits in workspace settings." }), {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please try again later." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI service error" }), {
+      console.error("AI gateway error:", response.status);
+      return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -108,10 +185,8 @@ Only return valid JSON, no markdown.`;
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
-    // Try to parse as JSON
     let parsed;
     try {
-      // Strip markdown code fences if present
       const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       parsed = JSON.parse(cleaned);
     } catch {
@@ -123,7 +198,7 @@ Only return valid JSON, no markdown.`;
     });
   } catch (e) {
     console.error("ai-travel error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
