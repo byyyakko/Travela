@@ -78,7 +78,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const [commentText, setCommentText] = useState("");
 
   const isOwnPost = currentUserId === post.user_id;
-  const isDemo = post.id.startsWith("demo-");
+  const isDemo = false;
 
   // Fetch comments when expanded
   const { data: comments = [], isLoading: commentsLoading } = useQuery({
