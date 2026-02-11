@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
+import { containsProfanity } from "@/lib/profanity";
 
 interface StoreItem {
   id: string;
@@ -138,6 +139,19 @@ const MerchantProducts = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!store?.id) return;
+
+    // Profanity checks
+    const fieldsToCheck = [
+      { value: formData.name, name: "name" },
+      { value: formData.description, name: "description" },
+      { value: formData.ordering_tip, name: "ordering tip" },
+    ];
+    for (const field of fieldsToCheck) {
+      if (containsProfanity(field.value)) {
+        toast({ title: "Inappropriate content", description: `Your ${field.name} contains inappropriate language.`, variant: "destructive" });
+        return;
+      }
+    }
 
     const itemData = {
       name: formData.name,

@@ -19,6 +19,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { containsProfanity } from "@/lib/profanity";
 
 const STEPS = [
   { id: 1, title: "Welcome", icon: Sparkles },
@@ -77,6 +78,10 @@ const Onboarding = () => {
 
   const addCustomInterest = () => {
     if (customInterest.trim() && !interests.includes(customInterest.trim()) && interests.length < 10) {
+      if (containsProfanity(customInterest)) {
+        toast({ title: "Inappropriate content", description: "Your interest contains inappropriate language.", variant: "destructive" });
+        return;
+      }
       setInterests([...interests, customInterest.trim()]);
       setCustomInterest("");
     }
@@ -100,16 +105,34 @@ const Onboarding = () => {
           toast({ title: "Display name is required", variant: "destructive" });
           return false;
         }
+        if (containsProfanity(displayName)) {
+          toast({ title: "Inappropriate content", description: "Your display name contains inappropriate language.", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 3:
+        if (containsProfanity(bio)) {
+          toast({ title: "Inappropriate content", description: "Your bio contains inappropriate language.", variant: "destructive" });
+          return false;
+        }
         return true;
       case 4:
         if (interests.length === 0) {
           toast({ title: "Please select at least 1 interest", variant: "destructive" });
           return false;
         }
+        if (interests.some(i => containsProfanity(i))) {
+          toast({ title: "Inappropriate content", description: "One of your interests contains inappropriate language.", variant: "destructive" });
+          return false;
+        }
         return true;
       case 5:
         if (!location.trim()) {
           toast({ title: "Location is required", variant: "destructive" });
+          return false;
+        }
+        if (containsProfanity(location)) {
+          toast({ title: "Inappropriate content", description: "Your location contains inappropriate language.", variant: "destructive" });
           return false;
         }
         return true;

@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Flag, Ban, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { containsProfanity } from "@/lib/profanity";
 
 interface ReportBlockDialogProps {
   targetUserId: string;
@@ -42,6 +43,10 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock, onReport }: 
 
   const handleReport = async () => {
     if (!user || !reason) return;
+    if (containsProfanity(description)) {
+      toast({ title: "Inappropriate content", description: "Your report description contains inappropriate language.", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
 
     try {
