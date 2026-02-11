@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "merchant")
-      .single();
+      .maybeSingle();
     
     const hasMerchantRole = !!data;
     setIsMerchant(hasMerchantRole);

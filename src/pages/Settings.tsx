@@ -26,7 +26,7 @@ const Settings = () => {
         .from("profiles")
         .select("is_local")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       if (data) {
         setIsLocalGuide(data.is_local || false);
