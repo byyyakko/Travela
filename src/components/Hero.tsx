@@ -34,13 +34,14 @@ const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button size="lg" className="text-lg px-8 py-6">
+            <Button size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/auth'}>
               Find a Local Guide
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
               className="text-lg px-8 py-6 bg-background/10 backdrop-blur-sm border-primary-foreground/30 text-primary-foreground hover:bg-background/20"
+              onClick={() => window.location.href = '/auth'}
             >
               <MapPin className="w-5 h-5 mr-2" />
               Explore Destinations

@@ -22,21 +22,21 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+              How it Works
+            </a>
+            <a href="#locals" className="text-muted-foreground hover:text-foreground transition-colors">
               Browse Locals
             </a>
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#destinations" className="text-muted-foreground hover:text-foreground transition-colors">
               Destinations
-            </a>
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-              How it Works
             </a>
           </div>
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost">Log in</Button>
-            <Button>Sign up</Button>
+            <Button variant="ghost" onClick={() => window.location.href = '/auth'}>Log in</Button>
+            <Button onClick={() => window.location.href = '/auth'}>Sign up</Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -56,12 +56,12 @@ const Navbar = () => {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <div className="flex flex-col gap-4">
-              <a href="#" className="text-foreground py-2">Browse Locals</a>
-              <a href="#" className="text-foreground py-2">Destinations</a>
-              <a href="#" className="text-foreground py-2">How it Works</a>
+              <a href="#how-it-works" className="text-foreground py-2" onClick={() => setIsOpen(false)}>How it Works</a>
+              <a href="#locals" className="text-foreground py-2" onClick={() => setIsOpen(false)}>Browse Locals</a>
+              <a href="#destinations" className="text-foreground py-2" onClick={() => setIsOpen(false)}>Destinations</a>
               <div className="flex gap-3 pt-4">
-                <Button variant="outline" className="flex-1">Log in</Button>
-                <Button className="flex-1">Sign up</Button>
+                <Button variant="outline" className="flex-1" onClick={() => window.location.href = '/auth'}>Log in</Button>
+                <Button className="flex-1" onClick={() => window.location.href = '/auth'}>Sign up</Button>
               </div>
             </div>
           </div>

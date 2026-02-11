@@ -252,8 +252,11 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
               {filter.label}
             </button>
           ))}
-          <button className="px-4 py-1.5 rounded-full text-sm font-semibold bg-muted text-muted-foreground flex items-center gap-1 hover:bg-muted/80 transition-colors">
-            More <ChevronRight className="w-3 h-3" />
+          <button
+            onClick={() => setActiveFilter(null)}
+            className="px-4 py-1.5 rounded-full text-sm font-semibold bg-muted text-muted-foreground flex items-center gap-1 hover:bg-muted/80 transition-colors"
+          >
+            {activeFilter ? "Show All" : "More"} <ChevronRight className="w-3 h-3" />
           </button>
         </div>
       </div>
