@@ -17,7 +17,8 @@ const PROFANITY_LIST = [
   "cocaine", "heroin", "meth",
 ];
 
-// Build regex patterns that match whole words and common evasion techniques
+// Build regex patterns that match words and common evasion techniques
+// Uses \b only at the start to catch derivatives (e.g., "fucker", "shitty")
 const buildPatterns = (words: string[]): RegExp[] => {
   return words.map(word => {
     // Create pattern that handles common letter substitutions
@@ -30,7 +31,8 @@ const buildPatterns = (words: string[]): RegExp[] => {
       .replace(/t/gi, "[t7]")
       .replace(/l/gi, "[l1|]")
       .replace(/u/gi, "[uùúûü]");
-    return new RegExp(`\\b${escaped}\\b`, "gi");
+    // Use word boundary at start but allow derivatives at the end
+    return new RegExp(`\\b${escaped}`, "gi");
   });
 };
 
