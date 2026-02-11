@@ -21,6 +21,7 @@ interface ReportBlockDialogProps {
   targetUserId: string;
   targetUserName: string;
   onBlock?: () => void;
+  onReport?: () => void;
 }
 
 const REPORT_REASONS = [
@@ -31,7 +32,7 @@ const REPORT_REASONS = [
   { value: "other", label: "Other" },
 ];
 
-const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBlockDialogProps) => {
+const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock, onReport }: ReportBlockDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "report" | "block">("menu");
@@ -56,6 +57,7 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
       toast({ title: "Report submitted", description: "Thank you for helping keep our community safe." });
       setOpen(false);
       resetForm();
+      onReport?.();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
