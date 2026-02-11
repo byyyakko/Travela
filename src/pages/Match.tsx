@@ -37,6 +37,7 @@ const Match = () => {
   const [locationFilter, setLocationFilter] = useState("");
   const [showProfileDetail, setShowProfileDetail] = useState(false);
   const [detailPhotoIndex, setDetailPhotoIndex] = useState(0);
+  const [swipeExitX, setSwipeExitX] = useState(0);
   const [likePopup, setLikePopup] = useState<{
     show: boolean;
     type: "liked" | "matched";
@@ -302,6 +303,7 @@ const Match = () => {
       }
       setCurrentIndex((prev) => prev + 1);
       setCurrentPhotoIndex(0);
+      motionX.set(0);
     },
   });
 
@@ -309,22 +311,25 @@ const Match = () => {
   const currentPhotos = currentProfile ? allProfilePhotos?.[currentProfile.user_id] || [] : [];
   const currentPrompts = currentProfile ? allProfilePrompts?.[currentProfile.user_id] || [] : [];
 
-  const handleSwipe = (action: "like" | "pass") => {
-    if (!currentProfile) return;
+  const handleSwipe = useCallback((action: "like" | "pass") => {
+    if (!currentProfile || matchMutation.isPending) return;
+    setSwipeExitX(action === "like" ? 500 : -500);
     track(action === "like" ? "swipe_like" : "swipe_pass", {
       target_user_id: currentProfile.user_id,
       target_location: currentProfile.location,
     });
     matchMutation.mutate({ targetUserId: currentProfile.user_id, action });
-  };
+  }, [currentProfile, matchMutation, track]);
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
     if (info.offset.x > SWIPE_THRESHOLD) {
       handleSwipe("like");
     } else if (info.offset.x < -SWIPE_THRESHOLD) {
       handleSwipe("pass");
+    } else {
+      motionX.set(0);
     }
-  };
+  }, [handleSwipe, motionX]);
 
   const handleRefresh = () => {
     setCurrentIndex(0);
@@ -422,11 +427,11 @@ const Match = () => {
                   style={{ x: motionX, rotate }}
                   drag="x"
                   dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.7}
+                  dragElastic={1}
                   onDragEnd={handleDragEnd}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, x: -300 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, x: swipeExitX, transition: { duration: 0.3 } }}
                   transition={{ duration: 0.3 }}
                   className="cursor-grab active:cursor-grabbing"
                 >
@@ -539,6 +544,27 @@ const Match = () => {
                     </div>
                   </Card>
                 </motion.div>
+
+                {/* Action buttons */}
+                <div className="flex justify-center gap-6 mt-4">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-14 h-14 rounded-full border-2 border-destructive/30 text-destructive hover:bg-destructive/10 p-0"
+                    onClick={() => handleSwipe("pass")}
+                    disabled={matchMutation.isPending}
+                  >
+                    <X className="w-7 h-7" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="w-14 h-14 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground p-0"
+                    onClick={() => handleSwipe("like")}
+                    disabled={matchMutation.isPending}
+                  >
+                    <Heart className="w-7 h-7" />
+                  </Button>
+                </div>
               </AnimatePresence>
             )}
           </TabsContent>
