@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +13,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { X, Heart, MapPin, Sparkles, RefreshCw, Search, MessageCircle, Users } from "lucide-react";
+import { X, Heart, MapPin, Sparkles, RefreshCw, Search, MessageCircle, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +29,7 @@ const Match = () => {
   const { track } = useAnalytics("match");
   const [activeTab, setActiveTab] = useState("discover");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
   const [likePopup, setLikePopup] = useState<{
     show: boolean;
@@ -159,7 +160,28 @@ const Match = () => {
     enabled: !!user && userProfile !== undefined && blockedUsers !== undefined,
   });
 
-  // Fetch profiles who liked the current user
+  // Fetch profile photos for all discovered profiles
+  const { data: allProfilePhotos } = useQuery({
+    queryKey: ["profilePhotosForMatch", profiles?.map(p => p.user_id)],
+    queryFn: async () => {
+      if (!profiles || profiles.length === 0) return {};
+      const userIds = profiles.map(p => p.user_id);
+      const { data, error } = await supabase
+        .from("profile_photos")
+        .select("*")
+        .in("user_id", userIds)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      const map: Record<string, typeof data> = {};
+      (data || []).forEach(photo => {
+        if (!map[photo.user_id]) map[photo.user_id] = [];
+        map[photo.user_id].push(photo);
+      });
+      return map;
+    },
+    enabled: !!profiles && profiles.length > 0,
+  });
+
   const { data: likedYouProfiles, isLoading: isLoadingLikedYou } = useQuery({
     queryKey: ["likedYouProfiles", user?.id],
     queryFn: async () => {
@@ -261,10 +283,12 @@ const Match = () => {
         }
       }
       setCurrentIndex((prev) => prev + 1);
+      setCurrentPhotoIndex(0);
     },
   });
 
   const currentProfile = filteredProfiles?.[currentIndex];
+  const currentPhotos = currentProfile ? allProfilePhotos?.[currentProfile.user_id] || [] : [];
 
   const handleSwipe = (action: "like" | "pass") => {
     if (!currentProfile) return;
@@ -367,21 +391,53 @@ const Match = () => {
                         targetUserName={currentProfile.display_name || "this user"}
                         onBlock={handleBlock}
                       />
-                      {currentProfile.avatar_url ? (
-                        <img
-                          src={currentProfile.avatar_url}
-                          alt={currentProfile.display_name || "Profile"}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Avatar className="w-32 h-32">
-                            <AvatarFallback className="text-4xl bg-secondary text-primary">
-                              {(currentProfile.display_name || "L")[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                      {/* Photo dots indicator */}
+                      {currentPhotos.length > 1 && (
+                        <div className="absolute top-3 left-0 right-0 z-10 flex justify-center gap-1 px-4">
+                          {currentPhotos.map((_, i) => (
+                            <div
+                              key={i}
+                              className={cn(
+                                "h-1 rounded-full flex-1 max-w-8 transition-colors",
+                                i === currentPhotoIndex ? "bg-white" : "bg-white/40"
+                              )}
+                            />
+                          ))}
                         </div>
                       )}
+                      {/* Photo tap zones */}
+                      {currentPhotos.length > 1 && (
+                        <>
+                          <button
+                            className="absolute left-0 top-0 w-1/3 h-full z-[5]"
+                            onClick={() => setCurrentPhotoIndex(prev => Math.max(0, prev - 1))}
+                          />
+                          <button
+                            className="absolute right-0 top-0 w-1/3 h-full z-[5]"
+                            onClick={() => setCurrentPhotoIndex(prev => Math.min(currentPhotos.length - 1, prev + 1))}
+                          />
+                        </>
+                      )}
+                      {(() => {
+                        const displayUrl = currentPhotos.length > 0
+                          ? currentPhotos[currentPhotoIndex]?.photo_url
+                          : currentProfile.avatar_url;
+                        return displayUrl ? (
+                          <img
+                            src={displayUrl}
+                            alt={currentProfile.display_name || "Profile"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Avatar className="w-32 h-32">
+                              <AvatarFallback className="text-4xl bg-secondary text-primary">
+                                {(currentProfile.display_name || "L")[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                        );
+                      })()}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
                       <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                         <h2 className="text-2xl font-display font-bold flex items-center gap-2">

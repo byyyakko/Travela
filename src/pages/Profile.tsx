@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit } from "lucide-react";
+import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VerifiedBadge from "@/components/VerifiedBadge";
@@ -18,9 +18,13 @@ import ProfilePreview from "@/components/ProfilePreview";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
+const MAX_PHOTOS = 6;
+
 const Profile = () => {
   const { user, signOut } = useAuth();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
@@ -41,6 +45,103 @@ const Profile = () => {
   const [travelEndDate, setTravelEndDate] = useState("");
   const [languages, setLanguages] = useState<string[]>([]);
   const [languageInput, setLanguageInput] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  // Fetch profile photos
+  const { data: profilePhotos = [], refetch: refetchPhotos } = useQuery({
+    queryKey: ["profilePhotos", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("profile_photos")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (profilePhotos.length >= MAX_PHOTOS) {
+      toast({ title: `Maximum ${MAX_PHOTOS} photos allowed`, variant: "destructive" });
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/photo_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      const { error: insertError } = await supabase
+        .from("profile_photos")
+        .insert({
+          user_id: user.id,
+          photo_url: publicUrl,
+          display_order: profilePhotos.length,
+        });
+
+      if (insertError) throw insertError;
+
+      // If this is the first photo and no avatar, set it as avatar
+      if (!avatarUrl) {
+        setAvatarUrl(publicUrl);
+        await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
+      }
+
+      refetchPhotos();
+      toast({ title: "Photo added!" });
+    } catch (error: any) {
+      toast({ title: "Error uploading photo", description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string, photoUrl: string) => {
+    if (!user) return;
+    try {
+      await supabase.from("profile_photos").delete().eq("id", photoId);
+
+      // If this was the avatar, update to next photo or null
+      if (avatarUrl === photoUrl) {
+        const remaining = profilePhotos.filter(p => p.id !== photoId);
+        const newAvatar = remaining.length > 0 ? remaining[0].photo_url : null;
+        setAvatarUrl(newAvatar);
+        await supabase.from("profiles").update({ avatar_url: newAvatar }).eq("user_id", user.id);
+      }
+
+      refetchPhotos();
+      toast({ title: "Photo removed" });
+    } catch (error: any) {
+      toast({ title: "Error removing photo", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleSetMainPhoto = async (photoUrl: string) => {
+    if (!user) return;
+    try {
+      setAvatarUrl(photoUrl);
+      await supabase.from("profiles").update({ avatar_url: photoUrl }).eq("user_id", user.id);
+      toast({ title: "Main photo updated!" });
+    } catch (error: any) {
+      toast({ title: "Error updating main photo", description: error.message, variant: "destructive" });
+    }
+  };
 
   const { isLoading } = useQuery({
     queryKey: ["profile", user?.id],
@@ -238,32 +339,77 @@ const Profile = () => {
           {/* Edit Tab Content */}
           <TabsContent value="edit" className="mt-6 space-y-6">
 
-        {/* Avatar */}
-        <div className="flex justify-center">
-          <div className="relative">
-            <Avatar className="w-24 h-24 ring-4 ring-primary/30">
-              <AvatarImage src={avatarUrl || ""} />
-              <AvatarFallback className="text-2xl bg-secondary text-primary">
-                {(displayName || user?.email || "U")[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+        {/* Photo Gallery */}
+        <Card className="border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              Photos ({profilePhotos.length}/{MAX_PHOTOS})
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Add up to {MAX_PHOTOS} photos. Tap a photo to set as main.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2">
+              {profilePhotos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className={cn(
+                    "relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
+                    avatarUrl === photo.photo_url
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-transparent hover:border-primary/40"
+                  )}
+                  onClick={() => handleSetMainPhoto(photo.photo_url)}
+                >
+                  <img
+                    src={photo.photo_url}
+                    alt="Profile photo"
+                    className="w-full h-full object-cover"
+                  />
+                  {avatarUrl === photo.photo_url && (
+                    <span className="absolute top-1 left-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-primary text-primary-foreground">
+                      Main
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePhoto(photo.id, photo.photo_url);
+                    }}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive/80 text-destructive-foreground flex items-center justify-center hover:bg-destructive transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {profilePhotos.length < MAX_PHOTOS && (
+                <button
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="aspect-square rounded-lg border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/60 hover:text-primary transition-colors disabled:opacity-50"
+                >
+                  {uploadingPhoto ? (
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="w-6 h-6" />
+                      <span className="text-[10px]">Add Photo</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
             <input
               type="file"
-              ref={fileInputRef}
-              onChange={handleAvatarChange}
+              ref={photoInputRef}
+              onChange={handleAddPhoto}
               accept="image/*"
               className="hidden"
             />
-            <Button
-              size="icon"
-              variant="secondary"
-              className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Camera className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Profile Info */}
         <Card className="border-primary/30">
