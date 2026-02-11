@@ -111,7 +111,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
         .from("profiles")
         .select("subscription_tier")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       return data?.subscription_tier || "tier_0";
     },
     enabled: !!user?.id,
