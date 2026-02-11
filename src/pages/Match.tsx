@@ -342,6 +342,12 @@ const Match = () => {
     setCurrentIndex(prev => Math.min(prev, (filteredProfiles?.length || 1) - 1));
   };
 
+  const handleReport = () => {
+    // Skip to next profile after reporting
+    setCurrentIndex((prev) => prev + 1);
+    setCurrentPhotoIndex(0);
+  };
+
   const closeLikePopup = () => {
     setLikePopup(prev => ({ ...prev, show: false }));
   };
@@ -456,6 +462,7 @@ const Match = () => {
                         targetUserId={currentProfile.user_id}
                         targetUserName={currentProfile.display_name || "this user"}
                         onBlock={handleBlock}
+                        onReport={handleReport}
                       />
                     </div>
 
