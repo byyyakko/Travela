@@ -434,9 +434,9 @@ const Match = () => {
                     {/* Swipe indicators */}
                     <motion.div
                       style={{ opacity: likeOpacity }}
-                      className="absolute top-8 left-6 z-20 px-4 py-2 border-4 border-green-500 rounded-lg rotate-[-20deg]"
+                      className="absolute top-8 left-6 z-20 px-4 py-2 border-4 border-primary rounded-lg rotate-[-20deg]"
                     >
-                      <span className="text-green-500 font-bold text-2xl">LIKE</span>
+                      <span className="text-primary font-bold text-2xl">LIKE</span>
                     </motion.div>
                     <motion.div
                       style={{ opacity: passOpacity }}
