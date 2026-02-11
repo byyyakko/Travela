@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const MAX_INPUT_LENGTH = 500;
 const MAX_COUNTRY_LENGTH = 100;
-const VALID_TYPES = ["phrases", "itinerary", "cultural-translation"];
+const VALID_TYPES = ["phrases", "itinerary", "cultural-translation", "explore-attractions"];
 
 function sanitizeInput(input: string, maxLength: number): string {
   if (typeof input !== "string") return "";
@@ -145,6 +145,38 @@ Return a JSON object:
 }
 Only return valid JSON, no markdown.`;
       userPrompt = `Message: "${message}"\nDestination country: ${destinationCountry}\nHelp me understand the cultural context and suggest how to respond.`;
+    } else if (type === "explore-attractions") {
+      const country = sanitizeInput(body.country || "", MAX_COUNTRY_LENGTH);
+      const category = sanitizeInput(body.category || "", 50);
+      if (!country) {
+        return new Response(JSON.stringify({ error: "Country is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const categoryFilter = category ? `Focus specifically on the "${category}" category.` : "Cover all categories.";
+      systemPrompt = `You are a world travel expert and destination guide. Given a country, return popular and noteworthy places to visit categorized into specific categories.
+${categoryFilter}
+Return a JSON object with this structure:
+{
+  "country": "Country Name",
+  "attractions": [
+    {
+      "name": "Attraction Name",
+      "category": "Attractions|Food & Cuisine|Nightlife|Wellness|Hiking|Beaches",
+      "description": "A brief 1-2 sentence description",
+      "summary": "A detailed 3-5 sentence AI summary about this place, what makes it special, best time to visit, and insider tips",
+      "location": "City or region name",
+      "latitude": 0.0,
+      "longitude": 0.0,
+      "source_url": "https://en.wikipedia.org/wiki/Attraction_Name or relevant travel site URL",
+      "rating": 4.5,
+      "price_level": "free|budget|moderate|expensive"
+    }
+  ]
+}
+Return 6-10 attractions. Ensure coordinates are accurate real-world values. Use real Wikipedia or travel site URLs where possible. Only return valid JSON, no markdown.`;
+      userPrompt = `Show me the best places to visit in ${country}${category ? ` in the ${category} category` : ""}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
