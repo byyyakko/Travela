@@ -50,16 +50,19 @@ export const uploadAndModerate = async (
     if (result.is_nsfw || result.is_vulgar || !result.is_safe) {
       // Remove the uploaded file
       await supabase.storage.from(bucket).remove([fileName]);
-      throw new Error(
-        result.reason || "This image was flagged as inappropriate and cannot be uploaded."
-      );
+      const reason = result.reason || "This image was flagged as inappropriate and cannot be uploaded.";
+      throw new Error(reason);
     }
 
     return { publicUrl, moderation: result };
   } catch (err: any) {
-    // If it's our own thrown error (NSFW), re-throw
-    if (err.message?.includes("flagged") || err.message?.includes("inappropriate")) {
-      throw err;
+    // If it's our own thrown error from moderation rejection, always re-throw
+    if (err instanceof Error && err.message && err.message !== "Moderation error") {
+      // Check if it came from our moderation block (not a network/service error)
+      const isServiceError = err.message === "Failed to fetch" || err.message?.includes("NetworkError") || err.message?.includes("TypeError");
+      if (!isServiceError) {
+        throw err;
+      }
     }
     // Otherwise moderation service failed — allow the image
     console.warn("Moderation service error, allowing image:", err);
