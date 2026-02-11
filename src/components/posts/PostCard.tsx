@@ -25,6 +25,7 @@ import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send } 
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { containsProfanity } from "@/lib/profanity";
 import { categoryColorMap } from "@/components/home/CutesyHome";
 interface PostCardProps {
   post: {
@@ -253,6 +254,10 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim() || isDemo) return;
+    if (containsProfanity(commentText)) {
+      toast({ title: "Inappropriate content", description: "Your comment contains inappropriate language. Please revise it.", variant: "destructive" });
+      return;
+    }
     addCommentMutation.mutate(commentText.trim());
   };
 

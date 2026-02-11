@@ -11,6 +11,7 @@ import { MapPin, Plane, Globe, Check, X, Mail, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { containsProfanity } from "@/lib/profanity";
 
 // Password validation rules
 const validatePassword = (password: string) => {
@@ -71,6 +72,15 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (containsProfanity(email)) {
+      toast({
+        title: "Inappropriate content",
+        description: "Your email contains inappropriate language. Please use a different email.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!isPasswordValid) {
       toast({

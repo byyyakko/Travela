@@ -18,6 +18,7 @@ import ProfilePreview from "@/components/ProfilePreview";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { uploadAndModerate } from "@/lib/moderateImage";
+import { containsProfanity } from "@/lib/profanity";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MAX_PHOTOS = 6;
@@ -191,6 +192,10 @@ const Profile = () => {
 
   const handleAddPrompt = async () => {
     if (!user || !selectedPromptQuestion || !promptAnswer.trim()) return;
+    if (containsProfanity(promptAnswer)) {
+      toast({ title: "Inappropriate content", description: "Your prompt answer contains inappropriate language.", variant: "destructive" });
+      return;
+    }
     if (profilePrompts.length >= MAX_PROMPTS) {
       toast({ title: `Maximum ${MAX_PROMPTS} prompts allowed`, variant: "destructive" });
       return;
@@ -286,6 +291,10 @@ const Profile = () => {
 
   const handleAddInterest = () => {
     if (interestInput.trim() && !interests.includes(interestInput.trim())) {
+      if (containsProfanity(interestInput)) {
+        toast({ title: "Inappropriate content", description: "Your interest contains inappropriate language.", variant: "destructive" });
+        return;
+      }
       setInterests([...interests, interestInput.trim()]);
       setInterestInput("");
     }
@@ -297,6 +306,10 @@ const Profile = () => {
 
   const handleAddLanguage = () => {
     if (languageInput.trim() && !languages.includes(languageInput.trim())) {
+      if (containsProfanity(languageInput)) {
+        toast({ title: "Inappropriate content", description: "Your language entry contains inappropriate language.", variant: "destructive" });
+        return;
+      }
       setLanguages([...languages, languageInput.trim()]);
       setLanguageInput("");
     }
@@ -308,6 +321,29 @@ const Profile = () => {
 
   const handleSave = async () => {
     if (!user) return;
+
+    // Profanity checks
+    const fieldsToCheck = [
+      { value: displayName, name: "display name" },
+      { value: bio, name: "bio" },
+      { value: location, name: "location" },
+      { value: destination, name: "destination" },
+    ];
+    for (const field of fieldsToCheck) {
+      if (containsProfanity(field.value)) {
+        toast({ title: "Inappropriate content", description: `Your ${field.name} contains inappropriate language. Please revise it.`, variant: "destructive" });
+        return;
+      }
+    }
+    if (interests.some(i => containsProfanity(i))) {
+      toast({ title: "Inappropriate content", description: "One of your interests contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+    if (languages.some(l => containsProfanity(l))) {
+      toast({ title: "Inappropriate content", description: "One of your languages contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+
     setSaving(true);
 
     try {
