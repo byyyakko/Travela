@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadAndModerate } from "@/lib/moderateImage";
+import { validateRealLocation } from "@/lib/validateLocation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -186,9 +187,20 @@ const Onboarding = () => {
           return;
         }
       } catch { /* fail open */ }
-      setAiChecking(false);
     }
 
+    // Validate location is a real place on step 5
+    if (currentStep === 5 && location.trim()) {
+      setAiChecking(true);
+      const locationResult = await validateRealLocation(location);
+      if (!locationResult.valid) {
+        toast({ title: "Invalid location", description: "Please enter a real city or place name (e.g., 'Barcelona, Spain').", variant: "destructive" });
+        setAiChecking(false);
+        return;
+      }
+    }
+
+    setAiChecking(false);
     setCurrentStep(currentStep + 1);
   };
 
@@ -201,6 +213,18 @@ const Onboarding = () => {
   const handleComplete = async () => {
     if (!user) return;
     if (!canProceedFromStep(5)) return;
+
+    // Validate location is real
+    if (location.trim()) {
+      setLoading(true);
+      const locationResult = await validateRealLocation(location);
+      if (!locationResult.valid) {
+        toast({ title: "Invalid location", description: "Please enter a real city or place name.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
