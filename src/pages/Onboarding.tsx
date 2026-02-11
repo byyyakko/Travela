@@ -62,13 +62,42 @@ const Onboarding = () => {
 
   const progress = (currentStep / STEPS.length) * 100;
 
-  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [avatarChecking, setAvatarChecking] = useState(false);
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    setAvatarFile(file);
+    // Show preview immediately
     const previewUrl = URL.createObjectURL(file);
     setAvatarUrl(previewUrl);
+    setAvatarFile(file);
+    
+    // Moderate the image right away
+    setAvatarChecking(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const tempFileName = `${user?.id}/temp_check_${Date.now()}.${fileExt}`;
+      
+      await uploadAndModerate("avatars", tempFileName, file, { upsert: true });
+      
+      // Moderation passed — clean up temp file, keep the local file for final upload
+      await supabase.storage.from("avatars").remove([tempFileName]);
+      
+      toast({ title: "Photo accepted ✓", description: "Your photo passed our content check." });
+    } catch (err: any) {
+      // Moderation failed — clear the photo
+      setAvatarFile(null);
+      setAvatarUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast({
+        title: "Photo rejected",
+        description: err.message || "This image was flagged as inappropriate and cannot be used.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarChecking(false);
+    }
   };
 
   const toggleInterest = (interest: string) => {
@@ -126,6 +155,10 @@ const Onboarding = () => {
   const canProceedFromStep = (step: number): boolean => {
     switch (step) {
       case 2:
+        if (avatarChecking) {
+          toast({ title: "Please wait", description: "Your photo is being checked...", variant: "destructive" });
+          return false;
+        }
         if (!displayName.trim()) {
           toast({ title: "Display name is required", variant: "destructive" });
           return false;
@@ -346,12 +379,17 @@ const Onboarding = () => {
             
             <div className="flex justify-center">
               <div className="relative">
-                <Avatar className="w-32 h-32 ring-4 ring-primary/20">
+                <Avatar className={cn("w-32 h-32 ring-4 ring-primary/20", avatarChecking && "opacity-50")}>
                   <AvatarImage src={avatarUrl || ""} />
                   <AvatarFallback className="text-4xl bg-muted">
                     {displayName ? displayName[0].toUpperCase() : <User className="w-12 h-12" />}
                   </AvatarFallback>
                 </Avatar>
+                {avatarChecking && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -363,6 +401,7 @@ const Onboarding = () => {
                   size="icon"
                   className="absolute -bottom-2 -right-2 rounded-full h-10 w-10"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarChecking}
                 >
                   <Camera className="w-5 h-5" />
                 </Button>
