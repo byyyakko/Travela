@@ -14,6 +14,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock } from "lucide-react";
 import { motion } from "framer-motion";
@@ -42,13 +48,24 @@ const mascotMessages = [
 const TORI_TAN_GREETING = mascotMessages[0];
 const getRandomMessage = () => mascotMessages[Math.floor(Math.random() * (mascotMessages.length - 1)) + 1];
 
-// Category filter pills with hand-drawn style colors
-const categoryFilters = [
+// All available category flairs
+export const allCategoryFlairs = [
   { label: "Local Favorites", color: "cutesy-pill-yellow" },
   { label: "Budget Friendly", color: "cutesy-pill-green" },
   { label: "Must See", color: "cutesy-pill-orange" },
   { label: "Foodie Finds", color: "cutesy-pill-pink" },
+  { label: "Hidden Gems", color: "bg-violet-200 text-violet-900" },
+  { label: "Adventure", color: "bg-sky-200 text-sky-900" },
+  { label: "Nightlife", color: "bg-indigo-200 text-indigo-900" },
+  { label: "Culture", color: "bg-rose-200 text-rose-900" },
+  { label: "Nature", color: "bg-emerald-200 text-emerald-900" },
+  { label: "Shopping", color: "bg-amber-200 text-amber-900" },
+  { label: "Relaxation", color: "bg-teal-200 text-teal-900" },
+  { label: "Photography", color: "bg-fuchsia-200 text-fuchsia-900" },
 ];
+
+// The first 4 shown inline
+const inlineCategoryFilters = allCategoryFlairs.slice(0, 4);
 
 // Quick action icons
 const quickActions = [
@@ -60,14 +77,10 @@ const quickActions = [
   { icon: Crown, label: "Subscribe", path: "/subscription", paid: false },
 ];
 
-
 // Map category labels to their pill CSS class for flair badges
-const categoryColorMap: Record<string, string> = {
-  "Local Favorites": "cutesy-pill-yellow",
-  "Budget Friendly": "cutesy-pill-green",
-  "Must See": "cutesy-pill-orange",
-  "Foodie Finds": "cutesy-pill-pink",
-};
+export const categoryColorMap: Record<string, string> = Object.fromEntries(
+  allCategoryFlairs.map(f => [f.label, f.color])
+);
 
 interface CutesyHomeProps {
   displayName?: string;
@@ -77,6 +90,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [showFlairsSheet, setShowFlairsSheet] = useState(false);
   const [showPaidDialog, setShowPaidDialog] = useState(false);
   const [hasSeenGreeting, setHasSeenGreeting] = useState(() => {
     return sessionStorage.getItem('toriTanGreeted') === 'true';
@@ -239,7 +253,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
 
         {/* Category filter pills */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {categoryFilters.map((filter) => (
+          {inlineCategoryFilters.map((filter) => (
             <button
               key={filter.label}
               onClick={() => setActiveFilter(activeFilter === filter.label ? null : filter.label)}
@@ -253,13 +267,51 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
             </button>
           ))}
           <button
-            onClick={() => setActiveFilter(null)}
+            onClick={() => setShowFlairsSheet(true)}
             className="px-4 py-1.5 rounded-full text-sm font-semibold bg-muted text-muted-foreground flex items-center gap-1 hover:bg-muted/80 transition-colors"
           >
-            {activeFilter ? "Show All" : "More"} <ChevronRight className="w-3 h-3" />
+            More <ChevronRight className="w-3 h-3" />
           </button>
         </div>
       </div>
+
+      {/* All Flairs Sheet */}
+      <Sheet open={showFlairsSheet} onOpenChange={setShowFlairsSheet}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle className="text-lg font-bold">All Categories</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-wrap gap-2 mt-4 pb-4">
+            {allCategoryFlairs.map((flair) => (
+              <button
+                key={flair.label}
+                onClick={() => {
+                  setActiveFilter(activeFilter === flair.label ? null : flair.label);
+                  setShowFlairsSheet(false);
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-full text-sm font-semibold transition-all border-2 border-transparent",
+                  flair.color,
+                  activeFilter === flair.label && "ring-2 ring-primary ring-offset-2"
+                )}
+              >
+                {flair.label}
+              </button>
+            ))}
+            {activeFilter && (
+              <button
+                onClick={() => {
+                  setActiveFilter(null);
+                  setShowFlairsSheet(false);
+                }}
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Create Post */}
       <CreatePost onPostCreated={refetch} />

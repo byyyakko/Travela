@@ -25,7 +25,7 @@ import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send } 
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/hooks/use-toast";
-
+import { categoryColorMap } from "@/components/home/CutesyHome";
 interface PostCardProps {
   post: {
     id: string;
@@ -47,12 +47,8 @@ interface PostCardProps {
   onUpdate: () => void;
 }
 
-const categoryColorMap: Record<string, string> = {
-  "Local Favorites": "bg-yellow-200 text-yellow-900",
-  "Budget Friendly": "bg-green-200 text-green-900",
-  "Must See": "bg-orange-200 text-orange-900",
-  "Foodie Finds": "bg-pink-200 text-pink-900",
-};
+// Use shared color map, with fallback
+const getCategoryColor = (cat: string) => categoryColorMap[cat] || "bg-muted text-muted-foreground";
 
 interface Comment {
   id: string;
@@ -283,7 +279,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
                 {category && (
                   <span className={cn(
                     "px-2 py-0.5 rounded-full text-[10px] font-bold",
-                    categoryColorMap[category] || "bg-muted text-muted-foreground"
+                    getCategoryColor(category)
                   )}>
                     {category}
                   </span>
