@@ -22,16 +22,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const MAX_PHOTOS = 6;
 const MAX_PROMPTS = 3;
 
-const TRAVEL_PROMPTS = [
+const GUIDE_PROMPTS = [
+  "As your local guide, I'll show you...",
   "What's a hidden gem only locals know about?",
   "My favorite local food you have to try is...",
   "The best time to visit my city is...",
   "A perfect day here looks like...",
-  "The one thing every traveler should experience is...",
   "I love being a local guide because...",
+];
+
+const USER_PROMPTS = [
+  "A hobby I could talk about for hours is...",
+  "My ideal weekend looks like...",
+  "Something I'm passionate about is...",
+  "The most spontaneous thing I've done is...",
+  "I geek out about...",
+  "A life goal I'm working towards is...",
+  "Something that makes me unique is...",
+  "I feel most alive when...",
+  "A simple pleasure I treasure is...",
+  "My friends would describe me as...",
+  "The best advice I ever received was...",
+  "My perfect evening looks like...",
+  "On my days off, you'll find me...",
   "My favorite travel memory is...",
-  "The most surprising thing about my culture is...",
-  "If we hang out, we'll definitely...",
   "One travel tip I always give is...",
 ];
 
@@ -177,7 +191,8 @@ const Profile = () => {
   const [selectedPromptQuestion, setSelectedPromptQuestion] = useState("");
   const [promptAnswer, setPromptAnswer] = useState("");
 
-  const availablePrompts = TRAVEL_PROMPTS.filter(
+  const allPrompts = isLocal ? [...GUIDE_PROMPTS, ...USER_PROMPTS] : USER_PROMPTS;
+  const availablePrompts = allPrompts.filter(
     q => !profilePrompts.some(p => p.question === q)
   );
 
