@@ -40,14 +40,16 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a content moderation AI. Analyze the provided image and return a JSON object with these fields:
+            content: `You are a strict content moderation AI for a family-friendly travel social app. Analyze the provided image and return a JSON object with these fields:
 {
-  "is_safe": boolean,         // true if the image is safe for a travel social app
-  "is_nsfw": boolean,         // true if the image contains nudity or explicit sexual content
+  "is_safe": boolean,         // true ONLY if the image is completely appropriate for all ages
+  "is_nsfw": boolean,         // true if the image contains ANY of: nudity (full or partial), sexually suggestive poses, explicit sexual content, lingerie/underwear as focus, excessive skin exposure in sexual context, provocative gestures, genitalia, bare buttocks, or any sexualized content
+  "is_vulgar": boolean,       // true if the image contains: offensive gestures (middle finger, etc.), graphic violence, gore, drug use, hate symbols, racist imagery, profane text/signs, shock content, or anything rude/vulgar/offensive
   "is_ai_generated": boolean, // true if the image appears to be AI-generated (look for: too-perfect skin, unnatural lighting, distorted hands/fingers, uncanny valley faces, overly smooth textures, inconsistent reflections, text artifacts)
   "confidence": number,       // 0-1 confidence score
   "reason": string           // brief explanation of the moderation decision
 }
+Be VERY strict. When in doubt, flag the image as unsafe. This is a travel app used by people of all ages.
 Only return valid JSON, no markdown.`
           },
           {

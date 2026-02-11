@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface ModerationResult {
   is_safe: boolean;
   is_nsfw: boolean;
+  is_vulgar: boolean;
   is_ai_generated: boolean;
   confidence: number;
   reason: string;
@@ -40,13 +41,13 @@ export const uploadAndModerate = async (
 
     if (modError) {
       console.warn("Moderation check failed, allowing image:", modError);
-      return { publicUrl, moderation: { is_safe: true, is_nsfw: false, is_ai_generated: false, confidence: 0, reason: "Moderation unavailable" } };
+      return { publicUrl, moderation: { is_safe: true, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Moderation unavailable" } };
     }
 
     const result = modResult as ModerationResult;
 
-    // Block NSFW content
-    if (result.is_nsfw || !result.is_safe) {
+    // Block NSFW or vulgar content
+    if (result.is_nsfw || result.is_vulgar || !result.is_safe) {
       // Remove the uploaded file
       await supabase.storage.from(bucket).remove([fileName]);
       throw new Error(
@@ -62,6 +63,6 @@ export const uploadAndModerate = async (
     }
     // Otherwise moderation service failed — allow the image
     console.warn("Moderation service error, allowing image:", err);
-    return { publicUrl, moderation: { is_safe: true, is_nsfw: false, is_ai_generated: false, confidence: 0, reason: "Moderation error" } };
+    return { publicUrl, moderation: { is_safe: true, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Moderation error" } };
   }
 };
