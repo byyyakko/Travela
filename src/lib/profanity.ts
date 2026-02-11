@@ -75,15 +75,16 @@ export const containsProfanity = (text: string): boolean => {
     return pattern.test(cleaned);
   })) return true;
 
-  // Check heavily normalized text for evasion attempts
-  const normalized = normalizeText(text);
-  for (const word of PROFANITY_LIST) {
-    const normalizedWord = word.replace(/\s+/g, "");
-    if (normalized.includes(normalizedWord)) return true;
-    // Also check with doubled chars collapsed to single
-    const singleChars = normalizedWord.replace(/(.)\1+/g, "$1");
-    const normalizedSingle = normalized.replace(/(.)\1+/g, "$1");
-    if (normalizedSingle.includes(singleChars)) return true;
+  // Check heavily normalized text for evasion attempts (spaced-out, symbol-laden text)
+  // Only use includes-based matching for multi-word phrases or when the original text
+  // had separators between letters (evasion signal)
+  const hasSeparators = /[.\-_*+#~\s]{2,}/.test(text) || /.\s.\s./.test(text);
+  if (hasSeparators) {
+    const normalized = normalizeText(text);
+    for (const word of PROFANITY_LIST) {
+      const normalizedWord = word.replace(/\s+/g, "");
+      if (normalized.includes(normalizedWord)) return true;
+    }
   }
 
   return false;
