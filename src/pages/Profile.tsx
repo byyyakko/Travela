@@ -18,7 +18,8 @@ import ProfilePreview from "@/components/ProfilePreview";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { uploadAndModerate } from "@/lib/moderateImage";
-import { containsProfanity } from "@/lib/profanity";
+import { containsProfanity, containsProfanityWithAI } from "@/lib/profanity";
+import { COMMON_LANGUAGES } from "@/lib/languages";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MAX_PHOTOS = 6;
@@ -304,15 +305,32 @@ const Profile = () => {
     setInterests(interests.filter((i) => i !== interest));
   };
 
-  const handleAddLanguage = () => {
-    if (languageInput.trim() && !languages.includes(languageInput.trim())) {
-      if (containsProfanity(languageInput)) {
-        toast({ title: "Inappropriate content", description: "Your language entry contains inappropriate language.", variant: "destructive" });
-        return;
-      }
-      setLanguages([...languages, languageInput.trim()]);
-      setLanguageInput("");
+  const [showOtherLanguage, setShowOtherLanguage] = useState(false);
+
+  const handleAddLanguageFromDropdown = (lang: string) => {
+    if (lang === "__other__") {
+      setShowOtherLanguage(true);
+      return;
     }
+    if (lang && !languages.includes(lang)) {
+      setLanguages([...languages, lang]);
+    }
+  };
+
+  const handleAddCustomLanguage = () => {
+    const trimmed = languageInput.trim();
+    if (!trimmed || languages.includes(trimmed)) return;
+    if (containsProfanity(trimmed)) {
+      toast({ title: "Inappropriate content", description: "Your language entry contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+    setLanguages([...languages, trimmed]);
+    setLanguageInput("");
+    setShowOtherLanguage(false);
+  };
+
+  const handleAddLanguage = () => {
+    handleAddCustomLanguage();
   };
 
   const handleRemoveLanguage = (language: string) => {
@@ -322,7 +340,7 @@ const Profile = () => {
   const handleSave = async () => {
     if (!user) return;
 
-    // Profanity checks
+    // Local profanity checks
     const fieldsToCheck = [
       { value: displayName, name: "display name" },
       { value: bio, name: "bio" },
@@ -342,6 +360,18 @@ const Profile = () => {
     if (languages.some(l => containsProfanity(l))) {
       toast({ title: "Inappropriate content", description: "One of your languages contains inappropriate language.", variant: "destructive" });
       return;
+    }
+
+    // AI profanity check on all non-empty text fields
+    const allTexts = [displayName, bio, location, destination, ...interests, ...languages].filter(t => t && t.trim().length > 0);
+    if (allTexts.length > 0) {
+      try {
+        const results = await Promise.all(allTexts.map(t => containsProfanityWithAI(t)));
+        if (results.some(r => r)) {
+          toast({ title: "Inappropriate content detected", description: "Our content filter detected inappropriate language. Please revise your profile.", variant: "destructive" });
+          return;
+        }
+      } catch { /* fail open */ }
     }
 
     setSaving(true);
@@ -689,18 +719,31 @@ const Profile = () => {
                 <Globe className="w-4 h-4 inline mr-2" />
                 Languages I Speak
               </Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a language..."
-                  value={languageInput}
-                  onChange={(e) => setLanguageInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddLanguage())}
-                  className="bg-secondary/50 border-primary/30"
-                />
-                <Button onClick={handleAddLanguage} variant="outline" className="border-primary/30">
-                  Add
-                </Button>
-              </div>
+              <Select onValueChange={handleAddLanguageFromDropdown}>
+                <SelectTrigger className="bg-secondary/50 border-primary/30">
+                  <SelectValue placeholder="Select a language..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 bg-background z-50">
+                  {COMMON_LANGUAGES.filter(l => !languages.includes(l)).map((lang) => (
+                    <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                  ))}
+                  <SelectItem value="__other__">Other (type your own)</SelectItem>
+                </SelectContent>
+              </Select>
+              {showOtherLanguage && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type your language..."
+                    value={languageInput}
+                    onChange={(e) => setLanguageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCustomLanguage())}
+                    className="bg-secondary/50 border-primary/30"
+                  />
+                  <Button onClick={handleAddCustomLanguage} variant="outline" className="border-primary/30">
+                    Add
+                  </Button>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {languages.map((language) => (
                   <span
