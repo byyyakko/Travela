@@ -408,11 +408,13 @@ export type Database = {
           id: string
           interests: string[] | null
           is_local: boolean | null
+          is_restricted: boolean
           is_verified: boolean | null
           languages: string[] | null
           location: string | null
           max_age_preference: number | null
           min_age_preference: number | null
+          restriction_reason: string | null
           subscription_tier: Database["public"]["Enums"]["user_subscription_tier"]
           theme: Database["public"]["Enums"]["user_theme"]
           travel_end_date: string | null
@@ -431,11 +433,13 @@ export type Database = {
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
+          is_restricted?: boolean
           is_verified?: boolean | null
           languages?: string[] | null
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
+          restriction_reason?: string | null
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
           travel_end_date?: string | null
@@ -454,11 +458,13 @@ export type Database = {
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
+          is_restricted?: boolean
           is_verified?: boolean | null
           languages?: string[] | null
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
+          restriction_reason?: string | null
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
           travel_end_date?: string | null

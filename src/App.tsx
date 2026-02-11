@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import RoleSelect from "./pages/RoleSelect";
 import Auth from "./pages/Auth";
@@ -121,9 +122,11 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ThemeProvider>
-            <MerchantSetupHandler>
-              <AppRoutes />
-            </MerchantSetupHandler>
+            <LanguageProvider>
+              <MerchantSetupHandler>
+                <AppRoutes />
+              </MerchantSetupHandler>
+            </LanguageProvider>
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>

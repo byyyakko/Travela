@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { containsProfanity } from "@/lib/profanity";
 
 interface Conversation {
   id: string;
@@ -187,6 +188,10 @@ const Messages = () => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
+    if (containsProfanity(newMessage)) {
+      toast({ title: "Inappropriate content", description: "Your message contains inappropriate language. Please revise it.", variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("messages").insert({
       conversation_id: selectedConversation.id,
       sender_id: user.id,

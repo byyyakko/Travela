@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Sparkles, ArrowLeft, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check } from "lucide-react";
+import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -28,10 +28,35 @@ interface Day {
   activities: Activity[];
 }
 
+interface Accommodation {
+  name: string;
+  type: string;
+  area: string;
+  price_range: string;
+  description: string;
+  tip: string;
+}
+
+interface TransportMode {
+  mode: string;
+  description: string;
+  estimated_cost: string;
+  tip: string;
+}
+
+interface TransportInfo {
+  from_airport: string;
+  getting_around: string;
+  modes: TransportMode[];
+  day_travel_times?: { from: string; to: string; duration: string; recommended_mode: string }[];
+}
+
 interface ItineraryData {
   title: string;
   description: string;
   days: Day[];
+  accommodations?: Accommodation[];
+  transport?: TransportInfo;
 }
 
 const categoryIcons: Record<string, React.ElementType> = {
@@ -155,14 +180,9 @@ const SmartItinerary = () => {
     <AppLayout>
       <div className="space-y-6 pb-8">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Smart Itinerary</h1>
-            <p className="text-sm text-muted-foreground">AI-powered local travel plans</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Smart Itinerary</h1>
+          <p className="text-sm text-muted-foreground">AI-powered local travel plans</p>
         </div>
 
         {/* Travela Plus badge */}
@@ -292,6 +312,62 @@ const SmartItinerary = () => {
                   })}
                 </div>
               ))}
+
+            {/* Accommodations */}
+            {itinerary.accommodations && itinerary.accommodations.length > 0 && (
+              <Card className="p-4 cutesy-border bg-card/95">
+                <h3 className="font-bold text-foreground flex items-center gap-2 mb-3">
+                  <Hotel className="w-5 h-5 text-primary" /> Nearby Hotels & Accommodations
+                </h3>
+                <div className="space-y-3">
+                  {itinerary.accommodations.map((acc, idx) => (
+                    <div key={idx} className="p-3 rounded-lg bg-secondary/50 border border-primary/10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm">{acc.name}</span>
+                        <Badge variant="outline" className="text-[10px] capitalize">{acc.type}</Badge>
+                        <Badge variant="outline" className="text-[10px] capitalize">{acc.price_range}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{acc.area}</p>
+                      <p className="text-sm mt-1">{acc.description}</p>
+                      {acc.tip && <p className="text-xs text-primary mt-1">💡 {acc.tip}</p>}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Transport */}
+            {itinerary.transport && (
+              <Card className="p-4 cutesy-border bg-card/95">
+                <h3 className="font-bold text-foreground flex items-center gap-2 mb-3">
+                  <Car className="w-5 h-5 text-primary" /> Getting Around
+                </h3>
+                <div className="space-y-3">
+                  {itinerary.transport.from_airport && (
+                    <div className="p-3 rounded-lg bg-secondary/50">
+                      <p className="text-xs font-semibold text-primary mb-1">✈️ From Airport</p>
+                      <p className="text-sm">{itinerary.transport.from_airport}</p>
+                    </div>
+                  )}
+                  {itinerary.transport.getting_around && (
+                    <div className="p-3 rounded-lg bg-secondary/50">
+                      <p className="text-xs font-semibold text-primary mb-1">🚶 Getting Around</p>
+                      <p className="text-sm">{itinerary.transport.getting_around}</p>
+                    </div>
+                  )}
+                  {itinerary.transport.modes?.map((mode, idx) => (
+                    <div key={idx} className="p-3 rounded-lg bg-secondary/50 border border-primary/10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm">{mode.mode}</span>
+                        <Badge variant="outline" className="text-[10px]">{mode.estimated_cost}</Badge>
+                      </div>
+                      <p className="text-sm">{mode.description}</p>
+                      {mode.tip && <p className="text-xs text-primary mt-1">💡 {mode.tip}</p>}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Add to Planner button */}
             <Card className="p-4 cutesy-border bg-card/95">
