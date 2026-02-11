@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ImagePlus, MapPin, X, Send } from "lucide-react";
+import { ImagePlus, MapPin, X, Send, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { allCategoryFlairs } from "@/components/home/CutesyHome";
 
 interface CreatePostProps {
   onPostCreated: () => void;
@@ -18,6 +19,8 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   const { user } = useAuth();
   const [content, setContent] = useState("");
   const [locationTag, setLocationTag] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,12 +77,15 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
         content: content.trim(),
         image_url: imageUrl,
         location_tag: locationTag.trim() || null,
+        category: selectedCategory,
       });
 
       if (error) throw error;
 
       setContent("");
       setLocationTag("");
+      setSelectedCategory(null);
+      setShowCategoryPicker(false);
       removeImage();
       onPostCreated();
 
@@ -134,6 +140,40 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             </div>
           )}
 
+          {/* Category flair picker */}
+          {selectedCategory && (
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "px-3 py-1 rounded-full text-xs font-semibold",
+                allCategoryFlairs.find(f => f.label === selectedCategory)?.color || "bg-muted text-muted-foreground"
+              )}>
+                {selectedCategory}
+              </span>
+              <button onClick={() => setSelectedCategory(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          {showCategoryPicker && (
+            <div className="flex flex-wrap gap-1.5">
+              {allCategoryFlairs.map((flair) => (
+                <button
+                  key={flair.label}
+                  onClick={() => {
+                    setSelectedCategory(flair.label);
+                    setShowCategoryPicker(false);
+                  }}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-semibold transition-all",
+                    flair.color
+                  )}
+                >
+                  {flair.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -160,6 +200,18 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               className="border-2 border-primary/40 text-primary hover:bg-secondary rounded-full"
             >
               <ImagePlus className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowCategoryPicker(!showCategoryPicker)}
+              className={cn(
+                "border-2 border-primary/40 text-primary hover:bg-secondary rounded-full",
+                selectedCategory && "bg-secondary"
+              )}
+            >
+              <Tag className="w-4 h-4" />
             </Button>
 
             <Button
