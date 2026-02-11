@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadAndModerate } from "@/lib/moderateImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Trash2, Image, Utensils, MapPin, Sparkles, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -86,25 +87,16 @@ const MerchantProducts = () => {
     const fileExt = file.name.split(".").pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("store-items")
-      .upload(fileName, file);
-
-    if (uploadError) {
+    try {
+      const { publicUrl } = await uploadAndModerate("store-items", fileName, file);
+      setFormData((prev) => ({ ...prev, image_url: publicUrl }));
+    } catch (err: any) {
       toast({
         title: "Upload failed",
-        description: uploadError.message,
+        description: err.message,
         variant: "destructive",
       });
-      setUploading(false);
-      return;
     }
-
-    const { data: urlData } = supabase.storage
-      .from("store-items")
-      .getPublicUrl(fileName);
-
-    setFormData((prev) => ({ ...prev, image_url: urlData.publicUrl }));
     setUploading(false);
   };
 

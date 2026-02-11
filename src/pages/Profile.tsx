@@ -17,6 +17,7 @@ import VerifiedBadge from "@/components/VerifiedBadge";
 import ProfilePreview from "@/components/ProfilePreview";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { uploadAndModerate } from "@/lib/moderateImage";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MAX_PHOTOS = 6;
@@ -105,15 +106,7 @@ const Profile = () => {
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/photo_${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(fileName);
+      const { publicUrl } = await uploadAndModerate("avatars", fileName, file, { upsert: true });
 
       const { error: insertError } = await supabase
         .from("profile_photos")
@@ -272,15 +265,7 @@ const Profile = () => {
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(fileName);
+      const { publicUrl } = await uploadAndModerate("avatars", fileName, file, { upsert: true });
 
       setAvatarUrl(publicUrl);
       
