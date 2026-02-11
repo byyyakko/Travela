@@ -1,5 +1,7 @@
 // Profanity filter utility
-// Uses a comprehensive word list and pattern matching
+// Uses a comprehensive word list, pattern matching, and AI fallback
+
+import { supabase } from "@/integrations/supabase/client";
 
 const PROFANITY_LIST = [
   // English profanity (common)
@@ -17,6 +19,28 @@ const PROFANITY_LIST = [
   "cocaine", "heroin", "meth",
 ];
 
+// Normalize text: strip separators, repeated chars, leetspeak, etc.
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    // Remove separators between letters: f.u.c.k, f-u-c-k, f_u_c_k, f u c k
+    .replace(/[\s_\-.*+#~^°!?,;:|\\/'`´\u200B\u200C\u200D]+/g, "")
+    // Collapse repeated characters: fuuuuck -> fuck
+    .replace(/(.)\1{2,}/g, "$1$1")
+    // Common leetspeak replacements
+    .replace(/[@4]/g, "a")
+    .replace(/[3€]/g, "e")
+    .replace(/[1!|]/g, "i")
+    .replace(/[0]/g, "o")
+    .replace(/[$5]/g, "s")
+    .replace(/[7]/g, "t")
+    .replace(/[üùúû]/g, "u")
+    .replace(/[àáâãäå]/g, "a")
+    .replace(/[èéêë]/g, "e")
+    .replace(/[ìíîï]/g, "i")
+    .replace(/[òóôõö]/g, "o");
+};
+
 // Build regex patterns that match words and common evasion techniques
 // Uses \b only at the start to catch derivatives (e.g., "fucker", "shitty")
 const buildPatterns = (words: string[]): RegExp[] => {
@@ -24,7 +48,7 @@ const buildPatterns = (words: string[]): RegExp[] => {
     // Create pattern that handles common letter substitutions
     const escaped = word
       .replace(/a/gi, "[a@4àáâãäå]")
-      .replace(/e/gi, "[e3èéêë]")
+      .replace(/e/gi, "[e3èéêë€]")
       .replace(/i/gi, "[i1!|ìíîï]")
       .replace(/o/gi, "[o0òóôõö]")
       .replace(/s/gi, "[s$5]")
@@ -39,12 +63,60 @@ const buildPatterns = (words: string[]): RegExp[] => {
 const patterns = buildPatterns(PROFANITY_LIST);
 
 /**
- * Check if text contains profanity
+ * Check if text contains profanity using local patterns
  */
 export const containsProfanity = (text: string): boolean => {
   if (!text) return false;
-  const normalized = text.toLowerCase().replace(/[_\-\.]/g, "");
-  return patterns.some(pattern => pattern.test(normalized));
+  
+  // Check original text with regex patterns
+  const cleaned = text.toLowerCase().replace(/[_\-\.]/g, "");
+  if (patterns.some(pattern => {
+    pattern.lastIndex = 0;
+    return pattern.test(cleaned);
+  })) return true;
+
+  // Check heavily normalized text for evasion attempts
+  const normalized = normalizeText(text);
+  for (const word of PROFANITY_LIST) {
+    const normalizedWord = word.replace(/\s+/g, "");
+    if (normalized.includes(normalizedWord)) return true;
+    // Also check with doubled chars collapsed to single
+    const singleChars = normalizedWord.replace(/(.)\1+/g, "$1");
+    const normalizedSingle = normalized.replace(/(.)\1+/g, "$1");
+    if (normalizedSingle.includes(singleChars)) return true;
+  }
+
+  return false;
+};
+
+/**
+ * AI-powered profanity check using Gemini via edge function.
+ * Returns true if the AI detects profanity or inappropriate content.
+ * Falls back to false (allow) if the AI check fails.
+ */
+export const aiCheckProfanity = async (text: string): Promise<boolean> => {
+  if (!text || text.trim().length === 0) return false;
+  try {
+    const { data, error } = await supabase.functions.invoke("check-profanity", {
+      body: { text },
+    });
+    if (error) {
+      console.error("AI profanity check error:", error);
+      return false; // fail open – local filter already ran
+    }
+    return data?.is_profane === true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Combined check: local filter first, then AI if local passes.
+ * Use this for critical fields where evasion is a concern.
+ */
+export const containsProfanityWithAI = async (text: string): Promise<boolean> => {
+  if (containsProfanity(text)) return true;
+  return aiCheckProfanity(text);
 };
 
 /**
@@ -55,11 +127,10 @@ export const detectProfanity = (text: string): string[] => {
   const normalized = text.toLowerCase().replace(/[_\-\.]/g, "");
   const found: string[] = [];
   patterns.forEach((pattern, index) => {
+    pattern.lastIndex = 0;
     if (pattern.test(normalized)) {
       found.push(PROFANITY_LIST[index]);
     }
-    // Reset lastIndex since we're reusing the regex
-    pattern.lastIndex = 0;
   });
   return found;
 };
@@ -71,8 +142,8 @@ export const filterProfanity = (text: string): string => {
   if (!text) return text;
   let filtered = text;
   patterns.forEach((pattern) => {
-    filtered = filtered.replace(pattern, (match) => "*".repeat(match.length));
     pattern.lastIndex = 0;
+    filtered = filtered.replace(pattern, (match) => "*".repeat(match.length));
   });
   return filtered;
 };

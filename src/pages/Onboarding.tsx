@@ -19,7 +19,9 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { containsProfanity } from "@/lib/profanity";
+import { containsProfanity, containsProfanityWithAI } from "@/lib/profanity";
+import { COMMON_LANGUAGES } from "@/lib/languages";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STEPS = [
   { id: 1, title: "Welcome", icon: Sparkles },
@@ -87,16 +89,38 @@ const Onboarding = () => {
     }
   };
 
-  const addLanguage = () => {
-    if (languageInput.trim() && !languages.includes(languageInput.trim())) {
-      setLanguages([...languages, languageInput.trim()]);
-      setLanguageInput("");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [showOtherLanguage, setShowOtherLanguage] = useState(false);
+
+  const addLanguageFromDropdown = (lang: string) => {
+    if (lang === "__other__") {
+      setShowOtherLanguage(true);
+      setSelectedLanguage("");
+      return;
     }
+    if (lang && !languages.includes(lang)) {
+      setLanguages([...languages, lang]);
+    }
+    setSelectedLanguage("");
+  };
+
+  const addCustomLanguage = () => {
+    const trimmed = languageInput.trim();
+    if (!trimmed || languages.includes(trimmed)) return;
+    if (containsProfanity(trimmed)) {
+      toast({ title: "Inappropriate content", description: "Your language entry contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+    setLanguages([...languages, trimmed]);
+    setLanguageInput("");
+    setShowOtherLanguage(false);
   };
 
   const removeLanguage = (lang: string) => {
     setLanguages(languages.filter(l => l !== lang));
   };
+
+  const [aiChecking, setAiChecking] = useState(false);
 
   const canProceedFromStep = (step: number): boolean => {
     switch (step) {
@@ -141,10 +165,31 @@ const Onboarding = () => {
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length && canProceedFromStep(currentStep)) {
-      setCurrentStep(currentStep + 1);
+  const handleNext = async () => {
+    if (currentStep >= STEPS.length || !canProceedFromStep(currentStep)) return;
+
+    // AI profanity check on text fields for the current step
+    const textsToCheck: string[] = [];
+    if (currentStep === 2) textsToCheck.push(displayName);
+    if (currentStep === 3) textsToCheck.push(bio, ...languages);
+    if (currentStep === 4) textsToCheck.push(...interests.filter(i => !SUGGESTED_INTERESTS.includes(i)));
+    if (currentStep === 5) textsToCheck.push(location);
+
+    const nonEmpty = textsToCheck.filter(t => t && t.trim().length > 0);
+    if (nonEmpty.length > 0) {
+      setAiChecking(true);
+      try {
+        const results = await Promise.all(nonEmpty.map(t => containsProfanityWithAI(t)));
+        if (results.some(r => r)) {
+          toast({ title: "Inappropriate content detected", description: "Please remove any inappropriate language before proceeding.", variant: "destructive" });
+          setAiChecking(false);
+          return;
+        }
+      } catch { /* fail open */ }
+      setAiChecking(false);
     }
+
+    setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
@@ -342,15 +387,28 @@ const Onboarding = () => {
                 <Globe className="w-4 h-4" />
                 Languages I Speak
               </Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a language..."
-                  value={languageInput}
-                  onChange={(e) => setLanguageInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addLanguage())}
-                />
-                <Button onClick={addLanguage} variant="outline">Add</Button>
-              </div>
+              <Select value={selectedLanguage} onValueChange={addLanguageFromDropdown}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a language..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 bg-background z-50">
+                  {COMMON_LANGUAGES.filter(l => !languages.includes(l)).map((lang) => (
+                    <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                  ))}
+                  <SelectItem value="__other__">Other (type your own)</SelectItem>
+                </SelectContent>
+              </Select>
+              {showOtherLanguage && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type your language..."
+                    value={languageInput}
+                    onChange={(e) => setLanguageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addCustomLanguage())}
+                  />
+                  <Button onClick={addCustomLanguage} variant="outline">Add</Button>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {languages.map((lang) => (
                   <span
@@ -533,8 +591,8 @@ const Onboarding = () => {
               )}
               
               {currentStep < STEPS.length ? (
-                <Button onClick={handleNext} className="flex-1">
-                  Continue
+                <Button onClick={handleNext} className="flex-1" disabled={aiChecking}>
+                  {aiChecking ? "Checking..." : "Continue"}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               ) : (
