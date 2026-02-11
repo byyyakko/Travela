@@ -104,7 +104,7 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
           <Flag className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-pink-200">
+      <DialogContent className="border-pink-200" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>
             {mode === "menu" && "Report or Block"}

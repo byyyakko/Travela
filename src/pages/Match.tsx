@@ -450,15 +450,19 @@ const Match = () => {
                       <span className="text-destructive font-bold text-2xl">PASS</span>
                     </motion.div>
 
-                    <div
-                      className="aspect-[3/4] relative bg-gradient-to-br from-secondary to-accent/20"
-                      onClick={openProfileDetail}
-                    >
+                    {/* Report button - outside the clickable photo area */}
+                    <div className="absolute top-2 right-2 z-30" onClick={(e) => e.stopPropagation()}>
                       <ReportBlockDialog
                         targetUserId={currentProfile.user_id}
                         targetUserName={currentProfile.display_name || "this user"}
                         onBlock={handleBlock}
                       />
+                    </div>
+
+                    <div
+                      className="aspect-[3/4] relative bg-gradient-to-br from-secondary to-accent/20"
+                      onClick={openProfileDetail}
+                    >
                       {/* Photo dots indicator */}
                       {currentPhotos.length > 1 && (
                         <div className="absolute top-3 left-0 right-0 z-10 flex justify-center gap-1 px-4">
