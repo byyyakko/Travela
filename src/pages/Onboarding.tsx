@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { 
   Camera, MapPin, Plane, ChevronRight, ChevronLeft, 
-  User, Sparkles, Check, Globe
+  User, Sparkles, Check, Globe, LogOut
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -34,7 +34,7 @@ const SUGGESTED_INTERESTS = [
 ];
 
 const Onboarding = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { track } = useAnalytics("onboarding");
@@ -450,8 +450,24 @@ const Onboarding = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
+      {/* Back / Sign out button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleSignOut}
+        className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        Sign Out
+      </Button>
+
       <div className="w-full max-w-md">
         {/* Progress */}
         <div className="mb-6">
