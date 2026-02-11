@@ -92,8 +92,33 @@ const Onboarding = () => {
     setLanguages(languages.filter(l => l !== lang));
   };
 
+  const canProceedFromStep = (step: number): boolean => {
+    switch (step) {
+      case 2:
+        if (!displayName.trim()) {
+          toast({ title: "Display name is required", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 4:
+        if (interests.length === 0) {
+          toast({ title: "Please select at least 1 interest", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 5:
+        if (!location.trim()) {
+          toast({ title: "Location is required", variant: "destructive" });
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
   const handleNext = () => {
-    if (currentStep < STEPS.length) {
+    if (currentStep < STEPS.length && canProceedFromStep(currentStep)) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -106,11 +131,12 @@ const Onboarding = () => {
 
   const handleComplete = async () => {
     if (!user) return;
+    if (!canProceedFromStep(5)) return;
     setLoading(true);
 
     try {
       let finalAvatarUrl = null;
-      const safeDisplayName = displayName.trim() || (user.email ? user.email.split("@")[0] : "");
+      const safeDisplayName = displayName.trim() || (user.email ? user.email.split("@")[0] : "Traveler");
 
       // Upload avatar if selected
       if (avatarFile) {
@@ -134,9 +160,7 @@ const Onboarding = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          // Ensure onboarding can complete even if the user leaves fields blank
-          // (prevents redirect loops caused by an "empty" profile)
-          display_name: safeDisplayName || null,
+          display_name: safeDisplayName,
           avatar_url: finalAvatarUrl,
           bio: bio.trim() || null,
           interests: interests.length > 0 ? interests : null,
@@ -148,10 +172,10 @@ const Onboarding = () => {
 
       if (error) throw error;
 
-      // Immediately unblock ProtectedRoute + refresh dependent queries
+      // Mark onboarding as complete in cache — do NOT invalidate to avoid race condition
       queryClient.setQueryData(["onboarding-check", user.id], false);
+      // Refresh profile data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["onboarding-check", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["userProfile", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["profile", user.id] }),
       ]);
@@ -167,7 +191,7 @@ const Onboarding = () => {
         description: "Your profile is all set up.",
       });
 
-      navigate("/home");
+      navigate("/home", { replace: true });
     } catch (error: any) {
       toast({
         title: "Error saving profile",
@@ -262,12 +286,13 @@ const Onboarding = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Display Name</Label>
+              <Label>Display Name <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="What should we call you?"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 maxLength={50}
+                required
               />
             </div>
           </div>
@@ -330,9 +355,9 @@ const Onboarding = () => {
         return (
           <div className="space-y-6 py-4">
             <div className="text-center">
-              <h2 className="text-xl font-display font-semibold">Your Interests</h2>
+              <h2 className="text-xl font-display font-semibold">Your Interests <span className="text-destructive">*</span></h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Select up to 10 interests to help find the perfect matches
+                Select at least 1 interest (up to 10) to help find the perfect matches
               </p>
             </div>
 
@@ -384,7 +409,7 @@ const Onboarding = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>City / Location</Label>
+              <Label>City / Location <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
