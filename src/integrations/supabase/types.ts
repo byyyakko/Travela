@@ -369,6 +369,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_prompts: {
+        Row: {
+          answer: string
+          created_at: string
+          display_order: number
+          id: string
+          question: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          question: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          question?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
