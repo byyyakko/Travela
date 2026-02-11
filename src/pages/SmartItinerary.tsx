@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Sparkles, ArrowLeft, Clock, Utensils, Camera, ShoppingBag, Compass, Star } from "lucide-react";
+import { MapPin, Sparkles, ArrowLeft, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { addDays, format } from "date-fns";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 
 interface Activity {
@@ -57,11 +59,14 @@ const examplePrompts = [
 
 const SmartItinerary = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [prompt, setPrompt] = useState("");
   const [itinerary, setItinerary] = useState<ItineraryData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeDay, setActiveDay] = useState(1);
+  const [isAddingToPlanner, setIsAddingToPlanner] = useState(false);
+  const [addedToPlanner, setAddedToPlanner] = useState(false);
 
   const generateItinerary = async () => {
     if (!prompt.trim()) return;
@@ -81,10 +86,68 @@ const SmartItinerary = () => {
 
       setItinerary(data);
       setActiveDay(1);
+      setAddedToPlanner(false);
     } catch (err) {
       toast({ title: "Error", description: "Failed to generate itinerary. Try again!", variant: "destructive" });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const addToPlanner = async () => {
+    if (!itinerary || !user) return;
+    setIsAddingToPlanner(true);
+
+    try {
+      const startDate = new Date();
+      const endDate = addDays(startDate, itinerary.days.length - 1);
+
+      // Extract country from title (best effort)
+      const country = itinerary.title.replace(/^.*in\s+/i, "").trim() || "Unknown";
+
+      // Create the trip
+      const { data: trip, error: tripError } = await supabase
+        .from("trips")
+        .insert({
+          user_id: user.id,
+          name: itinerary.title,
+          country,
+          start_date: format(startDate, "yyyy-MM-dd"),
+          end_date: format(endDate, "yyyy-MM-dd"),
+          notes: itinerary.description,
+          status: "planned",
+        })
+        .select("id")
+        .single();
+
+      if (tripError) throw tripError;
+
+      // Create itinerary items for each day/activity
+      const items = itinerary.days.flatMap((day) =>
+        day.activities.map((activity, idx) => ({
+          trip_id: trip.id,
+          user_id: user.id,
+          day_date: format(addDays(startDate, day.day - 1), "yyyy-MM-dd"),
+          title: activity.title,
+          description: activity.description + (activity.tip ? `\n💡 ${activity.tip}` : ""),
+          time: activity.time,
+          category: activity.category || "activity",
+          order_index: idx,
+        }))
+      );
+
+      const { error: itemsError } = await supabase.from("itinerary_items").insert(items);
+      if (itemsError) throw itemsError;
+
+      setAddedToPlanner(true);
+      toast({
+        title: "Added to Planner! 🎉",
+        description: "Your AI itinerary has been saved. You can edit it in the Plan tab.",
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsAddingToPlanner(false);
     }
   };
 
@@ -229,6 +292,31 @@ const SmartItinerary = () => {
                   })}
                 </div>
               ))}
+
+            {/* Add to Planner button */}
+            <Card className="p-4 cutesy-border bg-card/95">
+              {addedToPlanner ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                  <p className="font-semibold text-foreground">Added to your Planner!</p>
+                  <Button variant="outline" className="rounded-full" onClick={() => navigate("/planner")}>
+                    View in Planner
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={addToPlanner}
+                  disabled={isAddingToPlanner}
+                  className="w-full rounded-full"
+                  size="lg"
+                >
+                  <CalendarPlus className="w-5 h-5 mr-2" />
+                  {isAddingToPlanner ? "Adding to Planner..." : "Add to Planner"}
+                </Button>
+              )}
+            </Card>
           </motion.div>
         )}
       </div>
