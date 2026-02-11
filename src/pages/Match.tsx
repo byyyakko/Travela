@@ -303,20 +303,22 @@ const Match = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className={cn("w-full grid", userProfile?.is_local ? "grid-cols-2" : "grid-cols-1")}>
             <TabsTrigger value="discover" className="gap-1.5">
               <Search className="w-3.5 h-3.5" />
               Discover
             </TabsTrigger>
-            <TabsTrigger value="liked-you" className="gap-1.5">
-              <Heart className="w-3.5 h-3.5" />
-              Liked You
-              {likedYouProfiles && likedYouProfiles.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-primary text-primary-foreground font-bold">
-                  {likedYouProfiles.length}
-                </span>
-              )}
-            </TabsTrigger>
+            {userProfile?.is_local && (
+              <TabsTrigger value="liked-you" className="gap-1.5">
+                <Heart className="w-3.5 h-3.5" />
+                Liked You
+                {likedYouProfiles && likedYouProfiles.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-primary text-primary-foreground font-bold">
+                    {likedYouProfiles.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="discover" className="space-y-4 mt-4">
