@@ -3,6 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Crown, Sparkles, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 
 interface StoreContext {
   store: {
@@ -78,16 +83,42 @@ const MerchantPlan = () => {
   const { store } = useOutletContext<StoreContext>();
   const currentTier = store?.subscription_tier || "tier_0";
 
-  const handleUpgrade = (tier: string) => {
-    // TODO: Integrate with payment system
-    console.log("Upgrading to:", tier);
-    alert(`Payment integration coming soon! You selected the ${tier === "tier_1" ? "Pro" : "Premium"} plan.`);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [upgrading, setUpgrading] = useState(false);
+
+  const handleUpgrade = async (tier: string) => {
+    if (!store?.id) return;
+    setUpgrading(true);
+    try {
+      const { error } = await supabase
+        .from("stores")
+        .update({ subscription_tier: tier as "tier_0" | "tier_1" | "tier_2" })
+        .eq("id", store.id);
+
+      if (error) throw error;
+
+      // Refresh store data
+      await queryClient.invalidateQueries({ queryKey: ["merchant-store"] });
+
+      const planName = plans.find(p => p.tier === tier)?.name || tier;
+      toast({
+        title: "Plan Updated! 🎉",
+        description: `You're now on the ${planName} plan.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update plan. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpgrading(false);
+    }
   };
 
-  const getTierIndex = (tier: string) => {
-    return plans.findIndex((p) => p.tier === tier);
-  };
-
+  const getTierIndex = (tier: string) => plans.findIndex((p) => p.tier === tier);
   const currentTierIndex = getTierIndex(currentTier);
 
   return (
@@ -189,7 +220,7 @@ const MerchantPlan = () => {
                       : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
                   )}
                   onClick={() => isFuturePlan && handleUpgrade(plan.tier)}
-                  disabled={!isFuturePlan}
+                  disabled={!isFuturePlan || upgrading}
                 >
                   {isCurrentPlan ? (
                     <>
