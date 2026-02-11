@@ -99,6 +99,7 @@ const ReportBlockDialog = ({ targetUserId, targetUserName, onBlock }: ReportBloc
           variant="ghost"
           size="icon"
           className="absolute top-2 right-2 z-10 rounded-full bg-black/30 hover:bg-pink-500/50 text-white"
+          onClick={(e) => e.stopPropagation()}
         >
           <Flag className="w-4 h-4" />
         </Button>
