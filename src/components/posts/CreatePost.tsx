@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { allCategoryFlairs } from "@/components/home/CutesyHome";
 import { containsProfanity } from "@/lib/profanity";
+import { uploadAndModerate } from "@/lib/moderateImage";
 
 interface CreatePostProps {
   onPostCreated: () => void;
@@ -70,16 +71,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("post-images")
-          .upload(fileName, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("post-images")
-          .getPublicUrl(fileName);
-
+        const { publicUrl } = await uploadAndModerate("post-images", fileName, imageFile);
         imageUrl = publicUrl;
       }
 

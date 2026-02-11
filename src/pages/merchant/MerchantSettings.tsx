@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadAndModerate } from "@/lib/moderateImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -173,21 +174,13 @@ const MerchantSettings = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${store.id}/${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("store-items")
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("store-items")
-        .getPublicUrl(fileName);
+      const { publicUrl: urlPublic } = await uploadAndModerate("store-items", fileName, file);
 
       const { data: imageData, error: insertError } = await supabase
         .from("store_images")
         .insert({
           store_id: store.id,
-          image_url: urlData.publicUrl,
+          image_url: urlPublic,
           display_order: storeImages.length,
         })
         .select()

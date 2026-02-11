@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadAndModerate } from "@/lib/moderateImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,16 +144,7 @@ const Onboarding = () => {
         const fileExt = avatarFile.name.split(".").pop();
         const fileName = `${user.id}/avatar.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(fileName, avatarFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(fileName);
-
+        const { publicUrl } = await uploadAndModerate("avatars", fileName, avatarFile, { upsert: true });
         finalAvatarUrl = publicUrl;
       }
 
