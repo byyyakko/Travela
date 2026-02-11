@@ -10,6 +10,7 @@ import { ImagePlus, MapPin, X, Send, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { allCategoryFlairs } from "@/components/home/CutesyHome";
+import { containsProfanity } from "@/lib/profanity";
 
 interface CreatePostProps {
   onPostCreated: () => void;
@@ -49,6 +50,16 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   const handleSubmit = async () => {
     if (!content.trim() && !imageFile) return;
     if (!user) return;
+
+    // Profanity check
+    if (containsProfanity(content)) {
+      toast({ title: "Inappropriate content", description: "Your post contains inappropriate language. Please revise it.", variant: "destructive" });
+      return;
+    }
+    if (locationTag && containsProfanity(locationTag)) {
+      toast({ title: "Inappropriate content", description: "Your location tag contains inappropriate language.", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
 

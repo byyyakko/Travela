@@ -122,9 +122,22 @@ Return a JSON object with this structure:
         { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing" }
       ]
     }
-  ]
+  ],
+  "accommodations": [
+    { "name": "Hotel/hostel name", "type": "hotel|hostel|guesthouse|resort", "area": "Neighborhood/area", "price_range": "budget|mid-range|luxury", "description": "Brief description and why it's recommended", "tip": "Booking tip" }
+  ],
+  "transport": {
+    "from_airport": "How to get from the airport to the city center, including options and estimated costs",
+    "getting_around": "Best ways to get around the city/area day-to-day",
+    "modes": [
+      { "mode": "Metro/Bus/Taxi/Grab/Walk/Train", "description": "When and how to use this mode", "estimated_cost": "Cost range", "tip": "Insider tip" }
+    ],
+    "day_travel_times": [
+      { "from": "Activity/Area A", "to": "Activity/Area B", "duration": "~15 min", "recommended_mode": "Walk/Metro/Taxi" }
+    ]
+  }
 }
-Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Only return valid JSON, no markdown.`;
+Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
