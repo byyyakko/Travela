@@ -18,6 +18,7 @@ import ProfilePreview from "@/components/ProfilePreview";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { uploadAndModerate } from "@/lib/moderateImage";
+import { validateRealLocation } from "@/lib/validateLocation";
 import { containsProfanity, containsProfanityWithAI } from "@/lib/profanity";
 import { COMMON_LANGUAGES } from "@/lib/languages";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -372,6 +373,16 @@ const Profile = () => {
           return;
         }
       } catch { /* fail open */ }
+    }
+
+    // Validate locations are real places
+    const locationsToValidate = [location, destination].filter(l => l && l.trim().length > 0);
+    for (const loc of locationsToValidate) {
+      const result = await validateRealLocation(loc);
+      if (!result.valid) {
+        toast({ title: "Invalid location", description: `"${loc}" doesn't appear to be a real place. Please enter a valid city or location.`, variant: "destructive" });
+        return;
+      }
     }
 
     setSaving(true);
