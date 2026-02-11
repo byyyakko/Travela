@@ -782,7 +782,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "user" | "merchant"
+      app_role: "user" | "merchant" | "admin"
       store_type: "attractions" | "food" | "entertainment"
       subscription_tier: "tier_0" | "tier_1" | "tier_2"
       user_subscription_tier: "tier_0" | "tier_1" | "tier_2"
@@ -914,7 +914,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["user", "merchant"],
+      app_role: ["user", "merchant", "admin"],
       store_type: ["attractions", "food", "entertainment"],
       subscription_tier: ["tier_0", "tier_1", "tier_2"],
       user_subscription_tier: ["tier_0", "tier_1", "tier_2"],
