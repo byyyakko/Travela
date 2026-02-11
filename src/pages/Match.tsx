@@ -12,15 +12,19 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { X, Heart, MapPin, Sparkles, RefreshCw, Search, MessageCircle, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Heart, MapPin, Sparkles, RefreshCw, Search, MessageCircle, Users, Globe, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import ReportBlockDialog from "@/components/ReportBlockDialog";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useNavigate } from "react-router-dom";
+
+const SWIPE_THRESHOLD = 100;
 
 const Match = () => {
   const { user } = useAuth();
@@ -31,6 +35,8 @@ const Match = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
+  const [showProfileDetail, setShowProfileDetail] = useState(false);
+  const [detailPhotoIndex, setDetailPhotoIndex] = useState(0);
   const [likePopup, setLikePopup] = useState<{
     show: boolean;
     type: "liked" | "matched";
@@ -38,10 +44,16 @@ const Match = () => {
     avatarUrl: string | null;
   }>({ show: false, type: "liked", profileName: "", avatarUrl: null });
 
-  // Backend URL for ML ranking (set in .env or defaults to local dev)
+  // Swipe motion
+  const motionX = useMotionValue(0);
+  const rotate = useTransform(motionX, [-200, 200], [-15, 15]);
+  const likeOpacity = useTransform(motionX, [0, SWIPE_THRESHOLD], [0, 1]);
+  const passOpacity = useTransform(motionX, [-SWIPE_THRESHOLD, 0], [1, 0]);
+
+  // Backend URL for ML ranking
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:10000";
 
-  // Fetch current user's full profile (age prefs + interests for ML ranking)
+  // Fetch current user's full profile
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
@@ -57,7 +69,6 @@ const Match = () => {
     enabled: !!user,
   });
 
-  // Calculate age from date of birth
   const calculateAge = (dateOfBirth: string | null): number | null => {
     if (!dateOfBirth) return null;
     const today = new Date();
@@ -85,13 +96,11 @@ const Match = () => {
     enabled: !!user,
   });
 
-  // Fetch profiles to swipe on (excluding self, already swiped, and blocked)
+  // Fetch profiles to swipe on
   const { data: profiles, isLoading, refetch } = useQuery({
     queryKey: ["matchProfiles", user?.id, userProfile?.min_age_preference, userProfile?.max_age_preference, blockedUsers],
     queryFn: async () => {
       if (!user) return [];
-
-      // Get already swiped profiles
       const { data: swipedData } = await supabase
         .from("matches")
         .select("target_user_id")
@@ -110,7 +119,6 @@ const Match = () => {
 
       if (error) throw error;
 
-      // Filter by age preferences
       const minAge = userProfile?.min_age_preference || 18;
       const maxAge = userProfile?.max_age_preference || 99;
 
@@ -120,7 +128,6 @@ const Match = () => {
         return age >= minAge && age <= maxAge;
       });
 
-      // Rank profiles by ML compatibility (fallback to unranked if backend unavailable)
       if (filteredProfiles.length > 0 && userProfile) {
         try {
           const res = await fetch(`${BACKEND_URL}/rank`, {
@@ -151,7 +158,7 @@ const Match = () => {
             return ranked;
           }
         } catch {
-          // Backend unavailable — fall through to unranked profiles
+          // Backend unavailable
         }
       }
 
@@ -160,7 +167,7 @@ const Match = () => {
     enabled: !!user && userProfile !== undefined && blockedUsers !== undefined,
   });
 
-  // Fetch profile photos for all discovered profiles
+  // Fetch profile photos for discovered profiles
   const { data: allProfilePhotos } = useQuery({
     queryKey: ["profilePhotosForMatch", profiles?.map(p => p.user_id)],
     queryFn: async () => {
@@ -182,12 +189,33 @@ const Match = () => {
     enabled: !!profiles && profiles.length > 0,
   });
 
+  // Fetch profile prompts for discovered profiles
+  const { data: allProfilePrompts } = useQuery({
+    queryKey: ["profilePromptsForMatch", profiles?.map(p => p.user_id)],
+    queryFn: async () => {
+      if (!profiles || profiles.length === 0) return {};
+      const userIds = profiles.map(p => p.user_id);
+      const { data, error } = await supabase
+        .from("profile_prompts")
+        .select("*")
+        .in("user_id", userIds)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      const map: Record<string, typeof data> = {};
+      (data || []).forEach(prompt => {
+        if (!map[prompt.user_id]) map[prompt.user_id] = [];
+        map[prompt.user_id].push(prompt);
+      });
+      return map;
+    },
+    enabled: !!profiles && profiles.length > 0,
+  });
+
+  // Fetch profiles who liked the current user
   const { data: likedYouProfiles, isLoading: isLoadingLikedYou } = useQuery({
     queryKey: ["likedYouProfiles", user?.id],
     queryFn: async () => {
       if (!user) return [];
-
-      // Get user IDs who liked this user
       const { data: likers, error: likersError } = await supabase
         .from("matches")
         .select("user_id")
@@ -198,8 +226,6 @@ const Match = () => {
       if (!likers || likers.length === 0) return [];
 
       const likerIds = likers.map(l => l.user_id);
-
-      // Exclude mutual matches (already matched)
       const { data: mutuals } = await supabase
         .from("mutual_matches")
         .select("user1_id, user2_id")
@@ -223,13 +249,11 @@ const Match = () => {
     enabled: !!user,
   });
 
-  // Filter profiles by location search
   const filteredProfiles = useMemo(() => {
     if (!profiles) return [];
     if (!locationFilter.trim()) return profiles;
-    
     const searchTerm = locationFilter.toLowerCase().trim();
-    return profiles.filter(profile => 
+    return profiles.filter(profile =>
       profile.location?.toLowerCase().includes(searchTerm)
     );
   }, [profiles, locationFilter]);
@@ -237,16 +261,13 @@ const Match = () => {
   const matchMutation = useMutation({
     mutationFn: async ({ targetUserId, action }: { targetUserId: string; action: "like" | "pass" }) => {
       if (!user) throw new Error("Not authenticated");
-
       const { error } = await supabase.from("matches").insert({
         user_id: user.id,
         target_user_id: targetUserId,
         action,
       });
-
       if (error) throw error;
 
-      // Check for mutual match
       if (action === "like") {
         const { data: mutual } = await supabase
           .from("mutual_matches")
@@ -255,11 +276,8 @@ const Match = () => {
           .or(`user1_id.eq.${targetUserId},user2_id.eq.${targetUserId}`)
           .maybeSingle();
 
-        if (mutual) {
-          return { matched: true };
-        }
+        if (mutual) return { matched: true };
       }
-
       return { matched: false };
     },
     onSuccess: (data, variables) => {
@@ -289,6 +307,7 @@ const Match = () => {
 
   const currentProfile = filteredProfiles?.[currentIndex];
   const currentPhotos = currentProfile ? allProfilePhotos?.[currentProfile.user_id] || [] : [];
+  const currentPrompts = currentProfile ? allProfilePrompts?.[currentProfile.user_id] || [] : [];
 
   const handleSwipe = (action: "like" | "pass") => {
     if (!currentProfile) return;
@@ -297,6 +316,14 @@ const Match = () => {
       target_location: currentProfile.location,
     });
     matchMutation.mutate({ targetUserId: currentProfile.user_id, action });
+  };
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (info.offset.x > SWIPE_THRESHOLD) {
+      handleSwipe("like");
+    } else if (info.offset.x < -SWIPE_THRESHOLD) {
+      handleSwipe("pass");
+    }
   };
 
   const handleRefresh = () => {
@@ -314,6 +341,19 @@ const Match = () => {
     setLikePopup(prev => ({ ...prev, show: false }));
   };
 
+  const openProfileDetail = () => {
+    setDetailPhotoIndex(0);
+    setShowProfileDetail(true);
+  };
+
+  // Get all photos for detail view (include avatar if no profile_photos)
+  const getDetailPhotos = () => {
+    if (!currentProfile) return [];
+    if (currentPhotos.length > 0) return currentPhotos.map(p => p.photo_url);
+    if (currentProfile.avatar_url) return [currentProfile.avatar_url];
+    return [];
+  };
+
   return (
     <AppLayout>
       <div className="max-w-md mx-auto space-y-4">
@@ -322,7 +362,7 @@ const Match = () => {
             Find Locals
           </h1>
           <p className="text-muted-foreground text-sm">
-            Connect with locals in your destination
+            Swipe right to like, left to pass
           </p>
         </div>
 
@@ -379,13 +419,36 @@ const Match = () => {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentProfile.id}
+                  style={{ x: motionX, rotate }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.7}
+                  onDragEnd={handleDragEnd}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, x: -300 }}
                   transition={{ duration: 0.3 }}
+                  className="cursor-grab active:cursor-grabbing"
                 >
-                  <Card className="overflow-hidden border-primary/30 shadow-primary/10">
-                    <div className="aspect-[3/4] relative bg-gradient-to-br from-secondary to-accent/20">
+                  <Card className="overflow-hidden border-primary/30 shadow-primary/10 relative">
+                    {/* Swipe indicators */}
+                    <motion.div
+                      style={{ opacity: likeOpacity }}
+                      className="absolute top-8 left-6 z-20 px-4 py-2 border-4 border-green-500 rounded-lg rotate-[-20deg]"
+                    >
+                      <span className="text-green-500 font-bold text-2xl">LIKE</span>
+                    </motion.div>
+                    <motion.div
+                      style={{ opacity: passOpacity }}
+                      className="absolute top-8 right-6 z-20 px-4 py-2 border-4 border-destructive rounded-lg rotate-[20deg]"
+                    >
+                      <span className="text-destructive font-bold text-2xl">PASS</span>
+                    </motion.div>
+
+                    <div
+                      className="aspect-[3/4] relative bg-gradient-to-br from-secondary to-accent/20"
+                      onClick={openProfileDetail}
+                    >
                       <ReportBlockDialog
                         targetUserId={currentProfile.user_id}
                         targetUserName={currentProfile.display_name || "this user"}
@@ -410,11 +473,11 @@ const Match = () => {
                         <>
                           <button
                             className="absolute left-0 top-0 w-1/3 h-full z-[5]"
-                            onClick={() => setCurrentPhotoIndex(prev => Math.max(0, prev - 1))}
+                            onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(prev => Math.max(0, prev - 1)); }}
                           />
                           <button
                             className="absolute right-0 top-0 w-1/3 h-full z-[5]"
-                            onClick={() => setCurrentPhotoIndex(prev => Math.min(currentPhotos.length - 1, prev + 1))}
+                            onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(prev => Math.min(currentPhotos.length - 1, prev + 1)); }}
                           />
                         </>
                       )}
@@ -439,7 +502,7 @@ const Match = () => {
                         );
                       })()}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-                      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <div className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none">
                         <h2 className="text-2xl font-display font-bold flex items-center gap-2">
                           <span>
                             {currentProfile.display_name || "Local Guide"}
@@ -458,7 +521,7 @@ const Match = () => {
                           </p>
                         )}
                         {currentProfile.bio && (
-                          <p className="mt-3 text-sm text-white/90 line-clamp-3">
+                          <p className="mt-3 text-sm text-white/90 line-clamp-2">
                             {currentProfile.bio}
                           </p>
                         )}
@@ -471,26 +534,8 @@ const Match = () => {
                             ))}
                           </div>
                         )}
+                        <p className="text-xs text-white/50 mt-3 text-center">Tap to view full profile</p>
                       </div>
-                    </div>
-                    <div className="flex justify-center gap-6 p-6 bg-card">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="w-16 h-16 rounded-full border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50"
-                        onClick={() => handleSwipe("pass")}
-                        disabled={matchMutation.isPending}
-                      >
-                        <X className="w-8 h-8" />
-                      </Button>
-                      <Button
-                        size="lg"
-                        className="w-16 h-16 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                        onClick={() => handleSwipe("like")}
-                        disabled={matchMutation.isPending}
-                      >
-                        <Heart className="w-8 h-8" />
-                      </Button>
                     </div>
                   </Card>
                 </motion.div>
@@ -573,6 +618,148 @@ const Match = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Profile Detail Sheet */}
+      <Sheet open={showProfileDetail} onOpenChange={setShowProfileDetail}>
+        <SheetContent side="bottom" className="h-[90vh] rounded-t-2xl p-0">
+          {currentProfile && (
+            <ScrollArea className="h-full">
+              <div className="pb-6">
+                {/* Photo gallery */}
+                <div className="relative aspect-square bg-muted">
+                  {(() => {
+                    const photos = getDetailPhotos();
+                    const url = photos[detailPhotoIndex] || null;
+                    return url ? (
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-secondary">
+                        <Avatar className="w-32 h-32">
+                          <AvatarFallback className="text-4xl bg-secondary text-primary">
+                            {(currentProfile.display_name || "L")[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    );
+                  })()}
+                  {getDetailPhotos().length > 1 && (
+                    <div className="absolute top-3 left-0 right-0 z-10 flex justify-center gap-1 px-4">
+                      {getDetailPhotos().map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setDetailPhotoIndex(i)}
+                          className={cn(
+                            "h-1 rounded-full flex-1 max-w-8 transition-colors",
+                            i === detailPhotoIndex ? "bg-white" : "bg-white/40"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {getDetailPhotos().length > 1 && (
+                    <>
+                      <button
+                        className="absolute left-0 top-0 w-1/3 h-full z-[5]"
+                        onClick={() => setDetailPhotoIndex(prev => Math.max(0, prev - 1))}
+                      />
+                      <button
+                        className="absolute right-0 top-0 w-1/3 h-full z-[5]"
+                        onClick={() => setDetailPhotoIndex(prev => Math.min(getDetailPhotos().length - 1, prev + 1))}
+                      />
+                    </>
+                  )}
+                </div>
+
+                <div className="p-5 space-y-5">
+                  {/* Name & basics */}
+                  <div>
+                    <h2 className="text-2xl font-display font-bold flex items-center gap-2">
+                      {currentProfile.display_name || "Local Guide"}
+                      {currentProfile.date_of_birth && (
+                        <span className="text-xl font-normal text-muted-foreground">
+                          , {calculateAge(currentProfile.date_of_birth)}
+                        </span>
+                      )}
+                      {currentProfile.is_verified && <VerifiedBadge size="lg" />}
+                    </h2>
+                    {currentProfile.location && (
+                      <p className="flex items-center gap-1 mt-1 text-muted-foreground">
+                        <MapPin className="w-4 h-4" />
+                        {currentProfile.location}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Bio */}
+                  {currentProfile.bio && (
+                    <p className="text-foreground leading-relaxed">{currentProfile.bio}</p>
+                  )}
+
+                  {/* Languages */}
+                  {currentProfile.languages && currentProfile.languages.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Speaks: {currentProfile.languages.join(", ")}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Interests */}
+                  {currentProfile.interests && currentProfile.interests.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-2">Interests</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {currentProfile.interests.map((interest: string, i: number) => (
+                          <span key={i} className="px-3 py-1.5 rounded-full text-sm bg-secondary text-foreground">
+                            {interest}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Prompts */}
+                  {currentPrompts.length > 0 && (
+                    <div className="space-y-3">
+                      {currentPrompts.map((prompt) => (
+                        <Card key={prompt.id} className="border-primary/20 bg-secondary/30">
+                          <div className="p-4">
+                            <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                              <Quote className="w-3 h-3" />
+                              {prompt.question}
+                            </p>
+                            <p className="text-foreground">{prompt.answer}</p>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex justify-center gap-6 pt-4">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-16 h-16 rounded-full border-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                      onClick={() => { setShowProfileDetail(false); handleSwipe("pass"); }}
+                    >
+                      <X className="w-8 h-8" />
+                    </Button>
+                    <Button
+                      size="lg"
+                      className="w-16 h-16 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={() => { setShowProfileDetail(false); handleSwipe("like"); }}
+                    >
+                      <Heart className="w-8 h-8" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Like Sent / It's a Match Popup */}
       <Dialog open={likePopup.show} onOpenChange={(open) => !open && closeLikePopup()}>

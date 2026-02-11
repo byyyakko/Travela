@@ -10,15 +10,30 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon } from "lucide-react";
+import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon, Quote, MessageSquare } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import ProfilePreview from "@/components/ProfilePreview";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MAX_PHOTOS = 6;
+const MAX_PROMPTS = 3;
+
+const TRAVEL_PROMPTS = [
+  "What's a hidden gem only locals know about?",
+  "My favorite local food you have to try is...",
+  "The best time to visit my city is...",
+  "A perfect day here looks like...",
+  "The one thing every traveler should experience is...",
+  "I love being a local guide because...",
+  "My favorite travel memory is...",
+  "The most surprising thing about my culture is...",
+  "If we hang out, we'll definitely...",
+  "One travel tip I always give is...",
+];
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -140,6 +155,62 @@ const Profile = () => {
       toast({ title: "Main photo updated!" });
     } catch (error: any) {
       toast({ title: "Error updating main photo", description: error.message, variant: "destructive" });
+    }
+  };
+
+  // Fetch profile prompts
+  const { data: profilePrompts = [], refetch: refetchPrompts } = useQuery({
+    queryKey: ["profilePrompts", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("profile_prompts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const [selectedPromptQuestion, setSelectedPromptQuestion] = useState("");
+  const [promptAnswer, setPromptAnswer] = useState("");
+
+  const availablePrompts = TRAVEL_PROMPTS.filter(
+    q => !profilePrompts.some(p => p.question === q)
+  );
+
+  const handleAddPrompt = async () => {
+    if (!user || !selectedPromptQuestion || !promptAnswer.trim()) return;
+    if (profilePrompts.length >= MAX_PROMPTS) {
+      toast({ title: `Maximum ${MAX_PROMPTS} prompts allowed`, variant: "destructive" });
+      return;
+    }
+    try {
+      const { error } = await supabase.from("profile_prompts").insert({
+        user_id: user.id,
+        question: selectedPromptQuestion,
+        answer: promptAnswer.trim(),
+        display_order: profilePrompts.length,
+      });
+      if (error) throw error;
+      setSelectedPromptQuestion("");
+      setPromptAnswer("");
+      refetchPrompts();
+      toast({ title: "Prompt added!" });
+    } catch (error: any) {
+      toast({ title: "Error adding prompt", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeletePrompt = async (promptId: string) => {
+    try {
+      await supabase.from("profile_prompts").delete().eq("id", promptId);
+      refetchPrompts();
+      toast({ title: "Prompt removed" });
+    } catch (error: any) {
+      toast({ title: "Error removing prompt", description: error.message, variant: "destructive" });
     }
   };
 
@@ -411,7 +482,75 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Profile Info */}
+        {/* Travel Prompts */}
+        <Card className="border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Travel Prompts ({profilePrompts.length}/{MAX_PROMPTS})
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Choose up to {MAX_PROMPTS} prompts to show on your profile
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Existing prompts */}
+            {profilePrompts.map((prompt) => (
+              <div key={prompt.id} className="relative p-3 rounded-lg bg-secondary/50 border border-primary/20">
+                <button
+                  onClick={() => handleDeletePrompt(prompt.id)}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-destructive/80 text-destructive-foreground flex items-center justify-center hover:bg-destructive transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1 pr-8">
+                  <Quote className="w-3 h-3" />
+                  {prompt.question}
+                </p>
+                <p className="text-sm text-foreground">{prompt.answer}</p>
+              </div>
+            ))}
+
+            {/* Add new prompt */}
+            {profilePrompts.length < MAX_PROMPTS && (
+              <div className="space-y-3 p-3 rounded-lg border-2 border-dashed border-primary/20">
+                <Select value={selectedPromptQuestion} onValueChange={setSelectedPromptQuestion}>
+                  <SelectTrigger className="bg-secondary/50 border-primary/30">
+                    <SelectValue placeholder="Choose a prompt..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePrompts.map((q) => (
+                      <SelectItem key={q} value={q}>{q}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedPromptQuestion && (
+                  <>
+                    <Textarea
+                      placeholder="Write your answer..."
+                      value={promptAnswer}
+                      onChange={(e) => setPromptAnswer(e.target.value)}
+                      className="min-h-[80px] bg-secondary/50 border-primary/30"
+                      maxLength={300}
+                    />
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground">{promptAnswer.length}/300</span>
+                      <Button
+                        size="sm"
+                        onClick={handleAddPrompt}
+                        disabled={!promptAnswer.trim()}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Prompt
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="border-primary/30">
           <CardHeader>
             <CardTitle className="text-lg">Profile Information</CardTitle>
