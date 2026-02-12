@@ -158,9 +158,9 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   return (
     <div className="space-y-6">
       {/* Personalized Greeting with dotted grid background */}
-      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden">
+      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden min-h-[120px]">
         <div className="flex items-start justify-between">
-          <div>
+          <div className="z-10">
             <h1 className="text-2xl font-bold text-primary mb-1">
               Hello, {displayName || "Traveler"}! 👋
             </h1>
@@ -172,7 +172,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           <div className="relative flex items-start">
             {/* Speech Bubble */}
             <motion.div 
-              className="absolute -left-36 top-0 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-[140px]"
+              className="absolute -left-36 top-0 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-[140px] z-10"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
@@ -184,11 +184,11 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
               <div className="absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
               <div className="absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
             </motion.div>
-            {/* Mascot */}
+            {/* Mascot - large, covering upper right */}
             <motion.img 
               src={mascotCutesy} 
-              alt="Cute cat mascot" 
-              className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md mix-blend-multiply"
+              alt="Tori-Tan mascot" 
+              className="w-36 h-36 object-contain -mt-5 -mr-5 drop-shadow-md mix-blend-multiply"
               animate={floatAnimation}
             />
           </div>
