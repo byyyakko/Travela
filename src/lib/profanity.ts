@@ -41,8 +41,11 @@ const normalizeText = (text: string): string => {
     .replace(/[òóôõö]/g, "o");
 };
 
+// Short words that cause false positives when matched as prefixes
+// These require word boundaries on BOTH sides
+const EXACT_MATCH_WORDS = new Set(["ass", "damn", "crap", "piss", "sex", "nude"]);
+
 // Build regex patterns that match words and common evasion techniques
-// Uses \b only at the start to catch derivatives (e.g., "fucker", "shitty")
 const buildPatterns = (words: string[]): RegExp[] => {
   return words.map(word => {
     // Create pattern that handles common letter substitutions
@@ -55,7 +58,12 @@ const buildPatterns = (words: string[]): RegExp[] => {
       .replace(/t/gi, "[t7]")
       .replace(/l/gi, "[l1|]")
       .replace(/u/gi, "[uùúûü]");
-    // Use word boundary at start but allow derivatives at the end
+    // Short common words use boundaries on both sides to avoid false positives
+    // (e.g., "ass" should not match "passionate")
+    if (EXACT_MATCH_WORDS.has(word)) {
+      return new RegExp(`\\b${escaped}\\b`, "gi");
+    }
+    // Longer words use boundary at start but allow derivatives at the end
     return new RegExp(`\\b${escaped}`, "gi");
   });
 };
