@@ -116,6 +116,7 @@ const Match = () => {
         .select("*")
         .not("user_id", "in", `(${excludeIds.join(",")})`)
         .eq("is_local", true)
+        .eq("is_restricted", false)
         .limit(50);
 
       if (error) throw error;
