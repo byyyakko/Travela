@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import PostCard from "@/components/posts/PostCard";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,54 @@ const USER_PROMPTS = [
   "My favorite travel memory is...",
   "One travel tip I always give is...",
 ];
+
+const MyPostsTab = ({ userId }: { userId?: string }) => {
+  const { data: myPosts = [], refetch } = useQuery({
+    queryKey: ["myPosts", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*, post_likes(user_id), post_comments(id)")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      // Fetch own profile for display
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url, location")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      return (data || []).map((post) => ({
+        ...post,
+        profiles: profile || null,
+      }));
+    },
+    enabled: !!userId,
+  });
+
+  return (
+    <TabsContent value="posts" className="mt-6 space-y-4">
+      {myPosts.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8 text-sm">
+          You haven't posted anything yet.
+        </p>
+      ) : (
+        myPosts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            category={post.category || undefined}
+            currentUserId={userId}
+            onUpdate={refetch}
+          />
+        ))
+      )}
+    </TabsContent>
+  );
+};
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -444,7 +493,7 @@ const Profile = () => {
 
         {/* Edit / Preview Tabs */}
         <Tabs defaultValue="edit" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-secondary">
+          <TabsList className="grid w-full grid-cols-3 bg-secondary">
             <TabsTrigger 
               value="edit"
               className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -458,6 +507,13 @@ const Profile = () => {
             >
               <Eye className="w-4 h-4" />
               Preview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="posts"
+              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <MessageSquare className="w-4 h-4" />
+              My Posts
             </TabsTrigger>
           </TabsList>
 
@@ -911,6 +967,10 @@ const Profile = () => {
           </Button>
         </div>
           </TabsContent>
+
+          {/* My Posts Tab Content */}
+          <MyPostsTab userId={user?.id} />
+
         </Tabs>
       </div>
     </AppLayout>
