@@ -25,16 +25,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <div 
-      className="min-h-screen pb-20 md:pb-0 md:pl-20"
-      style={{
-        backgroundImage: `url(${bgCute})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-      }}
+      className="min-h-screen pb-20 md:pb-0 md:pl-20 bg-background"
     >
       {/* Top bar with search */}
-      <header className="fixed top-0 left-0 right-0 z-40 px-4 py-3 md:left-20 cutesy-grid-bg bg-card/95 backdrop-blur-md border-b-[3px] border-primary">
+      <header className="fixed top-0 left-0 right-0 z-40 px-4 py-3 md:left-20 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
           {/* Back Button - shows on non-primary routes */}
           <BackButton className="text-muted-foreground hover:text-foreground hover:bg-secondary shrink-0" />
@@ -70,7 +64,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </main>
 
       {/* Bottom navigation (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden cutesy-grid-bg bg-card/98 backdrop-blur-md border-t-[3px] border-primary">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/98 backdrop-blur-md border-t border-border">
         <div className="flex justify-around py-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -97,7 +91,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </nav>
 
       {/* Side navigation (desktop) */}
-      <nav className="fixed left-0 top-0 bottom-0 w-20 hidden md:flex flex-col items-center py-6 z-50 cutesy-grid-bg bg-card/98 backdrop-blur-md border-r-[3px] border-primary">
+      <nav className="fixed left-0 top-0 bottom-0 w-20 hidden md:flex flex-col items-center py-6 z-50 bg-background/98 backdrop-blur-md border-r border-border">
         <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-8 bg-secondary border-2 border-primary">
           <img src={mascotImg} alt="Travela mascot" className="w-14 h-14 object-contain mix-blend-multiply" />
         </div>
