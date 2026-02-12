@@ -43,7 +43,7 @@ const normalizeText = (text: string): string => {
 
 // Short words that cause false positives when matched as prefixes
 // These require word boundaries on BOTH sides
-const EXACT_MATCH_WORDS = new Set(["ass", "damn", "crap", "piss", "sex", "nude"]);
+const EXACT_MATCH_WORDS = new Set(["ass", "damn", "crap", "piss", "sex", "nude", "anal", "cock", "meth"]);
 
 // Build regex patterns that match words and common evasion techniques
 const buildPatterns = (words: string[]): RegExp[] => {
@@ -84,10 +84,11 @@ export const containsProfanity = (text: string): boolean => {
   })) return true;
 
   // Check heavily normalized text for evasion attempts (spaced-out, symbol-laden text)
-  // Only use includes-based matching for multi-word phrases or when the original text
-  // had separators between letters (evasion signal)
-  const hasSeparators = /[.\-_*+#~\s]{2,}/.test(text) || /.\s.\s./.test(text);
-  if (hasSeparators) {
+  // Only trigger on obvious evasion: repeated non-alpha separators between single chars
+  // e.g., "f u c k", "f.u.c.k", "f-u-c-k" but NOT normal sentences with spaces
+  const hasLetterSpacing = /\b\w[\s.\-_*+#~]{1,3}\w[\s.\-_*+#~]{1,3}\w\b/.test(text) && 
+    !/\w{3,}\s+\w{3,}/.test(text); // Exclude normal word spacing
+  if (hasLetterSpacing) {
     const normalized = normalizeText(text);
     for (const word of PROFANITY_LIST) {
       const normalizedWord = word.replace(/\s+/g, "");
