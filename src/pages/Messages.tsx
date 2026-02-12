@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, MessageCircle, ArrowLeft, Languages, Star, Loader2 } from "lucide-react";
+import { Send, MessageCircle, ArrowLeft, Languages, Star, Loader2, Check, X, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,8 @@ interface Conversation {
   participant1_id: string;
   participant2_id: string;
   updated_at: string;
+  accepted: boolean | null;
+  declined_at: string | null;
   otherUser?: {
     display_name: string | null;
     avatar_url: string | null;
@@ -47,6 +49,7 @@ interface Message {
 
 const Messages = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { track } = useAnalytics("messages");
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -185,8 +188,52 @@ const Messages = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Determine if current user can send messages in this conversation
+  const canSendMessage = (conv: Conversation | null): boolean => {
+    if (!conv || !user) return false;
+    // Accepted conversations: both can send
+    if (conv.accepted === true) return true;
+    // Declined: nobody can send
+    if (conv.accepted === false) return false;
+    // Pending (null): only the initiator (participant1) can send the first message
+    return conv.participant1_id === user.id;
+  };
+
+  // Check if current user is the recipient of a pending request
+  const isPendingRequestForMe = (conv: Conversation | null): boolean => {
+    if (!conv || !user) return false;
+    return conv.accepted === null && conv.participant2_id === user.id;
+  };
+
+  const handleAcceptConversation = async (convId: string) => {
+    const { error } = await supabase
+      .from("conversations")
+      .update({ accepted: true })
+      .eq("id", convId);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["conversations", user?.id] });
+      if (selectedConversation?.id === convId) {
+        setSelectedConversation({ ...selectedConversation!, accepted: true });
+      }
+      toast({ title: "Message request accepted!" });
+    }
+  };
+
+  const handleDeclineConversation = async (convId: string) => {
+    const { error } = await supabase
+      .from("conversations")
+      .update({ accepted: false, declined_at: new Date().toISOString() } as any)
+      .eq("id", convId);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["conversations", user?.id] });
+      setSelectedConversation(null);
+      toast({ title: "Message request declined" });
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
+    if (!canSendMessage(selectedConversation)) return;
 
     if (containsProfanity(newMessage)) {
       toast({ title: "Inappropriate content", description: "Your message contains inappropriate language. Please revise it.", variant: "destructive" });
@@ -277,23 +324,79 @@ const Messages = () => {
             </div>
           </ScrollArea>
 
-          {/* Message input */}
-          <div className="p-4 border-t border-primary/30 flex gap-2">
-            <Input
-              placeholder="Type a message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-              className="bg-secondary/50 border-primary/30"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+          {/* Accept/Decline banner for pending requests */}
+          {isPendingRequestForMe(selectedConversation) && (
+            <div className="p-4 border-t border-primary/30 bg-secondary/50">
+              <p className="text-sm text-muted-foreground mb-3 text-center">
+                <strong>{selectedConversation.otherUser?.display_name || "Someone"}</strong> wants to message you
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => handleDeclineConversation(selectedConversation.id)}
+                >
+                  <X className="w-4 h-4" /> Decline
+                </Button>
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={() => handleAcceptConversation(selectedConversation.id)}
+                >
+                  <Check className="w-4 h-4" /> Accept
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Declined notice */}
+          {selectedConversation.accepted === false && (
+            <div className="p-4 border-t border-primary/30 text-center">
+              <p className="text-sm text-muted-foreground">This conversation has been declined.</p>
+            </div>
+          )}
+
+          {/* Pending notice for sender */}
+          {selectedConversation.accepted === null && selectedConversation.participant1_id === user?.id && (
+            <div className="p-4 border-t border-primary/30">
+              <p className="text-xs text-muted-foreground text-center mb-3">
+                Waiting for {selectedConversation.otherUser?.display_name || "them"} to accept your message request
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                  className="bg-secondary/50 border-primary/30"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim()}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Normal message input for accepted conversations */}
+          {selectedConversation.accepted === true && (
+            <div className="p-4 border-t border-primary/30 flex gap-2">
+              <Input
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                className="bg-secondary/50 border-primary/30"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* Cultural Translation Dialog */}
@@ -379,38 +482,83 @@ const Messages = () => {
             </p>
           </Card>
         ) : (
-          <div className="space-y-2">
-            {conversations.map((conv) => (
-              <Card
-                key={conv.id}
-                className="p-4 cursor-pointer transition-all hover:shadow-md border-primary/30 hover:bg-secondary/50"
-                onClick={() => setSelectedConversation(conv)}
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar className="ring-2 ring-primary/30">
-                    <AvatarImage src={conv.otherUser?.avatar_url || ""} />
-                    <AvatarFallback className="bg-secondary text-primary">
-                      {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">
-                      {conv.otherUser?.display_name || "User"}
-                    </p>
-                    {conv.lastMessage && (
-                      <p className="text-sm truncate text-muted-foreground">
-                        {conv.lastMessage.content}
+          <div className="space-y-4">
+            {/* Pending message requests for current user */}
+            {(() => {
+              const pendingRequests = conversations.filter(
+                (c) => c.accepted === null && c.participant2_id === user?.id
+              );
+              if (pendingRequests.length === 0) return null;
+              return (
+                <div className="space-y-2">
+                  <h2 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                    <Inbox className="w-4 h-4" /> Message Requests ({pendingRequests.length})
+                  </h2>
+                  {pendingRequests.map((conv) => (
+                    <Card
+                      key={conv.id}
+                      className="p-4 cursor-pointer transition-all hover:shadow-md border-accent hover:bg-secondary/50"
+                      onClick={() => setSelectedConversation(conv)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="ring-2 ring-accent">
+                          <AvatarImage src={conv.otherUser?.avatar_url || ""} />
+                          <AvatarFallback className="bg-secondary text-primary">
+                            {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">
+                            {conv.otherUser?.display_name || "User"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Wants to message you</p>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">New</Badge>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Active conversations (accepted or sent by me pending) */}
+            <div className="space-y-2">
+              {conversations
+                .filter((c) => c.accepted !== false && !(c.accepted === null && c.participant2_id === user?.id))
+                .map((conv) => (
+                <Card
+                  key={conv.id}
+                  className="p-4 cursor-pointer transition-all hover:shadow-md border-primary/30 hover:bg-secondary/50"
+                  onClick={() => setSelectedConversation(conv)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="ring-2 ring-primary/30">
+                      <AvatarImage src={conv.otherUser?.avatar_url || ""} />
+                      <AvatarFallback className="bg-secondary text-primary">
+                        {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">
+                        {conv.otherUser?.display_name || "User"}
                       </p>
+                      {conv.lastMessage ? (
+                        <p className="text-sm truncate text-muted-foreground">
+                          {conv.lastMessage.content}
+                        </p>
+                      ) : conv.accepted === null ? (
+                        <p className="text-xs text-muted-foreground italic">Pending acceptance</p>
+                      ) : null}
+                    </div>
+                    {conv.lastMessage && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true })}
+                      </span>
                     )}
                   </div>
-                  {conv.lastMessage && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true })}
-                    </span>
-                  )}
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
           </div>
         )}
       </div>
