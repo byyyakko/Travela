@@ -233,12 +233,12 @@ const Auth = () => {
         {/* Logo */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: 'hsl(var(--logo-bg))' }}>
               <Plane className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
           <div>
-            <h1 className="text-4xl font-display font-bold text-foreground">Travela</h1>
+            <h1 className="text-4xl font-display font-bold text-foreground">TORI TAN</h1>
             <p className="text-muted-foreground mt-2">Connect with locals worldwide</p>
           </div>
         </div>
