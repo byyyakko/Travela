@@ -51,17 +51,17 @@ const getRandomMessage = () => mascotMessages[Math.floor(Math.random() * (mascot
 // All available category flairs
 export const allCategoryFlairs = [
   { label: "Local Favorites", color: "cutesy-pill-yellow" },
-  { label: "Budget Friendly", color: "cutesy-pill-green" },
-  { label: "Must See", color: "cutesy-pill-orange" },
-  { label: "Foodie Finds", color: "cutesy-pill-pink" },
-  { label: "Hidden Gems", color: "bg-secondary text-foreground" },
-  { label: "Adventure", color: "bg-foreground text-background" },
-  { label: "Nightlife", color: "bg-muted text-foreground" },
-  { label: "Culture", color: "bg-foreground/80 text-background" },
-  { label: "Nature", color: "bg-secondary text-foreground" },
-  { label: "Shopping", color: "bg-muted text-foreground" },
-  { label: "Relaxation", color: "bg-foreground/70 text-background" },
-  { label: "Photography", color: "bg-secondary text-foreground" },
+  { label: "Budget Friendly", color: "cutesy-pill-yellow" },
+  { label: "Must See", color: "cutesy-pill-yellow" },
+  { label: "Foodie Finds", color: "cutesy-pill-yellow" },
+  { label: "Hidden Gems", color: "cutesy-pill-yellow" },
+  { label: "Adventure", color: "cutesy-pill-yellow" },
+  { label: "Nightlife", color: "cutesy-pill-yellow" },
+  { label: "Culture", color: "cutesy-pill-yellow" },
+  { label: "Nature", color: "cutesy-pill-yellow" },
+  { label: "Shopping", color: "cutesy-pill-yellow" },
+  { label: "Relaxation", color: "cutesy-pill-yellow" },
+  { label: "Photography", color: "cutesy-pill-yellow" },
 ];
 
 // The first 4 shown inline
