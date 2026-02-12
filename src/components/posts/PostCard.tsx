@@ -21,17 +21,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { containsProfanity } from "@/lib/profanity";
 import { categoryColorMap } from "@/components/home/CutesyHome";
+
 interface PostCardProps {
   post: {
     id: string;
     content: string;
     image_url: string | null;
+    image_urls?: string[] | null;
     location_tag: string | null;
     created_at: string;
     user_id: string;
@@ -73,6 +79,20 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const [isDeleting, setIsDeleting] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [fullscreenIndex, setFullscreenIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Combine image_url and image_urls into one array
+  const allImages: string[] = (() => {
+    const urls: string[] = [];
+    if (post.image_urls && post.image_urls.length > 0) {
+      urls.push(...post.image_urls);
+    } else if (post.image_url) {
+      urls.push(post.image_url);
+    }
+    return urls;
+  })();
 
   const isOwnPost = currentUserId === post.user_id;
   const isDemo = false;
@@ -91,7 +111,6 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
 
       if (error) throw error;
 
-      // Fetch profiles for commenters
       const userIds = [...new Set(data.map(c => c.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -123,7 +142,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
     onSuccess: () => {
       setCommentText("");
       queryClient.invalidateQueries({ queryKey: ["comments", post.id] });
-      onUpdate(); // Refresh post comment count
+      onUpdate();
       toast({ title: "Comment added!" });
     },
     onError: (error: any) => {
@@ -218,8 +237,9 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
     setIsDeleting(true);
     
     try {
-      if (post.image_url) {
-        const imagePath = post.image_url.split("/post-images/")[1];
+      // Delete all images
+      for (const url of allImages) {
+        const imagePath = url.split("/post-images/")[1];
         if (imagePath) {
           await supabase.storage.from("post-images").remove([imagePath]);
         }
@@ -263,6 +283,11 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
 
   const displayName = post.profiles?.display_name || "Traveler";
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
+
+  const openFullscreen = (index: number) => {
+    setFullscreenIndex(index);
+    setFullscreenOpen(true);
+  };
 
   return (
     <>
@@ -334,14 +359,51 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
           </p>
         </div>
 
-        {/* Image */}
-        {post.image_url && (
+        {/* Images - carousel if multiple, single if one */}
+        {allImages.length > 0 && (
           <div className="px-4 pb-3">
-            <img
-              src={post.image_url}
-              alt="Post"
-              className="w-full rounded-xl object-cover max-h-96 ring-[3px] ring-primary/40"
-            />
+            <div className="relative">
+              <img
+                src={allImages[currentImageIndex]}
+                alt="Post"
+                className="w-full rounded-xl cursor-pointer border-[3px] border-primary/20"
+                onClick={() => openFullscreen(currentImageIndex)}
+              />
+              {/* Carousel controls */}
+              {allImages.length > 1 && (
+                <>
+                  {currentImageIndex > 0 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i - 1); }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border border-border hover:bg-background"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  )}
+                  {currentImageIndex < allImages.length - 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i + 1); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border border-border hover:bg-background"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  )}
+                  {/* Dots indicator */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {allImages.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i); }}
+                        className={cn(
+                          "w-2 h-2 rounded-full transition-all",
+                          i === currentImageIndex ? "bg-foreground scale-125" : "bg-foreground/40"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -463,6 +525,55 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
           </div>
         )}
       </Card>
+
+      {/* Fullscreen Image Viewer */}
+      <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none overflow-hidden flex items-center justify-center">
+          <button
+            onClick={() => setFullscreenOpen(false)}
+            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={allImages[fullscreenIndex]}
+            alt="Fullscreen"
+            className="max-w-full max-h-[90vh] object-contain"
+          />
+          {allImages.length > 1 && (
+            <>
+              {fullscreenIndex > 0 && (
+                <button
+                  onClick={() => setFullscreenIndex(i => i - 1)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
+              {fullscreenIndex < allImages.length - 1 && (
+                <button
+                  onClick={() => setFullscreenIndex(i => i + 1)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {allImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setFullscreenIndex(i)}
+                    className={cn(
+                      "w-2.5 h-2.5 rounded-full transition-all",
+                      i === fullscreenIndex ? "bg-white scale-125" : "bg-white/40"
+                    )}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
