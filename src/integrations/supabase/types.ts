@@ -319,6 +319,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          image_urls: string[] | null
           location_tag: string | null
           updated_at: string
           user_id: string
@@ -329,6 +330,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           location_tag?: string | null
           updated_at?: string
           user_id: string
@@ -339,6 +341,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           location_tag?: string | null
           updated_at?: string
           user_id?: string
