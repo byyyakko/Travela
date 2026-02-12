@@ -54,14 +54,14 @@ export const allCategoryFlairs = [
   { label: "Budget Friendly", color: "cutesy-pill-green" },
   { label: "Must See", color: "cutesy-pill-orange" },
   { label: "Foodie Finds", color: "cutesy-pill-pink" },
-  { label: "Hidden Gems", color: "bg-violet-200 text-violet-900" },
-  { label: "Adventure", color: "bg-sky-200 text-sky-900" },
-  { label: "Nightlife", color: "bg-indigo-200 text-indigo-900" },
-  { label: "Culture", color: "bg-rose-200 text-rose-900" },
-  { label: "Nature", color: "bg-emerald-200 text-emerald-900" },
-  { label: "Shopping", color: "bg-amber-200 text-amber-900" },
-  { label: "Relaxation", color: "bg-teal-200 text-teal-900" },
-  { label: "Photography", color: "bg-fuchsia-200 text-fuchsia-900" },
+  { label: "Hidden Gems", color: "bg-secondary text-foreground" },
+  { label: "Adventure", color: "bg-foreground text-background" },
+  { label: "Nightlife", color: "bg-muted text-foreground" },
+  { label: "Culture", color: "bg-foreground/80 text-background" },
+  { label: "Nature", color: "bg-secondary text-foreground" },
+  { label: "Shopping", color: "bg-muted text-foreground" },
+  { label: "Relaxation", color: "bg-foreground/70 text-background" },
+  { label: "Photography", color: "bg-secondary text-foreground" },
 ];
 
 // The first 4 shown inline
