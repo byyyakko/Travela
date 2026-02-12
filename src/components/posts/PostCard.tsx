@@ -366,7 +366,10 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
                 {post.location_tag && (
                   <>
                     <span className="text-muted-foreground">·</span>
-                    <span className="flex items-center gap-1 text-primary">
+                    <span
+                      className="flex items-center gap-1 text-primary"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <MapPin className="w-3 h-3" />
                       {post.location_tag}
                     </span>
