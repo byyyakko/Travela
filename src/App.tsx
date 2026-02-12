@@ -30,6 +30,7 @@ import StoreView from "./pages/StoreView";
 import CommonPhrases from "./pages/CommonPhrases";
 import SmartItinerary from "./pages/SmartItinerary";
 import NotFound from "./pages/NotFound";
+import UserProfile from "./pages/UserProfile";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
 import { useKeepAlive } from "@/hooks/useKeepAlive";
 
@@ -92,6 +93,7 @@ const AppRoutes = () => {
       <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
       <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/user/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
       <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send, ChevronLeft, ChevronRight, X, UserPlus, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/hooks/use-toast";
@@ -69,6 +70,7 @@ interface Comment {
 }
 
 const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(
     post.post_likes.some((like) => like.user_id === currentUserId)
@@ -96,6 +98,45 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
 
   const isOwnPost = currentUserId === post.user_id;
   const isDemo = false;
+
+  // Check if current user follows this post's author
+  const { data: isFollowingAuthor } = useQuery({
+    queryKey: ["isFollowing", currentUserId, post.user_id],
+    queryFn: async () => {
+      if (!currentUserId) return false;
+      const { data } = await supabase
+        .from("follows")
+        .select("id")
+        .eq("follower_id", currentUserId)
+        .eq("following_id", post.user_id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!currentUserId && !isOwnPost,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentUserId) throw new Error("Not authenticated");
+      if (isFollowingAuthor) {
+        const { error } = await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUserId)
+          .eq("following_id", post.user_id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("follows")
+          .insert({ follower_id: currentUserId, following_id: post.user_id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["isFollowing", currentUserId, post.user_id] });
+      toast({ title: isFollowingAuthor ? "Unfollowed" : "Followed!" });
+    },
+  });
 
   // Fetch comments when expanded
   const { data: comments = [], isLoading: commentsLoading } = useQuery({
@@ -294,7 +335,10 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
       <Card className="overflow-hidden cutesy-border bg-card/95">
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate(`/user/${post.user_id}`)}
+          >
             <Avatar className="w-10 h-10 ring-[3px] ring-primary">
               <AvatarImage src={post.profiles?.avatar_url || ""} />
               <AvatarFallback className="bg-secondary text-primary font-bold">
@@ -303,7 +347,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
             </Avatar>
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-medium text-foreground">
+                <p className="font-medium text-foreground hover:underline">
                   {displayName}
                 </p>
                 {category && (
@@ -332,24 +376,46 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
             </div>
           </div>
           
-          {isOwnPost && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                  <MoreHorizontal className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete post
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <div className="flex items-center gap-1">
+            {/* Follow button */}
+            {!isOwnPost && currentUserId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => followMutation.mutate()}
+                disabled={followMutation.isPending}
+                className={cn(
+                  "text-xs h-7 px-2",
+                  isFollowingAuthor ? "text-muted-foreground" : "text-primary"
+                )}
+              >
+                {isFollowingAuthor ? (
+                  <UserCheck className="w-4 h-4" />
+                ) : (
+                  <UserPlus className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+
+            {isOwnPost && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete post
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         {/* Content */}
