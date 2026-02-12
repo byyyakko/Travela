@@ -103,13 +103,13 @@ const Onboarding = () => {
   const toggleInterest = (interest: string) => {
     if (interests.includes(interest)) {
       setInterests(interests.filter(i => i !== interest));
-    } else if (interests.length < 10) {
+    } else if (interests.length < 20) {
       setInterests([...interests, interest]);
     }
   };
 
   const addCustomInterest = () => {
-    if (customInterest.trim() && !interests.includes(customInterest.trim()) && interests.length < 10) {
+    if (customInterest.trim() && !interests.includes(customInterest.trim()) && interests.length < 20) {
       if (containsProfanity(customInterest)) {
         toast({ title: "Inappropriate content", description: "Your interest contains inappropriate language.", variant: "destructive" });
         return;
@@ -529,7 +529,7 @@ const Onboarding = () => {
             </div>
 
             <p className="text-center text-sm text-muted-foreground">
-              {interests.length}/10 selected
+              {interests.length}/20 selected
             </p>
           </div>
         );
