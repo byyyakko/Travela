@@ -8,11 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Globe, UserPlus, UserCheck, ArrowLeft } from "lucide-react";
+import { MapPin, Globe, UserPlus, UserCheck, ArrowLeft, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import PostCard from "@/components/posts/PostCard";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import ReportBlockDialog from "@/components/ReportBlockDialog";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -239,36 +240,45 @@ const UserProfile = () => {
             </div>
           )}
 
-          {/* Follow button */}
+          {/* Action buttons */}
           {user && !isOwnProfile && (
-            <Button
-              onClick={() => followMutation.mutate()}
-              disabled={followMutation.isPending}
-              variant={isFollowing ? "outline" : "default"}
-              className="w-full mt-4 gap-2"
-            >
-              {isFollowing ? (
-                <><UserCheck className="w-4 h-4" /> Following</>
-              ) : (
-                <><UserPlus className="w-4 h-4" /> Follow</>
+            <div className="flex gap-2 mt-4">
+              <Button
+                onClick={() => followMutation.mutate()}
+                disabled={followMutation.isPending}
+                variant={isFollowing ? "outline" : "default"}
+                className="flex-1 gap-2"
+              >
+                {isFollowing ? (
+                  <><UserCheck className="w-4 h-4" /> Following</>
+                ) : (
+                  <><UserPlus className="w-4 h-4" /> Follow</>
+                )}
+              </Button>
+
+              {isFollowing && (
+                <Button
+                  variant="secondary"
+                  className="flex-1 gap-2"
+                  onClick={() => navigate("/messages")}
+                >
+                  <MessageCircle className="w-4 h-4" /> Message
+                </Button>
               )}
-            </Button>
+            </div>
+          )}
+
+          {/* Block / Report */}
+          {user && !isOwnProfile && (
+            <div className="mt-3 flex justify-end relative">
+              <ReportBlockDialog
+                targetUserId={userId!}
+                targetUserName={displayName}
+                onBlock={() => navigate(-1)}
+              />
+            </div>
           )}
         </Card>
-
-        {/* Photos gallery */}
-        {profilePhotos.length > 0 && (
-          <div className="grid grid-cols-3 gap-1 rounded-xl overflow-hidden">
-            {profilePhotos.map((photo) => (
-              <img
-                key={photo.id}
-                src={photo.photo_url}
-                alt=""
-                className="w-full aspect-square object-cover"
-              />
-            ))}
-          </div>
-        )}
 
         {/* User's posts */}
         <div className="space-y-4">
