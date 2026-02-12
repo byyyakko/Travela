@@ -67,21 +67,27 @@ export type Database = {
       }
       conversations: {
         Row: {
+          accepted: boolean | null
           created_at: string
+          declined_at: string | null
           id: string
           participant1_id: string
           participant2_id: string
           updated_at: string
         }
         Insert: {
+          accepted?: boolean | null
           created_at?: string
+          declined_at?: string | null
           id?: string
           participant1_id: string
           participant2_id: string
           updated_at?: string
         }
         Update: {
+          accepted?: boolean | null
           created_at?: string
+          declined_at?: string | null
           id?: string
           participant1_id?: string
           participant2_id?: string

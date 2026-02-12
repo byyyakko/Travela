@@ -260,7 +260,33 @@ const UserProfile = () => {
                 <Button
                   variant="secondary"
                   className="flex-1 gap-2"
-                  onClick={() => navigate("/messages")}
+                  onClick={async () => {
+                    if (!user || !userId) return;
+                    // Check for existing conversation
+                    const { data: existing } = await supabase
+                      .from("conversations")
+                      .select("id")
+                      .or(
+                        `and(participant1_id.eq.${user.id},participant2_id.eq.${userId}),and(participant1_id.eq.${userId},participant2_id.eq.${user.id})`
+                      )
+                      .maybeSingle();
+
+                    if (existing) {
+                      navigate("/messages");
+                      return;
+                    }
+
+                    // Create new conversation as a message request (accepted = null)
+                    const { error } = await supabase.from("conversations").insert({
+                      participant1_id: user.id,
+                      participant2_id: userId,
+                    });
+                    if (error) {
+                      toast({ title: "Error", description: error.message, variant: "destructive" });
+                      return;
+                    }
+                    navigate("/messages");
+                  }}
                 >
                   <MessageCircle className="w-4 h-4" /> Message
                 </Button>
