@@ -167,6 +167,57 @@ body.theme-cutesy {
   font-family: "Quicksand", system-ui, sans-serif;
 }
 
+/* Cutesy Dark Mode */
+.dark body.theme-cutesy,
+html.dark body.theme-cutesy {
+  --background: 0 0% 8%;
+  --foreground: 0 0% 92%;
+
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 92%;
+
+  --popover: 0 0% 12%;
+  --popover-foreground: 0 0% 92%;
+
+  --primary: 0 0% 90%;
+  --primary-foreground: 0 0% 8%;
+
+  --secondary: 0 0% 18%;
+  --secondary-foreground: 0 0% 88%;
+
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 0% 55%;
+
+  --accent: 0 0% 75%;
+  --accent-foreground: 0 0% 8%;
+
+  --cutesy-yellow: 0 0% 20%;
+  --cutesy-green: 0 0% 22%;
+  --cutesy-orange: 0 0% 24%;
+  --cutesy-pink: 0 0% 19%;
+  --cutesy-blue: 0 0% 23%;
+
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 22%;
+  --input: 0 0% 15%;
+  --ring: 0 0% 90%;
+
+  --gradient-warm: linear-gradient(135deg, hsl(0 0% 85%) 0%, hsl(0 0% 65%) 100%);
+  --shadow-card: 0 4px 24px -4px hsla(0, 0%, 0%, 0.3);
+  --shadow-card-hover: 0 12px 36px -8px hsla(0, 0%, 0%, 0.4);
+
+  --sidebar-background: 0 0% 8%;
+  --sidebar-foreground: 0 0% 92%;
+  --sidebar-primary: 0 0% 90%;
+  --sidebar-primary-foreground: 0 0% 8%;
+  --sidebar-accent: 0 0% 18%;
+  --sidebar-accent-foreground: 0 0% 88%;
+  --sidebar-border: 0 0% 22%;
+  --sidebar-ring: 0 0% 90%;
+}
+
 body.theme-cutesy h1,
 body.theme-cutesy h2,
 body.theme-cutesy h3,
@@ -189,6 +240,10 @@ body.theme-cutesy .cutesy-border {
   box-shadow: none;
 }
 
+html.dark body.theme-cutesy .cutesy-border {
+  border-color: hsl(0 0% 30%);
+}
+
 /* Squiggly underline effect */
 body.theme-cutesy .cutesy-underline {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23000000' stroke-width='2.5'/%3E%3C/svg%3E");
@@ -196,6 +251,10 @@ body.theme-cutesy .cutesy-underline {
   background-position: bottom;
   background-size: 50px 8px;
   padding-bottom: 8px;
+}
+
+html.dark body.theme-cutesy .cutesy-underline {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23ffffff' stroke-width='2.5'/%3E%3C/svg%3E");
 }
 
 /* Category pill styles - uniform black border, white bg, black text */
@@ -207,6 +266,16 @@ body.theme-cutesy .cutesy-pill-blue {
   background-color: hsl(0 0% 100%);
   color: hsl(0 0% 0%);
   border: 2px solid hsl(0 0% 0%);
+}
+
+html.dark body.theme-cutesy .cutesy-pill-yellow,
+html.dark body.theme-cutesy .cutesy-pill-green,
+html.dark body.theme-cutesy .cutesy-pill-orange,
+html.dark body.theme-cutesy .cutesy-pill-pink,
+html.dark body.theme-cutesy .cutesy-pill-blue {
+  background-color: hsl(0 0% 18%);
+  color: hsl(0 0% 90%);
+  border-color: hsl(0 0% 35%);
 }
 
 /* Anime Theme - Ghibli-style soft greens, sky blues, warm fields */

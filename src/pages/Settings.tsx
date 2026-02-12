@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Shield, HelpCircle, LogOut, MapPin, Globe } from "lucide-react";
+import { Bell, Shield, HelpCircle, LogOut, MapPin, Globe, Moon } from "lucide-react";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -18,6 +19,7 @@ const Settings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { language, setLanguage, t, languages } = useLanguage();
+  const { colorMode, setColorMode } = useTheme();
   const [isLocalGuide, setIsLocalGuide] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -91,6 +93,25 @@ const Settings = () => {
                 ))}
               </SelectContent>
             </Select>
+          </CardContent>
+        </Card>
+
+        {/* Appearance */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Moon className="w-5 h-5" />
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Dark Mode</Label>
+              <Switch
+                checked={colorMode === "dark"}
+                onCheckedChange={(checked) => setColorMode(checked ? "dark" : "light")}
+              />
+            </div>
           </CardContent>
         </Card>
 
