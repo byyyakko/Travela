@@ -111,58 +111,58 @@
 
 /* Cutesy Theme - Hand-drawn notebook doodle aesthetic */
 body.theme-cutesy {
-  --background: 48 50% 97%;
-  --foreground: 30 60% 20%;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 8%;
 
   --card: 0 0% 100%;
-  --card-foreground: 30 60% 20%;
+  --card-foreground: 0 0% 8%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 30 60% 20%;
+  --popover-foreground: 0 0% 8%;
 
-  /* Warm brown primary for hand-drawn style */
-  --primary: 30 50% 35%;
+  /* Black primary */
+  --primary: 0 0% 10%;
   --primary-foreground: 0 0% 100%;
 
-  /* Light cream secondary */
-  --secondary: 48 60% 92%;
-  --secondary-foreground: 30 50% 25%;
+  /* Light gray secondary */
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 0 0% 15%;
 
-  --muted: 48 30% 90%;
-  --muted-foreground: 30 30% 45%;
+  --muted: 0 0% 93%;
+  --muted-foreground: 0 0% 45%;
 
-  /* Soft sky blue accent */
-  --accent: 200 70% 65%;
+  /* Dark gray accent */
+  --accent: 0 0% 25%;
   --accent-foreground: 0 0% 100%;
 
-  /* Additional cutesy colors */
-  --cutesy-yellow: 48 90% 70%;
-  --cutesy-green: 140 50% 55%;
-  --cutesy-orange: 25 85% 60%;
-  --cutesy-pink: 350 70% 70%;
-  --cutesy-blue: 200 70% 65%;
+  /* Monochrome cutesy colors */
+  --cutesy-yellow: 0 0% 90%;
+  --cutesy-green: 0 0% 85%;
+  --cutesy-orange: 0 0% 80%;
+  --cutesy-pink: 0 0% 88%;
+  --cutesy-blue: 0 0% 83%;
 
   --destructive: 0 70% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 30 40% 75%;
+  --border: 0 0% 80%;
   --input: 0 0% 100%;
-  --ring: 30 50% 35%;
+  --ring: 0 0% 10%;
 
   --radius: 1.5rem;
 
-  --gradient-warm: linear-gradient(135deg, hsl(48 90% 70%) 0%, hsl(200 70% 65%) 100%);
-  --shadow-card: 0 4px 24px -4px hsla(30, 50%, 35%, 0.1);
-  --shadow-card-hover: 0 12px 36px -8px hsla(30, 50%, 35%, 0.15);
+  --gradient-warm: linear-gradient(135deg, hsl(0 0% 15%) 0%, hsl(0 0% 35%) 100%);
+  --shadow-card: 0 4px 24px -4px hsla(0, 0%, 0%, 0.08);
+  --shadow-card-hover: 0 12px 36px -8px hsla(0, 0%, 0%, 0.15);
 
   --sidebar-background: 0 0% 100%;
-  --sidebar-foreground: 30 60% 20%;
-  --sidebar-primary: 30 50% 35%;
+  --sidebar-foreground: 0 0% 8%;
+  --sidebar-primary: 0 0% 10%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 48 60% 92%;
-  --sidebar-accent-foreground: 30 50% 25%;
-  --sidebar-border: 30 40% 75%;
-  --sidebar-ring: 30 50% 35%;
+  --sidebar-accent: 0 0% 95%;
+  --sidebar-accent-foreground: 0 0% 15%;
+  --sidebar-border: 0 0% 80%;
+  --sidebar-ring: 0 0% 10%;
 
   font-family: "Quicksand", system-ui, sans-serif;
 }
@@ -180,49 +180,49 @@ body.theme-cutesy h6 {
 /* Dotted grid background for cutesy theme */
 body.theme-cutesy .cutesy-grid-bg {
   background-image: 
-    radial-gradient(circle, hsl(30 40% 75% / 0.4) 1px, transparent 1px);
+    radial-gradient(circle, hsl(0 0% 80% / 0.4) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
 /* Hand-drawn border effect */
 body.theme-cutesy .cutesy-border {
-  border: 3px solid hsl(30 50% 35%);
+  border: 3px solid hsl(0 0% 10%);
   border-radius: 24px;
-  box-shadow: 2px 3px 0 hsl(30 50% 35% / 0.3);
+  box-shadow: 2px 3px 0 hsl(0 0% 10% / 0.2);
 }
 
 /* Squiggly underline effect */
 body.theme-cutesy .cutesy-underline {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23785c42' stroke-width='2.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23222222' stroke-width='2.5'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-position: bottom;
   background-size: 50px 8px;
   padding-bottom: 8px;
 }
 
-/* Category pill styles for cutesy theme */
+/* Category pill styles for cutesy theme - monochrome */
 body.theme-cutesy .cutesy-pill-yellow {
-  background-color: hsl(48 90% 70%);
-  color: hsl(30 60% 20%);
+  background-color: hsl(0 0% 90%);
+  color: hsl(0 0% 10%);
 }
 
 body.theme-cutesy .cutesy-pill-green {
-  background-color: hsl(140 50% 55%);
+  background-color: hsl(0 0% 15%);
   color: white;
 }
 
 body.theme-cutesy .cutesy-pill-orange {
-  background-color: hsl(25 85% 60%);
+  background-color: hsl(0 0% 30%);
   color: white;
 }
 
 body.theme-cutesy .cutesy-pill-pink {
-  background-color: hsl(350 70% 70%);
-  color: white;
+  background-color: hsl(0 0% 85%);
+  color: hsl(0 0% 10%);
 }
 
 body.theme-cutesy .cutesy-pill-blue {
-  background-color: hsl(200 70% 65%);
+  background-color: hsl(0 0% 20%);
   color: white;
 }
 
