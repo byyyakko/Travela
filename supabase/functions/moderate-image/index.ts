@@ -29,6 +29,21 @@ serve(async (req) => {
       });
     }
 
+    // Fetch the image and convert to base64 data URL
+    const imgResponse = await fetch(image_url);
+    if (!imgResponse.ok) {
+      console.error("Failed to fetch image:", imgResponse.status);
+      return new Response(JSON.stringify({ 
+        is_safe: false, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Could not fetch image for moderation" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const imgBuffer = await imgResponse.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+    const contentType = imgResponse.headers.get("content-type") || "image/jpeg";
+    const dataUrl = `data:${contentType};base64,${base64}`;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -42,21 +57,25 @@ serve(async (req) => {
             role: "system",
             content: `You are a strict content moderation AI for a family-friendly travel social app. Analyze the provided image and return a JSON object with these fields:
 {
-  "is_safe": boolean,         // true ONLY if the image is completely appropriate for all ages
-  "is_nsfw": boolean,         // true if the image contains ANY of: nudity (full or partial), sexually suggestive poses, explicit sexual content, lingerie/underwear as focus, excessive skin exposure in sexual context, provocative gestures, genitalia, bare buttocks, or any sexualized content
-  "is_vulgar": boolean,       // true if the image contains: offensive gestures (middle finger, etc.), graphic violence, gore, drug use, hate symbols, racist imagery, profane text/signs, shock content, or anything rude/vulgar/offensive
-  "is_ai_generated": boolean, // true if the image appears to be AI-generated (look for: too-perfect skin, unnatural lighting, distorted hands/fingers, uncanny valley faces, overly smooth textures, inconsistent reflections, text artifacts)
-  "confidence": number,       // 0-1 confidence score
-  "reason": string           // brief explanation of the moderation decision
+  "is_safe": boolean,
+  "is_nsfw": boolean,
+  "is_vulgar": boolean,
+  "is_ai_generated": boolean,
+  "confidence": number,
+  "reason": string
 }
-Be VERY strict. When in doubt, flag the image as unsafe. This is a travel app used by people of all ages.
-Only return valid JSON, no markdown.`
+Rules:
+- is_nsfw: true if ANY nudity (full/partial), sexually suggestive poses, lingerie/underwear focus, provocative gestures, genitalia, bare buttocks, or sexualized content
+- is_vulgar: true if offensive gestures (middle finger), graphic violence, gore, drug use, hate symbols, racist imagery, profane text, shock content, or anything rude/vulgar/offensive
+- is_safe: true ONLY if completely appropriate for all ages
+- is_ai_generated: true if image appears AI-generated
+Be VERY strict. When in doubt, flag as unsafe. Only return valid JSON, no markdown.`
           },
           {
             role: "user",
             content: [
               { type: "text", text: "Analyze this image for content moderation:" },
-              { type: "image_url", image_url: { url: image_url } }
+              { type: "image_url", image_url: { url: dataUrl } }
             ]
           }
         ],
@@ -76,10 +95,11 @@ Only return valid JSON, no markdown.`
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      console.error("AI gateway error:", response.status);
-      // If moderation fails, allow the image (fail open for non-critical)
+      const errBody = await response.text();
+      console.error("AI gateway error:", response.status, errBody);
+      // Fail CLOSED — reject the image when moderation is unavailable
       return new Response(JSON.stringify({ 
-        is_safe: true, is_nsfw: false, is_ai_generated: false, confidence: 0, reason: "Moderation unavailable" 
+        is_safe: false, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Moderation service error — please try again" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -94,7 +114,7 @@ Only return valid JSON, no markdown.`
       parsed = JSON.parse(cleaned);
     } catch {
       // Default to safe if parsing fails
-      parsed = { is_safe: true, is_nsfw: false, is_ai_generated: false, confidence: 0, reason: "Could not parse moderation result" };
+      parsed = { is_safe: false, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Could not parse moderation result" };
     }
 
     return new Response(JSON.stringify(parsed), {
@@ -103,7 +123,7 @@ Only return valid JSON, no markdown.`
   } catch (e) {
     console.error("moderate-image error:", e);
     return new Response(JSON.stringify({ 
-      is_safe: true, is_nsfw: false, is_ai_generated: false, confidence: 0, reason: "Moderation error" 
+      is_safe: false, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Moderation error — please try again" 
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

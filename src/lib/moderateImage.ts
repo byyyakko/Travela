@@ -40,8 +40,9 @@ export const uploadAndModerate = async (
     );
 
     if (modError) {
-      console.warn("Moderation check failed, allowing image:", modError);
-      return { publicUrl, moderation: { is_safe: true, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Moderation unavailable" } };
+      console.error("Moderation invocation failed:", modError);
+      await supabase.storage.from(bucket).remove([fileName]);
+      throw new Error("Image moderation is currently unavailable. Please try again.");
     }
 
     const result = modResult as ModerationResult;
@@ -64,8 +65,9 @@ export const uploadAndModerate = async (
         throw err;
       }
     }
-    // Otherwise moderation service failed — allow the image
-    console.warn("Moderation service error, allowing image:", err);
-    return { publicUrl, moderation: { is_safe: true, is_nsfw: false, is_vulgar: false, is_ai_generated: false, confidence: 0, reason: "Moderation error" } };
+    // Moderation service failed — fail closed, reject the image
+    console.error("Moderation service error, rejecting image:", err);
+    await supabase.storage.from(bucket).remove([fileName]);
+    throw new Error("Image moderation failed. Please try again.");
   }
 };
