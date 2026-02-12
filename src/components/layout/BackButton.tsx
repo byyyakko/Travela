@@ -22,10 +22,14 @@ const BackButton = ({ className, fallbackPath = "/home" }: BackButtonProps) => {
   }
 
   const handleBack = () => {
-    // Check if there's history to go back to
-    if (window.history.length > 2) {
-      navigate(-1);
-    } else {
+    // Always try to go back; if there's no real history, fallback to home
+    try {
+      if (window.history.state && window.history.state.idx > 0) {
+        navigate(-1);
+      } else {
+        navigate(fallbackPath);
+      }
+    } catch {
       navigate(fallbackPath);
     }
   };
