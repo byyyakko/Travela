@@ -40,7 +40,15 @@ serve(async (req) => {
       });
     }
     const imgBuffer = await imgResponse.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+    // Convert to base64 in chunks to avoid stack overflow on large images
+    const bytes = new Uint8Array(imgBuffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64 = btoa(binary);
     const contentType = imgResponse.headers.get("content-type") || "image/jpeg";
     const dataUrl = `data:${contentType};base64,${base64}`;
 
