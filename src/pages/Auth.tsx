@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Plane, Globe, Check, X, Mail, ArrowLeft } from "lucide-react";
+import { Check, X, Mail, ArrowLeft, Globe, MapPin } from "lucide-react";
+import mascotImage from "@/assets/mascot-cutesy.png";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -234,11 +235,11 @@ const Auth = () => {
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: 'hsl(var(--logo-bg))' }}>
-              <Plane className="w-8 h-8 text-primary-foreground" />
+              <img src={mascotImage} alt="Tori-Tan" className="w-10 h-10 object-contain" />
             </div>
           </div>
           <div>
-            <h1 className="text-4xl font-display font-bold text-foreground">TORI TAN</h1>
+            <h1 className="text-4xl font-display font-bold text-foreground">Travela</h1>
             <p className="text-muted-foreground mt-2">Connect with locals worldwide</p>
           </div>
         </div>
