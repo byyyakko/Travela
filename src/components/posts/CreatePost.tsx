@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { allCategoryFlairs } from "@/components/home/CutesyHome";
 import { containsProfanity } from "@/lib/profanity";
 import { uploadAndModerate } from "@/lib/moderateImage";
+import { validateRealLocation } from "@/lib/validateLocation";
 
 interface CreatePostProps {
   onPostCreated: () => void;
@@ -70,6 +71,18 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
     setLoading(true);
 
     try {
+      // Validate location is a real place
+      if (locationTag.trim()) {
+        const locationResult = await validateRealLocation(locationTag.trim());
+        if (!locationResult.valid) {
+          toast({ title: "Invalid location", description: "Please enter a real location.", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        if (locationResult.formattedAddress) {
+          setLocationTag(locationResult.formattedAddress);
+        }
+      }
       const uploadedUrls: string[] = [];
 
       for (const file of imageFiles) {
