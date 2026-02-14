@@ -283,7 +283,7 @@ const SmartItinerary = () => {
             {/* Day tabs */}
             <ScrollArea className="w-full">
               <div className="flex gap-2 pb-2">
-                {itinerary.days.map((day) => (
+                {itinerary.days?.map((day) => (
                   <button
                     key={day.day}
                     onClick={() => setActiveDay(day.day)}
@@ -300,12 +300,12 @@ const SmartItinerary = () => {
             </ScrollArea>
 
             {/* Day theme */}
-            {itinerary.days
+            {(itinerary.days || [])
               .filter((d) => d.day === activeDay)
               .map((day) => (
                 <div key={day.day} className="space-y-3">
                   <p className="text-sm font-semibold text-primary">✨ {day.theme}</p>
-                  {day.activities.map((activity, idx) => {
+                  {(day.activities || []).map((activity, idx) => {
                     const IconComp = categoryIcons[activity.category] || MapPin;
                     const colorClass = categoryColors[activity.category] || "bg-gray-100 text-gray-700 border-gray-200";
                     return (
@@ -383,7 +383,7 @@ const SmartItinerary = () => {
                   <Hotel className="w-5 h-5 text-primary" /> Nearby Hotels & Accommodations
                 </h3>
                 <div className="space-y-3">
-                  {itinerary.accommodations.map((acc, idx) => (
+                  {(itinerary.accommodations || []).map((acc, idx) => (
                     <div key={idx} className="p-3 rounded-lg bg-secondary/50 border border-primary/10">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-sm">{acc.name}</span>
