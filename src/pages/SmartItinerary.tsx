@@ -416,7 +416,7 @@ const SmartItinerary = () => {
                                 id: `pin-hotel-${acc.name}-${acc.latitude}`,
                                 name: acc.name,
                                 type: "ai" as const,
-                                storeType: "attractions",
+                                storeType: "hotels",
                                 lat: acc.latitude,
                                 lng: acc.longitude,
                                 description: `${acc.type} • ${acc.area}`,

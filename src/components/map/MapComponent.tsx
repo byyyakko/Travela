@@ -19,7 +19,7 @@ interface Place {
   id: string;
   name: string;
   type: "store" | "local" | "itinerary" | "ai" | "pinned";
-  storeType?: "food" | "attractions" | "entertainment";
+  storeType?: "food" | "attractions" | "entertainment" | "hotels";
   lat: number;
   lng: number;
   description?: string;
@@ -136,6 +136,10 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
           case "entertainment":
             markerColor = "#ec4899";
             markerEmoji = "🎮";
+            break;
+          case "hotels":
+            markerColor = "#0ea5e9";
+            markerEmoji = "🏨";
             break;
           default:
             markerColor = place.type === "pinned" ? "#ef4444" : place.type === "ai" ? "#6366f1" : "#3b82f6";

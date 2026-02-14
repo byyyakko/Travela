@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Navigation, MapPin, Locate, Store, Loader2, Sparkles, Search, Pin } from "lucide-react";
+import { Navigation, MapPin, Locate, Store, Loader2, Sparkles, Search, Pin, Hotel } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +15,7 @@ interface Place {
   id: string;
   name: string;
   type: "store" | "local" | "itinerary" | "ai" | "pinned";
-  storeType?: "food" | "attractions" | "entertainment";
+  storeType?: "food" | "attractions" | "entertainment" | "hotels";
   lat: number;
   lng: number;
   description?: string;
@@ -48,7 +48,7 @@ const MapView = () => {
 
   const [userPosition, setUserPosition] = useState<[number, number] | null>(deepLinkPosition);
   const [isLocating, setIsLocating] = useState(!deepLinkPosition);
-  const [activeFilter, setActiveFilter] = useState<"all" | "stores" | "locals" | "ai" | "saved">(
+  const [activeFilter, setActiveFilter] = useState<"all" | "stores" | "locals" | "ai" | "saved" | "hotels">(
     deepLinkPosition ? "saved" : "all"
   );
   const [countrySearch, setCountrySearch] = useState("");
@@ -215,6 +215,7 @@ const MapView = () => {
     if (activeFilter === "locals") return place.type === "itinerary";
     if (activeFilter === "ai") return place.type === "ai";
     if (activeFilter === "saved") return place.type === "pinned";
+    if (activeFilter === "hotels") return place.storeType === "hotels";
     return true;
   });
 
@@ -277,6 +278,7 @@ const MapView = () => {
           {[
             { id: "all", label: "All Places", icon: MapPin },
             { id: "stores", label: "Stores", icon: Store },
+            { id: "hotels", label: "Hotels", icon: Hotel, count: places.filter(p => p.storeType === "hotels").length },
             { id: "locals", label: "My Plans", icon: Navigation },
             { id: "ai", label: "AI Picks", icon: Sparkles, count: aiPlaces.length },
             { id: "saved", label: "Saved Pins", icon: Pin, count: savedPins.length },
