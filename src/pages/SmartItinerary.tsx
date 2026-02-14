@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car } from "lucide-react";
+import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,9 @@ interface Activity {
   description: string;
   tip: string;
   category: string;
+  latitude?: number;
+  longitude?: number;
+  location?: string;
 }
 
 interface Day {
@@ -303,6 +306,17 @@ const SmartItinerary = () => {
                                 <div className="mt-2 px-3 py-2 bg-secondary/50 rounded-lg">
                                   <p className="text-xs text-primary font-medium">💡 {activity.tip}</p>
                                 </div>
+                              )}
+                              {activity.latitude && activity.longitude && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mt-2 gap-1.5 text-xs h-7 px-2"
+                                  onClick={() => navigate(`/map?lat=${activity.latitude}&lng=${activity.longitude}`)}
+                                >
+                                  <Map className="w-3 h-3" />
+                                  View on Map
+                                </Button>
                               )}
                             </div>
                           </div>

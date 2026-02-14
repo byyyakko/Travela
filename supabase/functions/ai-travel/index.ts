@@ -119,7 +119,7 @@ Return a JSON object with this structure:
       "day": 1,
       "theme": "Day theme",
       "activities": [
-        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing" }
+        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name" }
       ]
     }
   ],
@@ -137,7 +137,7 @@ Return a JSON object with this structure:
     ]
   }
 }
-Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
+IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates and the location/neighborhood name. Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);

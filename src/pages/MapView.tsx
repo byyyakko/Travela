@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Navigation, MapPin, Locate, Store, ArrowLeft, Loader2, Sparkles, Search } from "lucide-react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface Place {
@@ -35,10 +35,17 @@ const CATEGORY_MAP: Record<string, "food" | "attractions" | "entertainment"> = {
 const MapView = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
-  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
-  const [isLocating, setIsLocating] = useState(true);
+  const paramLat = searchParams.get("lat");
+  const paramLng = searchParams.get("lng");
+  const deepLinkPosition: [number, number] | null = paramLat && paramLng
+    ? [parseFloat(paramLat), parseFloat(paramLng)]
+    : null;
+
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(deepLinkPosition);
+  const [isLocating, setIsLocating] = useState(!deepLinkPosition);
   const [activeFilter, setActiveFilter] = useState<"all" | "stores" | "locals" | "ai">("all");
   const [countrySearch, setCountrySearch] = useState("");
   const [aiPlaces, setAiPlaces] = useState<Place[]>([]);
