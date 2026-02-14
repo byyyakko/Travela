@@ -158,59 +158,58 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   return (
     <div className="space-y-6">
       {/* Personalized Greeting with dotted grid background */}
-      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden min-h-[120px]">
-        <div className="flex items-start justify-between">
-          <div className="z-10">
-            <h1 className="text-2xl font-bold text-primary mb-1">
+      <Card className="p-4 sm:p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden">
+        {/* Top row: greeting text + mascot */}
+        <div className="flex items-start gap-2">
+          <div className="z-10 flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-primary mb-1">
               Hello, {displayName || "Traveler"}! 👋
             </h1>
             <p className="text-muted-foreground text-sm">
               Where would you like to explore today?
-          </p>
+            </p>
           </div>
-          {/* Mascot with Speech Bubble */}
-          <div className="relative flex items-start">
-            {/* Speech Bubble */}
-            <motion.div 
-              className="absolute -left-36 top-0 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-[140px] z-10"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-            >
-              <p className="text-xs text-primary font-medium leading-snug">
-                {mascotMessage}
-              </p>
-              {/* Speech bubble tail */}
-              <div className="absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
-              <div className="absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
-            </motion.div>
-            {/* Mascot - large, covering upper right */}
-            <motion.img 
-              src={mascotCutesy} 
-              alt="Tori-Tan mascot" 
-              className="w-36 h-36 object-contain -mt-5 -mr-5 drop-shadow-md mix-blend-multiply"
-              animate={floatAnimation}
-            />
-          </div>
+          {/* Mascot only (no speech bubble overlapping) */}
+          <motion.img 
+            src={mascotCutesy} 
+            alt="Tori-Tan mascot" 
+            className="w-20 h-20 sm:w-36 sm:h-36 object-contain -mt-2 -mr-2 sm:-mt-5 sm:-mr-5 drop-shadow-md mix-blend-multiply flex-shrink-0"
+            animate={floatAnimation}
+          />
         </div>
 
+        {/* Speech Bubble - below greeting on mobile, absolute on desktop */}
+        <motion.div 
+          className="mt-2 sm:mt-0 sm:absolute sm:right-40 sm:top-3 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-full sm:max-w-[140px] z-10 relative"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
+          <p className="text-xs text-primary font-medium leading-snug">
+            {mascotMessage}
+          </p>
+          {/* Speech bubble tail - points up to mascot on mobile, right on desktop */}
+          <div className="hidden sm:block absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
+          <div className="hidden sm:block absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
+        </motion.div>
+
         {/* Quick action icons */}
-        <div className="flex justify-center gap-8 mt-6">
+        <div className="grid grid-cols-3 sm:flex sm:justify-center gap-4 sm:gap-8 mt-4 sm:mt-6">
           {quickActions.map((action) => (
             <button
               key={action.label}
               onClick={() => handleQuickAction(action)}
-              className="flex flex-col items-center gap-2 group"
+              className="flex flex-col items-center gap-1.5 sm:gap-2 group"
             >
-              <div className="w-16 h-16 rounded-full bg-secondary border-[3px] border-primary flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm relative">
-                <action.icon className="w-7 h-7 text-primary" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-secondary border-[3px] border-primary flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm relative">
+                <action.icon className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
                 {action.paid && subscriptionTier !== "tier_1" && subscriptionTier !== "tier_2" && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <Lock className="w-3 h-3 text-primary-foreground" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary-foreground" />
                   </div>
                 )}
               </div>
-              <span className="text-xs font-semibold text-primary">{action.label}</span>
+              <span className="text-[10px] sm:text-xs font-semibold text-primary">{action.label}</span>
             </button>
           ))}
         </div>
