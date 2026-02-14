@@ -18,7 +18,7 @@ L.Icon.Default.mergeOptions({
 interface Place {
   id: string;
   name: string;
-  type: "store" | "local" | "itinerary";
+  type: "store" | "local" | "itinerary" | "ai";
   storeType?: "food" | "attractions" | "entertainment";
   lat: number;
   lng: number;
@@ -120,27 +120,26 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
 
     // Add new markers
     places.forEach((place) => {
-      // Determine icon based on store type
-      let markerColor = "#22c55e"; // Default green for itinerary
+      let markerColor = "#22c55e";
       let markerEmoji = "📋";
       
-      if (place.type === "store") {
+      if (place.type === "store" || place.type === "ai") {
         switch (place.storeType) {
           case "food":
-            markerColor = "#f97316"; // Orange for food
+            markerColor = "#f97316";
             markerEmoji = "🍜";
             break;
           case "attractions":
-            markerColor = "#8b5cf6"; // Purple for attractions
+            markerColor = "#8b5cf6";
             markerEmoji = "🏛️";
             break;
           case "entertainment":
-            markerColor = "#ec4899"; // Pink for entertainment
+            markerColor = "#ec4899";
             markerEmoji = "🎮";
             break;
           default:
-            markerColor = "#3b82f6"; // Blue fallback
-            markerEmoji = "🏪";
+            markerColor = place.type === "ai" ? "#6366f1" : "#3b82f6";
+            markerEmoji = place.type === "ai" ? "✨" : "🏪";
         }
       }
 
@@ -177,7 +176,7 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
               background: #f3f4f6;
               border-radius: 12px;
               font-size: 11px;
-            ">${markerEmoji} ${place.type === "store" ? (place.storeType || "Store") : "Itinerary"}</span>
+            ">${markerEmoji} ${place.type === "store" ? (place.storeType || "Store") : place.type === "ai" ? `AI · ${place.storeType || "Place"}` : "Itinerary"}</span>
           </div>
         `);
 
