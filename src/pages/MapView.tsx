@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Navigation, MapPin, Locate, Store, ArrowLeft, Loader2, Sparkles, Search } from "lucide-react";
+import { Navigation, MapPin, Locate, Store, ArrowLeft, Loader2, Sparkles, Search, Pin } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -14,12 +14,14 @@ import { useToast } from "@/hooks/use-toast";
 interface Place {
   id: string;
   name: string;
-  type: "store" | "local" | "itinerary" | "ai";
+  type: "store" | "local" | "itinerary" | "ai" | "pinned";
   storeType?: "food" | "attractions" | "entertainment";
   lat: number;
   lng: number;
   description?: string;
 }
+
+const SAVED_PINS_KEY = "saved-map-pins";
 
 const LazyMapComponent = lazy(() => import("@/components/map/MapComponent"));
 
@@ -46,9 +48,17 @@ const MapView = () => {
 
   const [userPosition, setUserPosition] = useState<[number, number] | null>(deepLinkPosition);
   const [isLocating, setIsLocating] = useState(!deepLinkPosition);
-  const [activeFilter, setActiveFilter] = useState<"all" | "stores" | "locals" | "ai">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "stores" | "locals" | "ai" | "saved">(
+    deepLinkPosition ? "saved" : "all"
+  );
   const [countrySearch, setCountrySearch] = useState("");
   const [aiPlaces, setAiPlaces] = useState<Place[]>([]);
+  const [savedPins, setSavedPins] = useState<Place[]>(() => {
+    try {
+      const stored = localStorage.getItem(SAVED_PINS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
 
   const defaultPosition: [number, number] = [1.3521, 103.8198];
 
@@ -166,6 +176,7 @@ const MapView = () => {
       description: item.location || undefined,
     })) || []),
     ...aiPlaces,
+    ...savedPins.map(p => ({ ...p, type: "pinned" as const })),
   ];
 
   const handleLocationFound = useCallback((lat: number, lng: number) => {
@@ -203,6 +214,7 @@ const MapView = () => {
     if (activeFilter === "stores") return place.type === "store";
     if (activeFilter === "locals") return place.type === "itinerary";
     if (activeFilter === "ai") return place.type === "ai";
+    if (activeFilter === "saved") return place.type === "pinned";
     return true;
   });
 
@@ -270,6 +282,7 @@ const MapView = () => {
             { id: "stores", label: "Stores", icon: Store },
             { id: "locals", label: "My Plans", icon: Navigation },
             { id: "ai", label: "AI Picks", icon: Sparkles, count: aiPlaces.length },
+            { id: "saved", label: "Saved Pins", icon: Pin, count: savedPins.length },
           ].map((filter) => (
             <Button
               key={filter.id}
@@ -333,7 +346,7 @@ const MapView = () => {
                 let bgClass = "bg-secondary";
                 let textClass = "text-foreground";
                 
-                if (place.type === "store" || place.type === "ai") {
+                if (place.type === "store" || place.type === "ai" || place.type === "pinned") {
                   switch (place.storeType) {
                     case "food":
                       emoji = "🍜";
@@ -350,6 +363,12 @@ const MapView = () => {
                       bgClass = "bg-pink-100 dark:bg-pink-950";
                       textClass = "text-pink-600";
                       break;
+                    default:
+                      if (place.type === "pinned") {
+                        emoji = "📌";
+                        bgClass = "bg-red-100 dark:bg-red-950";
+                        textClass = "text-red-600";
+                      }
                   }
                 }
 
@@ -361,8 +380,8 @@ const MapView = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="font-medium text-sm truncate">{place.name}</p>
-                        {place.type === "ai" && (
-                          <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                        {(place.type === "ai" || place.type === "pinned") && (
+                          <Pin className="w-3 h-3 text-primary shrink-0" />
                         )}
                       </div>
                       {place.description && (

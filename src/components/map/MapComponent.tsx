@@ -18,7 +18,7 @@ L.Icon.Default.mergeOptions({
 interface Place {
   id: string;
   name: string;
-  type: "store" | "local" | "itinerary" | "ai";
+  type: "store" | "local" | "itinerary" | "ai" | "pinned";
   storeType?: "food" | "attractions" | "entertainment";
   lat: number;
   lng: number;
@@ -123,7 +123,7 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
       let markerColor = "#22c55e";
       let markerEmoji = "📋";
       
-      if (place.type === "store" || place.type === "ai") {
+      if (place.type === "store" || place.type === "ai" || place.type === "pinned") {
         switch (place.storeType) {
           case "food":
             markerColor = "#f97316";
@@ -138,8 +138,8 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
             markerEmoji = "🎮";
             break;
           default:
-            markerColor = place.type === "ai" ? "#6366f1" : "#3b82f6";
-            markerEmoji = place.type === "ai" ? "✨" : "🏪";
+            markerColor = place.type === "pinned" ? "#ef4444" : place.type === "ai" ? "#6366f1" : "#3b82f6";
+            markerEmoji = place.type === "pinned" ? "📌" : place.type === "ai" ? "✨" : "🏪";
         }
       }
 
@@ -176,7 +176,7 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
               background: #f3f4f6;
               border-radius: 12px;
               font-size: 11px;
-            ">${markerEmoji} ${place.type === "store" ? (place.storeType || "Store") : place.type === "ai" ? `AI · ${place.storeType || "Place"}` : "Itinerary"}</span>
+            ">${markerEmoji} ${place.type === "store" ? (place.storeType || "Store") : place.type === "ai" ? `AI · ${place.storeType || "Place"}` : place.type === "pinned" ? `📌 ${place.storeType || "Saved"}` : "Itinerary"}</span>
           </div>
         `);
 

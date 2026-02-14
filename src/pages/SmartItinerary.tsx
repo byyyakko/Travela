@@ -334,10 +334,34 @@ const SmartItinerary = () => {
                                   variant="ghost"
                                   size="sm"
                                   className="mt-2 gap-1.5 text-xs h-7 px-2"
-                                  onClick={() => navigate(`/map?lat=${activity.latitude}&lng=${activity.longitude}`)}
+                                  onClick={() => {
+                                    // Save pin to localStorage for persistence
+                                    const CATEGORY_TO_STORE: Record<string, string> = {
+                                      food: "food",
+                                      culture: "attractions",
+                                      adventure: "attractions",
+                                      shopping: "entertainment",
+                                      sightseeing: "attractions",
+                                    };
+                                    const pin = {
+                                      id: `pin-${activity.title}-${activity.latitude}`,
+                                      name: activity.title,
+                                      type: "ai" as const,
+                                      storeType: CATEGORY_TO_STORE[activity.category] || "attractions",
+                                      lat: activity.latitude,
+                                      lng: activity.longitude,
+                                      description: activity.location || activity.description,
+                                    };
+                                    const existing = JSON.parse(localStorage.getItem("saved-map-pins") || "[]");
+                                    if (!existing.some((p: any) => p.id === pin.id)) {
+                                      existing.push(pin);
+                                      localStorage.setItem("saved-map-pins", JSON.stringify(existing));
+                                    }
+                                    navigate(`/map?lat=${activity.latitude}&lng=${activity.longitude}`);
+                                  }}
                                 >
                                   <Map className="w-3 h-3" />
-                                  View on Map
+                                  Pin to Map
                                 </Button>
                               )}
                             </div>
