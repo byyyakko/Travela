@@ -394,23 +394,24 @@ const SmartItinerary = () => {
                       <p className="text-sm mt-1">{acc.description}</p>
                       {acc.tip && <p className="text-xs text-primary mt-1">💡 {acc.tip}</p>}
                       <div className="flex gap-2 mt-2">
-                        {acc.booking_url && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5 text-xs h-7 px-2"
-                            onClick={() => window.open(acc.booking_url, "_blank", "noopener,noreferrer")}
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            Book Now
-                          </Button>
-                        )}
-                        {acc.latitude && acc.longitude && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-1.5 text-xs h-7 px-2"
-                            onClick={() => {
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 text-xs h-7 px-2"
+                          onClick={() => {
+                            const url = acc.booking_url || `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(acc.name + " " + acc.area)}`;
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          }}
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Book Now
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs h-7 px-2"
+                          onClick={() => {
+                            if (acc.latitude && acc.longitude) {
                               const pin = {
                                 id: `pin-hotel-${acc.name}-${acc.latitude}`,
                                 name: acc.name,
@@ -426,12 +427,15 @@ const SmartItinerary = () => {
                                 localStorage.setItem("saved-map-pins", JSON.stringify(existing));
                               }
                               navigate(`/map?lat=${acc.latitude}&lng=${acc.longitude}`);
-                            }}
-                          >
-                            <Map className="w-3 h-3" />
-                            View on Map
-                          </Button>
-                        )}
+                            } else {
+                              // Fallback: search by name
+                              window.open(`https://www.google.com/maps/search/${encodeURIComponent(acc.name + " " + acc.area)}`, "_blank", "noopener,noreferrer");
+                            }
+                          }}
+                        >
+                          <Map className="w-3 h-3" />
+                          View on Map
+                        </Button>
                       </div>
                     </div>
                   ))}
