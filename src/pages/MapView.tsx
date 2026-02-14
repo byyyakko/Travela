@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Navigation, MapPin, Locate, Store, ArrowLeft, Loader2, Sparkles, Search, Pin } from "lucide-react";
+import { Navigation, MapPin, Locate, Store, Loader2, Sparkles, Search, Pin } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -232,9 +232,6 @@ const MapView = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
             <div>
               <h1 className="text-2xl font-bold text-primary">Explore Map</h1>
               <p className="text-sm text-muted-foreground">Find places near you</p>
