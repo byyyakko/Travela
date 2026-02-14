@@ -56,7 +56,19 @@ const MapView = () => {
   const [savedPins, setSavedPins] = useState<Place[]>(() => {
     try {
       const stored = localStorage.getItem(SAVED_PINS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      if (!stored) return [];
+      const pins = JSON.parse(stored) as Place[];
+      // Migrate old hotel pins that were saved as "attractions"
+      let migrated = false;
+      const updated = pins.map((p) => {
+        if (p.id?.startsWith("pin-hotel-") && p.storeType !== "hotels") {
+          migrated = true;
+          return { ...p, storeType: "hotels" as const };
+        }
+        return p;
+      });
+      if (migrated) localStorage.setItem(SAVED_PINS_KEY, JSON.stringify(updated));
+      return updated;
     } catch { return []; }
   });
 
