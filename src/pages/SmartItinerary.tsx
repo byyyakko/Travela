@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map } from "lucide-react";
+import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +38,9 @@ interface Accommodation {
   price_range: string;
   description: string;
   tip: string;
+  booking_url?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface TransportMode {
@@ -390,6 +393,46 @@ const SmartItinerary = () => {
                       <p className="text-xs text-muted-foreground">{acc.area}</p>
                       <p className="text-sm mt-1">{acc.description}</p>
                       {acc.tip && <p className="text-xs text-primary mt-1">💡 {acc.tip}</p>}
+                      <div className="flex gap-2 mt-2">
+                        {acc.booking_url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs h-7 px-2"
+                            onClick={() => window.open(acc.booking_url, "_blank", "noopener,noreferrer")}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Book Now
+                          </Button>
+                        )}
+                        {acc.latitude && acc.longitude && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1.5 text-xs h-7 px-2"
+                            onClick={() => {
+                              const pin = {
+                                id: `pin-hotel-${acc.name}-${acc.latitude}`,
+                                name: acc.name,
+                                type: "ai" as const,
+                                storeType: "attractions",
+                                lat: acc.latitude,
+                                lng: acc.longitude,
+                                description: `${acc.type} • ${acc.area}`,
+                              };
+                              const existing = JSON.parse(localStorage.getItem("saved-map-pins") || "[]");
+                              if (!existing.some((p: any) => p.id === pin.id)) {
+                                existing.push(pin);
+                                localStorage.setItem("saved-map-pins", JSON.stringify(existing));
+                              }
+                              navigate(`/map?lat=${acc.latitude}&lng=${acc.longitude}`);
+                            }}
+                          >
+                            <Map className="w-3 h-3" />
+                            View on Map
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
