@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import BackButton from "@/components/layout/BackButton";
+import ToriTanChat from "@/components/ToriTanChat";
 import bgCute from "@/assets/bg-cute.png";
 import mascotImg from "@/assets/mascot-cutesy.png";
 
@@ -116,6 +117,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           })}
         </div>
       </nav>
+
+      {/* Tori-Tan AI Chat */}
+      <ToriTanChat />
     </div>
   );
 };
