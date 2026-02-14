@@ -124,7 +124,7 @@ Return a JSON object with this structure:
     }
   ],
   "accommodations": [
-    { "name": "Hotel/hostel name", "type": "hotel|hostel|guesthouse|resort", "area": "Neighborhood/area", "price_range": "budget|mid-range|luxury", "description": "Brief description and why it's recommended", "tip": "Booking tip" }
+    { "name": "Hotel/hostel name", "type": "hotel|hostel|guesthouse|resort", "area": "Neighborhood/area", "price_range": "budget|mid-range|luxury", "description": "Brief description and why it's recommended", "tip": "Booking tip", "booking_url": "https://www.booking.com/search.html?ss=Hotel+Name+City or relevant official booking website URL for this specific hotel", "latitude": 0.0, "longitude": 0.0 }
   ],
   "transport": {
     "from_airport": "How to get from the airport to the city center, including options and estimated costs",
@@ -137,7 +137,7 @@ Return a JSON object with this structure:
     ]
   }
 }
-IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates and the location/neighborhood name. Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
+IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates and the location/neighborhood name. For each accommodation, include accurate latitude and longitude coordinates and a real booking URL (use the hotel's official website, Booking.com search URL, or Agoda search URL). Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
