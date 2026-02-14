@@ -180,7 +180,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
 
         {/* Speech Bubble - below greeting on mobile, absolute on desktop */}
         <motion.div 
-          className="mt-2 sm:mt-0 sm:absolute sm:right-40 sm:top-3 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-full sm:max-w-[140px] z-10 relative"
+          className="mt-2 sm:mt-0 sm:absolute sm:right-40 sm:top-3 bg-card border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-full sm:max-w-[140px] z-10 relative"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3, duration: 0.4 }}
@@ -189,7 +189,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
             {mascotMessage}
           </p>
           {/* Speech bubble tail - points up to mascot on mobile, right on desktop */}
-          <div className="hidden sm:block absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
+          <div className="hidden sm:block absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-card" />
           <div className="hidden sm:block absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
         </motion.div>
 
