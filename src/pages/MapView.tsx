@@ -206,11 +206,13 @@ const MapView = () => {
     return true;
   });
 
-  // Center on AI places if they exist and filter is "ai"
+  // Priority: deep link > AI places > user position > default
   const mapCenter: [number, number] = 
-    activeFilter === "ai" && aiPlaces.length > 0
-      ? [aiPlaces[0].lat, aiPlaces[0].lng]
-      : userPosition || defaultPosition;
+    deepLinkPosition
+      ? deepLinkPosition
+      : activeFilter === "ai" && aiPlaces.length > 0
+        ? [aiPlaces[0].lat, aiPlaces[0].lng]
+        : userPosition || defaultPosition;
 
   return (
     <AppLayout>

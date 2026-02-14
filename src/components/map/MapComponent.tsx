@@ -72,9 +72,9 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
   // Update center when it changes
   useEffect(() => {
     if (mapRef.current) {
-      mapRef.current.setView(center, mapRef.current.getZoom());
+      mapRef.current.setView(center, 15);
     }
-  }, [center]);
+  }, [center[0], center[1]]);
 
   // Update user position marker
   useEffect(() => {

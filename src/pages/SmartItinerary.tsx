@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -89,12 +89,34 @@ const SmartItinerary = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [prompt, setPrompt] = useState("");
-  const [itinerary, setItinerary] = useState<ItineraryData | null>(null);
+  const [prompt, setPrompt] = useState(() => {
+    return sessionStorage.getItem("smart-itinerary-prompt") || "";
+  });
+  const [itinerary, setItinerary] = useState<ItineraryData | null>(() => {
+    const saved = sessionStorage.getItem("smart-itinerary-data");
+    return saved ? JSON.parse(saved) : null;
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [activeDay, setActiveDay] = useState(1);
+  const [activeDay, setActiveDay] = useState(() => {
+    return Number(sessionStorage.getItem("smart-itinerary-day")) || 1;
+  });
   const [isAddingToPlanner, setIsAddingToPlanner] = useState(false);
   const [addedToPlanner, setAddedToPlanner] = useState(false);
+
+  // Persist itinerary state to sessionStorage
+  useEffect(() => {
+    if (itinerary) {
+      sessionStorage.setItem("smart-itinerary-data", JSON.stringify(itinerary));
+    }
+  }, [itinerary]);
+
+  useEffect(() => {
+    sessionStorage.setItem("smart-itinerary-prompt", prompt);
+  }, [prompt]);
+
+  useEffect(() => {
+    sessionStorage.setItem("smart-itinerary-day", String(activeDay));
+  }, [activeDay]);
 
   const generateItinerary = async () => {
     if (!prompt.trim()) return;
