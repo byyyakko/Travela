@@ -29,6 +29,7 @@ import MapView from "./pages/MapView";
 import StoreView from "./pages/StoreView";
 import CommonPhrases from "./pages/CommonPhrases";
 import SmartItinerary from "./pages/SmartItinerary";
+import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
 import UserProfile from "./pages/UserProfile";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
@@ -101,6 +102,7 @@ const AppRoutes = () => {
       <Route path="/store/:storeId" element={<ProtectedRoute><StoreView /></ProtectedRoute>} />
       <Route path="/common-phrases" element={<ProtectedRoute><CommonPhrases /></ProtectedRoute>} />
       <Route path="/smart-itinerary" element={<ProtectedRoute><SmartItinerary /></ProtectedRoute>} />
+      <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
       {/* Merchant Dashboard Routes */}
       <Route path="/merchant-dashboard" element={<ProtectedRoute skipOnboardingCheck><MerchantDashboard /></ProtectedRoute>}>
         <Route index element={<MerchantHome />} />
