@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map, ExternalLink } from "lucide-react";
+import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map, ExternalLink, ChevronDown, ChevronUp, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,8 @@ interface Activity {
   latitude?: number;
   longitude?: number;
   location?: string;
+  summary?: string;
+  source_url?: string;
 }
 
 interface Day {
@@ -105,7 +107,16 @@ const SmartItinerary = () => {
   });
   const [isAddingToPlanner, setIsAddingToPlanner] = useState(false);
   const [addedToPlanner, setAddedToPlanner] = useState(false);
+  const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
 
+  const toggleExpanded = (key: string) => {
+    setExpandedActivities(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
   // Persist itinerary state to sessionStorage
   useEffect(() => {
     if (itinerary) {
@@ -305,74 +316,118 @@ const SmartItinerary = () => {
               .map((day) => (
                 <div key={day.day} className="space-y-3">
                   <p className="text-sm font-semibold text-primary">✨ {day.theme}</p>
-                  {(day.activities || []).map((activity, idx) => {
-                    const IconComp = categoryIcons[activity.category] || MapPin;
-                    const colorClass = categoryColors[activity.category] || "bg-gray-100 text-gray-700 border-gray-200";
-                    return (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.08 }}
-                      >
-                        <Card className="p-4 cutesy-border bg-card/95">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${colorClass} flex-shrink-0`}>
-                              <IconComp className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Clock className="w-3 h-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{activity.time}</span>
-                              </div>
-                              <h3 className="font-bold text-foreground">{activity.title}</h3>
-                              <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
-                              {activity.tip && (
-                                <div className="mt-2 px-3 py-2 bg-secondary/50 rounded-lg">
-                                  <p className="text-xs text-primary font-medium">💡 {activity.tip}</p>
-                                </div>
-                              )}
-                              {activity.latitude && activity.longitude && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mt-2 gap-1.5 text-xs h-7 px-2"
-                                  onClick={() => {
-                                    // Save pin to localStorage for persistence
-                                    const CATEGORY_TO_STORE: Record<string, string> = {
-                                      food: "food",
-                                      culture: "attractions",
-                                      adventure: "attractions",
-                                      shopping: "entertainment",
-                                      sightseeing: "attractions",
-                                    };
-                                    const pin = {
-                                      id: `pin-${activity.title}-${activity.latitude}`,
-                                      name: activity.title,
-                                      type: "ai" as const,
-                                      storeType: CATEGORY_TO_STORE[activity.category] || "attractions",
-                                      lat: activity.latitude,
-                                      lng: activity.longitude,
-                                      description: activity.location || activity.description,
-                                    };
-                                    const existing = JSON.parse(localStorage.getItem("saved-map-pins") || "[]");
-                                    if (!existing.some((p: any) => p.id === pin.id)) {
-                                      existing.push(pin);
-                                      localStorage.setItem("saved-map-pins", JSON.stringify(existing));
-                                    }
-                                    navigate(`/map?lat=${activity.latitude}&lng=${activity.longitude}`);
-                                  }}
-                                >
-                                  <Map className="w-3 h-3" />
-                                  Pin to Map
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
+                    {(day.activities || []).map((activity, idx) => {
+                     const IconComp = categoryIcons[activity.category] || MapPin;
+                     const colorClass = categoryColors[activity.category] || "bg-gray-100 text-gray-700 border-gray-200";
+                     const expandKey = `${day.day}-${idx}`;
+                     const isExpanded = expandedActivities.has(expandKey);
+                     return (
+                       <motion.div
+                         key={idx}
+                         initial={{ opacity: 0, x: -10 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         transition={{ delay: idx * 0.08 }}
+                       >
+                         <Card
+                           className="p-4 cutesy-border bg-card/95 cursor-pointer transition-shadow hover:shadow-md"
+                           onClick={() => toggleExpanded(expandKey)}
+                         >
+                           <div className="flex items-start gap-3">
+                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${colorClass} flex-shrink-0`}>
+                               <IconComp className="w-5 h-5" />
+                             </div>
+                             <div className="flex-1 min-w-0">
+                               <div className="flex items-center justify-between gap-2">
+                                 <div className="flex items-center gap-2 mb-1">
+                                   <Clock className="w-3 h-3 text-muted-foreground" />
+                                   <span className="text-xs text-muted-foreground">{activity.time}</span>
+                                 </div>
+                                 {(activity.summary || activity.source_url) && (
+                                   isExpanded
+                                     ? <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                     : <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                 )}
+                               </div>
+                               <h3 className="font-bold text-foreground">{activity.title}</h3>
+                               <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                               {activity.tip && (
+                                 <div className="mt-2 px-3 py-2 bg-secondary/50 rounded-lg">
+                                   <p className="text-xs text-primary font-medium">💡 {activity.tip}</p>
+                                 </div>
+                               )}
+
+                               {/* Expanded content */}
+                               {isExpanded && (activity.summary || activity.source_url) && (
+                                 <motion.div
+                                   initial={{ opacity: 0, height: 0 }}
+                                   animate={{ opacity: 1, height: "auto" }}
+                                   exit={{ opacity: 0, height: 0 }}
+                                   className="mt-3 space-y-2 border-t border-primary/10 pt-3"
+                                 >
+                                   {activity.summary && (
+                                     <div className="px-3 py-2 bg-primary/5 rounded-lg">
+                                       <p className="text-xs font-semibold text-primary mb-1">✨ AI Summary</p>
+                                       <p className="text-sm text-foreground leading-relaxed">{activity.summary}</p>
+                                     </div>
+                                   )}
+                                   {activity.source_url && (
+                                     <Button
+                                       variant="outline"
+                                       size="sm"
+                                       className="gap-1.5 text-xs h-7 px-3"
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         window.open(activity.source_url, "_blank", "noopener,noreferrer");
+                                       }}
+                                     >
+                                       <Globe className="w-3 h-3" />
+                                       View Source
+                                     </Button>
+                                   )}
+                                 </motion.div>
+                               )}
+
+                               {activity.latitude && activity.longitude && (
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   className="mt-2 gap-1.5 text-xs h-7 px-2"
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     const CATEGORY_TO_STORE: Record<string, string> = {
+                                       food: "food",
+                                       culture: "attractions",
+                                       adventure: "attractions",
+                                       shopping: "entertainment",
+                                       sightseeing: "attractions",
+                                     };
+                                     const pin = {
+                                       id: `pin-${activity.title}-${activity.latitude}`,
+                                       name: activity.title,
+                                       type: "ai" as const,
+                                       storeType: CATEGORY_TO_STORE[activity.category] || "attractions",
+                                       lat: activity.latitude,
+                                       lng: activity.longitude,
+                                       description: activity.location || activity.description,
+                                     };
+                                     const existing = JSON.parse(localStorage.getItem("saved-map-pins") || "[]");
+                                     if (!existing.some((p: any) => p.id === pin.id)) {
+                                       existing.push(pin);
+                                       localStorage.setItem("saved-map-pins", JSON.stringify(existing));
+                                     }
+                                     navigate(`/map?lat=${activity.latitude}&lng=${activity.longitude}`);
+                                   }}
+                                 >
+                                   <Map className="w-3 h-3" />
+                                   Pin to Map
+                                 </Button>
+                               )}
+                             </div>
+                           </div>
+                         </Card>
+                       </motion.div>
+                     );
+                   })}
                 </div>
               ))}
 

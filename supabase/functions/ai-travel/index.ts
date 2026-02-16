@@ -119,7 +119,7 @@ Return a JSON object with this structure:
       "day": 1,
       "theme": "Day theme",
       "activities": [
-        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name" }
+        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name", "summary": "A detailed 3-5 sentence AI summary about this place — what makes it special, best time to visit, and insider tips", "source_url": "https://en.wikipedia.org/wiki/Place_Name or relevant travel site URL" }
       ]
     }
   ],
@@ -137,7 +137,7 @@ Return a JSON object with this structure:
     ]
   }
 }
-IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates and the location/neighborhood name. For each accommodation, include accurate latitude and longitude coordinates and a real booking URL (use the hotel's official website, Booking.com search URL, or Agoda search URL). Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
+IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates, the location/neighborhood name, a detailed AI summary (3-5 sentences about what makes the place special, best time to visit, insider tips), and a real source URL (Wikipedia or travel site). For each accommodation, include accurate latitude and longitude coordinates and a real booking URL (use the hotel's official website, Booking.com search URL, or Agoda search URL). Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
