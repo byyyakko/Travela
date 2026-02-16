@@ -119,7 +119,7 @@ Return a JSON object with this structure:
       "day": 1,
       "theme": "Day theme",
       "activities": [
-        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name", "summary": "A detailed 3-5 sentence AI summary about this place — what makes it special, best time to visit, and insider tips", "source_url": "https://en.wikipedia.org/wiki/Place_Name or relevant travel site URL" }
+        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name", "summary": "A detailed 3-5 sentence AI summary about this place — what makes it special, best time to visit, and insider tips", "source_url": "https://www.tripadvisor.com/Search?q=Place+Name+City or https://www.lonelyplanet.com/search?q=Place+Name" }
       ]
     }
   ],
@@ -137,7 +137,7 @@ Return a JSON object with this structure:
     ]
   }
 }
-IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates, the location/neighborhood name, a detailed AI summary (3-5 sentences about what makes the place special, best time to visit, insider tips), and a real source URL (Wikipedia or travel site). For each accommodation, include accurate latitude and longitude coordinates and a real booking URL (use the hotel's official website, Booking.com search URL, or Agoda search URL). Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
+IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates, the location/neighborhood name, a detailed AI summary (3-5 sentences about what makes the place special, best time to visit, insider tips), and a source_url. NEVER use Wikipedia. For source_url, ONLY use search URLs from reputable travel sites that will always resolve (never 404). Use this format: "https://www.tripadvisor.com/Search?q=Place+Name+City" or "https://www.lonelyplanet.com/search?q=Place+Name" or "https://www.google.com/search?q=Place+Name+City+travel+guide". Never guess or fabricate direct article URLs — always use search query URLs that are guaranteed to work. For each accommodation, include accurate latitude and longitude coordinates and a real booking URL (use Booking.com search URL like "https://www.booking.com/searchresults.html?ss=Hotel+Name+City" or Agoda search URL). Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
@@ -182,13 +182,13 @@ Return a JSON object with this structure:
       "location": "City or region name",
       "latitude": 0.0,
       "longitude": 0.0,
-      "source_url": "https://en.wikipedia.org/wiki/Attraction_Name or relevant travel site URL",
+      "source_url": "https://www.tripadvisor.com/Search?q=Attraction+Name+City or https://www.lonelyplanet.com/search?q=Attraction+Name",
       "rating": 4.5,
       "price_level": "free|budget|moderate|expensive"
     }
   ]
 }
-Return 6-10 attractions. Ensure coordinates are accurate real-world values. Use real Wikipedia or travel site URLs where possible. Only return valid JSON, no markdown.`;
+Return 6-10 attractions. Ensure coordinates are accurate real-world values. NEVER use Wikipedia URLs. For source_url, ONLY use search URLs from reputable travel sites (TripAdvisor, Lonely Planet, Google) that will always resolve. Use formats like "https://www.tripadvisor.com/Search?q=Place+Name+City" — never guess direct article URLs. Only return valid JSON, no markdown.`;
       userPrompt = `Show me the best places to visit in ${country}${category ? ` in the ${category} category` : ""}`;
     }
 
