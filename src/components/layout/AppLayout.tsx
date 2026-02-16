@@ -36,7 +36,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           
           <div className="flex items-center gap-2">
             <img src={mascotImg} alt="Travela mascot" className="w-16 h-16 object-contain mix-blend-multiply -my-3" />
-            <span className="text-xl font-display font-bold text-primary">
+            <span className="text-xl font-sans font-bold text-primary">
               Travela
             </span>
           </div>
