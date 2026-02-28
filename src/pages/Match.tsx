@@ -26,6 +26,18 @@ import { useNavigate } from "react-router-dom";
 
 const SWIPE_THRESHOLD = 100;
 
+const INTEREST_CATEGORIES = [
+  { key: null,                      label: "All" },
+  { key: "cultural_heritage",       label: "Cultural" },
+  { key: "adventure_outdoor",       label: "Adventure" },
+  { key: "food_culinary",           label: "Food" },
+  { key: "nature_wildlife",         label: "Nature" },
+  { key: "wellness_spiritual",      label: "Spiritual" },
+  { key: "luxury_travel",           label: "Luxury" },
+  { key: "backpacking_budget",      label: "Backpacking" },
+  { key: "volunteering_community",  label: "Volunteering" },
+];
+
 const Match = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -35,6 +47,7 @@ const Match = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [locationFilter, setLocationFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showProfileDetail, setShowProfileDetail] = useState(false);
   const [detailPhotoIndex, setDetailPhotoIndex] = useState(0);
   const [swipeExitX, setSwipeExitX] = useState(0);
@@ -43,7 +56,8 @@ const Match = () => {
     type: "liked" | "matched";
     profileName: string;
     avatarUrl: string | null;
-  }>({ show: false, type: "liked", profileName: "", avatarUrl: null });
+    matchedInterests: string[];
+  }>({ show: false, type: "liked", profileName: "", avatarUrl: null, matchedInterests: [] });
 
   // Swipe motion
   const motionX = useMotionValue(0);
@@ -99,7 +113,7 @@ const Match = () => {
 
   // Fetch profiles to swipe on
   const { data: profiles, isLoading, refetch } = useQuery({
-    queryKey: ["matchProfiles", user?.id, userProfile?.min_age_preference, userProfile?.max_age_preference, blockedUsers],
+    queryKey: ["matchProfiles", user?.id, userProfile?.min_age_preference, userProfile?.max_age_preference, blockedUsers, categoryFilter],
     queryFn: async () => {
       if (!user) return [];
       const { data: swipedData } = await supabase
@@ -132,35 +146,65 @@ const Match = () => {
 
       if (filteredProfiles.length > 0 && userProfile) {
         try {
-          const res = await fetch(`${BACKEND_URL}/rank`, {
+          const endpoint = categoryFilter ? "/recommend" : "/rank";
+          const body = categoryFilter
+            ? {
+                user: {
+                  user_id: user.id,
+                  date_of_birth: userProfile.date_of_birth,
+                  interests: userProfile.interests,
+                  bio: userProfile.bio,
+                  languages: userProfile.languages,
+                  location: userProfile.location,
+                },
+                candidates: filteredProfiles.map(p => ({
+                  user_id: p.user_id,
+                  display_name: p.display_name,
+                  date_of_birth: p.date_of_birth,
+                  interests: p.interests,
+                  bio: p.bio,
+                  languages: p.languages,
+                  location: p.location,
+                  is_local: p.is_local,
+                  is_verified: p.is_verified,
+                  avatar_url: p.avatar_url,
+                })),
+                category_filter: categoryFilter,
+              }
+            : {
+                user: {
+                  user_id: user.id,
+                  date_of_birth: userProfile.date_of_birth,
+                  interests: userProfile.interests,
+                  bio: userProfile.bio,
+                  languages: userProfile.languages,
+                  location: userProfile.location,
+                },
+                candidates: filteredProfiles.map(p => ({
+                  user_id: p.user_id,
+                  display_name: p.display_name,
+                  date_of_birth: p.date_of_birth,
+                  interests: p.interests,
+                  bio: p.bio,
+                  languages: p.languages,
+                  location: p.location,
+                  is_local: p.is_local,
+                  is_verified: p.is_verified,
+                  avatar_url: p.avatar_url,
+                })),
+              };
+
+          const res = await fetch(`${BACKEND_URL}${endpoint}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user: {
-                user_id: user.id,
-                date_of_birth: userProfile.date_of_birth,
-                interests: userProfile.interests,
-                location: userProfile.location,
-              },
-              candidates: filteredProfiles.map(p => ({
-                user_id: p.user_id,
-                display_name: p.display_name,
-                date_of_birth: p.date_of_birth,
-                interests: p.interests,
-                location: p.location,
-                bio: p.bio,
-                is_local: p.is_local,
-                is_verified: p.is_verified,
-                avatar_url: p.avatar_url,
-              })),
-            }),
+            body: JSON.stringify(body),
           });
           if (res.ok) {
             const { ranked } = await res.json();
             return ranked;
           }
         } catch {
-          // Backend unavailable
+          // Backend unavailable — fall through to unranked list
         }
       }
 
@@ -292,6 +336,7 @@ const Match = () => {
             type: "matched",
             profileName: profile?.display_name || "Local Guide",
             avatarUrl: profile?.avatar_url || null,
+            matchedInterests: profile?.matched_interests || [],
           });
         } else {
           setLikePopup({
@@ -299,6 +344,7 @@ const Match = () => {
             type: "liked",
             profileName: profile?.display_name || "Local Guide",
             avatarUrl: profile?.avatar_url || null,
+            matchedInterests: profile?.matched_interests || [],
           });
         }
       }
@@ -407,6 +453,24 @@ const Match = () => {
                 onChange={(e) => { setLocationFilter(e.target.value); setCurrentIndex(0); }}
                 className="pl-9 bg-secondary/50 border-primary/30"
               />
+            </div>
+
+            {/* Interest Category Filter Tabs */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+              {INTEREST_CATEGORIES.map(({ key, label }) => (
+                <button
+                  key={label}
+                  onClick={() => { setCategoryFilter(key); setCurrentIndex(0); }}
+                  className={cn(
+                    "shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    categoryFilter === key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-secondary/50 text-muted-foreground border-primary/20 hover:border-primary/50"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
             {isLoading ? (
@@ -542,8 +606,18 @@ const Match = () => {
                             {currentProfile.bio}
                           </p>
                         )}
+                        {currentProfile.matched_interests && currentProfile.matched_interests.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                            <span className="text-xs text-white/60">Both love:</span>
+                            {currentProfile.matched_interests.slice(0, 3).map((interest: string, i: number) => (
+                              <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-primary/70 text-white font-medium">
+                                {interest}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {currentProfile.interests && currentProfile.interests.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-3">
+                          <div className="flex flex-wrap gap-2 mt-2">
                             {currentProfile.interests.slice(0, 4).map((interest: string, i: number) => (
                               <span key={i} className="px-2 py-1 rounded-full text-xs bg-white/20">
                                 {interest}
@@ -838,6 +912,16 @@ const Match = () => {
                 <p className="text-muted-foreground">
                   You and <span className="font-semibold text-foreground">{likePopup.profileName}</span> liked each other! You can now start chatting.
                 </p>
+                {likePopup.matchedInterests.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    <span className="text-xs text-muted-foreground w-full text-center">Both love:</span>
+                    {likePopup.matchedInterests.slice(0, 4).map((interest, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-3 w-full mt-2">
                   <Button variant="outline" className="flex-1" onClick={closeLikePopup}>
                     Keep Swiping
@@ -857,6 +941,16 @@ const Match = () => {
                 <p className="text-muted-foreground text-sm">
                   You liked <span className="font-semibold text-foreground">{likePopup.profileName}</span>. If they like you back, you'll be able to message each other!
                 </p>
+                {likePopup.matchedInterests.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    <span className="text-xs text-muted-foreground w-full text-center">You share:</span>
+                    {likePopup.matchedInterests.slice(0, 3).map((interest, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <Button className="w-full mt-2" onClick={closeLikePopup}>
                   Continue
                 </Button>
