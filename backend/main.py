@@ -1,15 +1,15 @@
-"""FastAPI backend for Travela compatibility ranking."""
+"""FastAPI backend for Travela compatibility ranking — v2."""
 
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 
-from model_service import rank_candidates
+from model_service import rank_candidates, recommend_by_category
 
-app = FastAPI(title="Travela Match API", version="1.0.0")
+app = FastAPI(title="Travela Match API", version="2.0.0")
 
-# CORS — allow the frontend origin (Lovable preview + production)
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 app.add_middleware(
@@ -20,52 +20,59 @@ app.add_middleware(
 )
 
 
-# -- Request / Response schemas --------------------------------------------
+# ── Schemas ─────────────────────────────────────────────────────────────────
 
 class Profile(BaseModel):
-    user_id: str
-    display_name: str | None = None
-    date_of_birth: str | None = None
-    interests: list[str] | None = None
-    location: str | None = None
-    bio: str | None = None
-    is_local: bool | None = None
-    is_verified: bool | None = None
-    avatar_url: str | None = None
+    user_id: Optional[str] = None
+    display_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    interests: Optional[list[str]] = None
+    bio: Optional[str] = None
+    languages: Optional[list[str]] = None
+    location: Optional[str] = None
+    is_local: Optional[bool] = None
+    is_verified: Optional[bool] = None
+    avatar_url: Optional[str] = None
+
 
 class RankRequest(BaseModel):
     user: Profile
     candidates: list[Profile]
 
-class ScoredProfile(Profile):
-    match_score: float
 
-class RankResponse(BaseModel):
-    ranked: list[ScoredProfile]
+class RecommendRequest(BaseModel):
+    user: Profile
+    candidates: list[Profile]
+    category_filter: Optional[str] = None
+    limit: int = 50
 
 
-# -- Endpoints --------------------------------------------------------------
+# ── Endpoints ────────────────────────────────────────────────────────────────
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 
-@app.post("/rank", response_model=RankResponse)
+@app.post("/rank")
 def rank(req: RankRequest):
-    """
-    Rank candidate profiles by compatibility with the requesting user.
-    Returns candidates sorted by match_score (highest first).
-    """
-    if not req.candidates:
-        return RankResponse(ranked=[])
-
+    """Rank candidates by compatibility with the user. Returns match_score and matched_interests."""
     user_dict = req.user.model_dump()
     candidate_dicts = [c.model_dump() for c in req.candidates]
-
     try:
         ranked = rank_candidates(user_dict, candidate_dicts)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ranking failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ranking failed: {e}")
+    return {"ranked": ranked}
 
-    return RankResponse(ranked=ranked)
+
+@app.post("/recommend")
+def recommend(req: RecommendRequest):
+    """Filter candidates by interest category then rank. Supports category_filter and limit."""
+    user_dict = req.user.model_dump()
+    candidate_dicts = [c.model_dump() for c in req.candidates]
+    try:
+        ranked = recommend_by_category(user_dict, candidate_dicts, req.category_filter)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Recommendation failed: {e}")
+    return {"ranked": ranked[: req.limit]}
