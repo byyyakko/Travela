@@ -1,5 +1,4 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -7,57 +6,17 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Search,
-  MapPin,
-  Globe,
-  MessageSquare,
-  Sparkles,
-  Users,
-  Languages,
-  Send,
-} from "lucide-react";
+import { Sparkles, MapPin, Calendar as CalIcon, Clock, Users, CircleDot, Compass } from "lucide-react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
-
-const INTEREST_CHIPS = [
-  "Food", "Culture", "Outdoors", "Night", "Arts", "Tech", "History", "Music",
-];
-
-interface LocalProfile {
-  user_id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  location: string | null;
-  interests: string[] | null;
-  languages: string[] | null;
-  is_verified: boolean | null;
-}
+import { scoreCircles, scoreExperiences, type UserPreferences } from "@/lib/recommendations";
 
 const Match = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [selectedLocal, setSelectedLocal] = useState<LocalProfile | null>(null);
-  const [connectMessage, setConnectMessage] = useState("");
 
-  // Current user profile for recommendations
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
@@ -72,458 +31,242 @@ const Match = () => {
     enabled: !!user,
   });
 
-  // Fetch local guides
-  const { data: locals, isLoading } = useQuery({
-    queryKey: ["localGuides", search, activeTag],
+  const prefs: UserPreferences | null = userProfile
+    ? {
+        interests: userProfile.interests || [],
+        location: userProfile.location,
+        destination: userProfile.destination,
+        languages: userProfile.languages || [],
+        travel_start_date: userProfile.travel_start_date,
+        travel_end_date: userProfile.travel_end_date,
+        activity_vibe: (userProfile as any).activity_vibe || "both",
+        time_availability: (userProfile as any).time_availability || [],
+      }
+    : null;
+
+  const { data: circles, isLoading: circlesLoading } = useQuery({
+    queryKey: ["allCircles"],
     queryFn: async () => {
-      let q = supabase
-        .from("profiles")
-        .select("user_id, display_name, avatar_url, bio, location, interests, languages, is_verified")
-        .eq("is_local", true)
-        .eq("is_restricted", false);
-
-      if (user) q = q.neq("user_id", user.id);
-      if (search.trim()) q = q.ilike("display_name", `%${search.trim()}%`);
-      if (activeTag) q = q.contains("interests", [activeTag.toLowerCase()]);
-
-      const { data, error } = await q.order("updated_at", { ascending: false }).limit(50);
-      if (error) throw error;
-      return (data || []) as LocalProfile[];
-    },
-    enabled: !!user,
-  });
-
-  // Check existing conversations to know who we already connected with
-  const { data: existingConvos } = useQuery({
-    queryKey: ["myConversations", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
       const { data } = await supabase
-        .from("conversations")
-        .select("participant1_id, participant2_id, accepted")
-        .or(`participant1_id.eq.${user.id},participant2_id.eq.${user.id}`);
+        .from("circles")
+        .select("*, circle_memberships(count)")
+        .order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!user,
   });
 
-  // Score locals for "Suggested" section
-  const scoredLocals = useMemo(() => {
-    if (!locals || !userProfile) return [];
-    const userInterests = new Set((userProfile.interests || []).map((i: string) => i.toLowerCase()));
-    const userLangs = new Set((userProfile.languages || []).map((l: string) => l.toLowerCase()));
-    const userDest = userProfile.destination?.toLowerCase();
-    const userLoc = userProfile.location?.toLowerCase();
+  const { data: experiences, isLoading: expLoading } = useQuery({
+    queryKey: ["allExperiences"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("experiences")
+        .select("*")
+        .gte("schedule", new Date().toISOString())
+        .order("schedule", { ascending: true })
+        .limit(50);
 
-    return locals
-      .map((local) => {
-        let score = 0;
-        const reasons: string[] = [];
-        const localInterests = (local.interests || []).map((i) => i.toLowerCase());
-        const matched = localInterests.filter((i) => userInterests.has(i));
-        if (matched.length > 0) {
-          score += matched.length * 3;
-          reasons.push(`You both chose: ${matched.join(" + ")}`);
-        }
-        const localCity = local.location?.toLowerCase();
-        if (localCity && (userDest?.includes(localCity) || localCity.includes(userDest || ""))) {
-          score += 2;
-          reasons.push(`Based in ${local.location}`);
-        }
-        if (localCity && userLoc?.includes(localCity)) {
-          score += 1;
-        }
-        const localLangs = (local.languages || []).map((l) => l.toLowerCase());
-        const sharedLang = localLangs.filter((l) => userLangs.has(l));
-        if (sharedLang.length > 0) {
-          score += 1;
-          reasons.push(`Speaks ${sharedLang.join(", ")}`);
-        }
-        return { local, score, reasons };
-      })
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-  }, [locals, userProfile]);
+      if (!data?.length) return [];
 
-  // Get conversation status with a local
-  const getConvoStatus = (localId: string) => {
-    if (!existingConvos) return null;
-    return existingConvos.find(
-      (c: any) =>
-        (c.participant1_id === user?.id && c.participant2_id === localId) ||
-        (c.participant2_id === user?.id && c.participant1_id === localId)
-    );
-  };
+      const hostIds = [...new Set(data.map((e: any) => e.host_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, avatar_url")
+        .in("user_id", hostIds);
+      const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p]));
 
-  // Request to connect mutation
-  const connectMutation = useMutation({
-    mutationFn: async ({ localId, message }: { localId: string; message: string }) => {
-      if (!user) throw new Error("Not authenticated");
-      const p1 = user.id < localId ? user.id : localId;
-      const p2 = user.id < localId ? localId : user.id;
-
-      // Create conversation
-      const { data: convo, error: convoErr } = await supabase
-        .from("conversations")
-        .insert({ participant1_id: p1, participant2_id: p2 })
-        .select()
-        .single();
-      if (convoErr) {
-        if (convoErr.code === "23505") throw new Error("You already sent a request to this guide.");
-        throw convoErr;
+      const expIds = data.map((e: any) => e.id);
+      let approvedCounts: Record<string, number> = {};
+      if (expIds.length) {
+        const { data: reqData } = await supabase
+          .from("experience_join_requests")
+          .select("experience_id")
+          .in("experience_id", expIds)
+          .eq("status", "approved");
+        if (reqData) {
+          reqData.forEach((r: any) => {
+            approvedCounts[r.experience_id] = (approvedCounts[r.experience_id] || 0) + 1;
+          });
+        }
       }
 
-      // Send intro message
-      if (message.trim()) {
-        await supabase.from("messages").insert({
-          conversation_id: convo.id,
-          sender_id: user.id,
-          content: message.trim(),
-        });
-      }
-
-      return convo;
+      return data.map((e: any) => ({
+        ...e,
+        host: profileMap[e.host_id],
+        approved_count: approvedCounts[e.id] || 0,
+      }));
     },
-    onSuccess: () => {
-      toast({ title: "Request sent!", description: "The local guide will review your request." });
-      setSelectedLocal(null);
-      setConnectMessage("");
-      queryClient.invalidateQueries({ queryKey: ["myConversations"] });
-    },
-    onError: (err: any) => {
-      toast({ title: "Could not connect", description: err.message, variant: "destructive" });
-    },
+    enabled: !!user,
   });
 
-  const handleConnect = () => {
-    if (!selectedLocal) return;
-    connectMutation.mutate({ localId: selectedLocal.user_id, message: connectMessage });
-  };
+  const suggestedCircles = prefs && circles ? scoreCircles(prefs, circles).slice(0, 5) : [];
+  const suggestedExperiences = prefs && experiences ? scoreExperiences(prefs, experiences).slice(0, 5) : [];
 
-  const hasFilters = !!search.trim() || !!activeTag;
+  const isLoading = circlesLoading || expLoading || !userProfile;
 
   return (
     <AppLayout>
-      <div className="space-y-5">
-        {/* Header */}
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Globe className="w-6 h-6 text-primary" />
-            Ask a Local
+            <Sparkles className="w-6 h-6 text-primary" />
+            For You
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Connect with local guides for cultural exchange & travel tips
+            Personalised suggestions based on your interests, location & schedule
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search local guides..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 rounded-full"
-          />
-        </div>
-
-        {/* Interest chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {INTEREST_CHIPS.map((chip) => (
-            <button
-              key={chip}
-              onClick={() => setActiveTag(activeTag === chip ? null : chip)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-all",
-                activeTag === chip
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80"
-              )}
-            >
-              {chip}
-            </button>
-          ))}
-        </div>
-
-        {/* Suggested locals */}
-        {!hasFilters && scoredLocals.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="text-sm font-bold flex items-center gap-1.5 text-primary">
-              <Sparkles className="w-4 h-4" /> Suggested for you
-            </h2>
-            <div className="grid gap-2">
-              {scoredLocals.map(({ local, reasons }) => (
-                <LocalCard
-                  key={local.user_id}
-                  local={local}
-                  reasons={reasons}
-                  convoStatus={getConvoStatus(local.user_id)}
-                  onTap={() => setSelectedLocal(local)}
-                  onMessage={() => navigate("/messages")}
-                  isSuggested
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* All locals */}
         {isLoading ? (
-          <div className="grid sm:grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-36 rounded-xl" />
-            ))}
-          </div>
-        ) : !locals?.length ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
-            <p className="font-medium">No local guides found</p>
-            <p className="text-sm mt-1">Try a different search or check back later</p>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
           </div>
         ) : (
           <>
-            <h2 className="text-sm font-bold text-muted-foreground">
-              {hasFilters ? "Results" : "All Local Guides"}
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {locals.map((local, i) => (
-                <motion.div
-                  key={local.user_id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                >
-                  <LocalCard
-                    local={local}
-                    convoStatus={getConvoStatus(local.user_id)}
-                    onTap={() => setSelectedLocal(local)}
-                    onMessage={() => navigate("/messages")}
-                  />
-                </motion.div>
-              ))}
-            </div>
+            {/* Suggested Experiences */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Compass className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold">Suggested Experiences</h2>
+              </div>
+              {suggestedExperiences.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">
+                  No suggestions yet — update your interests or travel dates in your profile.
+                </p>
+              ) : (
+                <div className="grid gap-3">
+                  {suggestedExperiences.map(({ item: exp, reasons }, i) => {
+                    const spotsLeft = exp.max_people ? exp.max_people - ((exp as any).approved_count || 0) : null;
+                    return (
+                      <motion.div
+                        key={(exp as any).id}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                      >
+                        <Card
+                          className="cursor-pointer hover:shadow-md transition-shadow border border-border/60"
+                          onClick={() => navigate(`/experiences/${(exp as any).id}`)}
+                        >
+                          <CardContent className="p-4 space-y-2">
+                            <p className="text-[11px] text-primary font-medium bg-primary/10 rounded-full px-2.5 py-1 w-fit">
+                              💡 Suggested because {reasons[0]?.toLowerCase()}
+                              {reasons[1] ? ` and ${reasons[1].toLowerCase()}` : ""}
+                            </p>
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-bold text-base leading-tight">{(exp as any).title}</h3>
+                              {(exp as any).price ? (
+                                <Badge variant="secondary" className="shrink-0 text-xs">{(exp as any).price}</Badge>
+                              ) : (
+                                <Badge className="bg-green-100 text-green-700 shrink-0 text-xs">Free</Badge>
+                              )}
+                            </div>
+                            {(exp as any).tags?.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {(exp as any).tags.slice(0, 3).map((tag: string) => (
+                                  <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{tag}</Badge>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                              {(exp as any).schedule && (
+                                <span className="flex items-center gap-1">
+                                  <CalIcon className="w-3 h-3" />
+                                  {format(new Date((exp as any).schedule), "MMM d, h:mm a")}
+                                </span>
+                              )}
+                              {(exp as any).city && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />{(exp as any).city}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between pt-1">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={(exp as any).host?.avatar_url} />
+                                  <AvatarFallback className="text-[10px]">{(exp as any).host?.display_name?.[0] || "?"}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs text-muted-foreground">{(exp as any).host?.display_name?.split(" ")[0] || "Host"}</span>
+                              </div>
+                              {spotsLeft !== null && (
+                                <span className={cn(
+                                  "text-xs font-semibold",
+                                  spotsLeft <= 0 ? "text-destructive" : spotsLeft <= 2 ? "text-orange-500" : "text-muted-foreground"
+                                )}>
+                                  {spotsLeft <= 0 ? "Full" : `${spotsLeft} spot${spotsLeft !== 1 ? "s" : ""} left`}
+                                </span>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* Suggested Circles */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <CircleDot className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold">Suggested Circles</h2>
+              </div>
+              {suggestedCircles.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">
+                  No circle suggestions yet — try joining some interests!
+                </p>
+              ) : (
+                <div className="grid gap-3">
+                  {suggestedCircles.map(({ item: circle, reasons }, i) => (
+                    <motion.div
+                      key={(circle as any).id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      <Card
+                        className="cursor-pointer hover:shadow-md transition-shadow border border-border/60"
+                        onClick={() => navigate(`/circles/${(circle as any).id}`)}
+                      >
+                        <CardContent className="p-4 space-y-2">
+                          <p className="text-[11px] text-primary font-medium bg-primary/10 rounded-full px-2.5 py-1 w-fit">
+                            💡 Suggested because {reasons[0]?.toLowerCase()}
+                            {reasons[1] ? ` and ${reasons[1].toLowerCase()}` : ""}
+                          </p>
+                          <h3 className="font-bold text-base">{(circle as any).name}</h3>
+                          {(circle as any).description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{(circle as any).description}</p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {(circle as any).city && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" /> {(circle as any).city}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3 h-3" /> {(circle as any).circle_memberships?.[0]?.count || 0} members
+                            </span>
+                          </div>
+                          {(circle as any).tags?.length > 0 && (
+                            <div className="flex gap-1 flex-wrap">
+                              {(circle as any).tags.slice(0, 4).map((tag: string) => (
+                                <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">{tag}</Badge>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>
-
-      {/* Local Profile Detail / Connect Dialog */}
-      <Dialog open={!!selectedLocal} onOpenChange={(open) => !open && setSelectedLocal(null)}>
-        <DialogContent className="max-w-md">
-          {selectedLocal && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-14 h-14">
-                    <AvatarImage src={selectedLocal.avatar_url || undefined} />
-                    <AvatarFallback className="text-lg">
-                      {selectedLocal.display_name?.[0] || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <DialogTitle className="flex items-center gap-1.5">
-                      {selectedLocal.display_name || "Local Guide"}
-                      {selectedLocal.is_verified && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">✓ Verified</Badge>
-                      )}
-                    </DialogTitle>
-                    {selectedLocal.location && (
-                      <DialogDescription className="flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3" /> {selectedLocal.location}
-                      </DialogDescription>
-                    )}
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-4 pt-2">
-                {selectedLocal.bio && (
-                  <p className="text-sm text-foreground">{selectedLocal.bio}</p>
-                )}
-
-                {selectedLocal.interests && selectedLocal.interests.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Interests</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedLocal.interests.map((interest) => (
-                        <Badge key={interest} variant="secondary" className="text-xs capitalize">
-                          {interest}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedLocal.languages && selectedLocal.languages.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">Languages</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedLocal.languages.map((lang) => (
-                        <Badge key={lang} variant="outline" className="text-xs">
-                          {lang}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Action */}
-                {(() => {
-                  const convo = getConvoStatus(selectedLocal.user_id);
-                  if (convo?.accepted) {
-                    return (
-                      <Button className="w-full gap-2" onClick={() => navigate("/messages")}>
-                        <MessageSquare className="w-4 h-4" />
-                        Open Chat
-                      </Button>
-                    );
-                  }
-                  if (convo) {
-                    return (
-                      <Button className="w-full" variant="secondary" disabled>
-                        Request Pending
-                      </Button>
-                    );
-                  }
-                  return (
-                    <div className="space-y-3">
-                      <Textarea
-                        placeholder="Introduce yourself — what would you like to ask or explore together?"
-                        value={connectMessage}
-                        onChange={(e) => setConnectMessage(e.target.value)}
-                        className="min-h-[80px]"
-                      />
-                      <Button
-                        className="w-full gap-2"
-                        onClick={handleConnect}
-                        disabled={connectMutation.isPending}
-                      >
-                        <Send className="w-4 h-4" />
-                        {connectMutation.isPending ? "Sending..." : "Request to Connect"}
-                      </Button>
-                      <p className="text-[11px] text-muted-foreground text-center">
-                        Chat opens after the guide accepts your request
-                      </p>
-                    </div>
-                  );
-                })()}
-
-                {/* View full profile link */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-xs text-muted-foreground"
-                  onClick={() => {
-                    setSelectedLocal(null);
-                    navigate(`/user/${selectedLocal.user_id}`);
-                  }}
-                >
-                  View full profile →
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </AppLayout>
-  );
-};
-
-/* ---------- Local Card Component ---------- */
-
-interface LocalCardProps {
-  local: LocalProfile;
-  reasons?: string[];
-  convoStatus: any;
-  onTap: () => void;
-  onMessage: () => void;
-  isSuggested?: boolean;
-}
-
-const LocalCard = ({ local, reasons, convoStatus, onTap, onMessage, isSuggested }: LocalCardProps) => {
-  const connected = convoStatus?.accepted;
-
-  return (
-    <Card
-      className={cn(
-        "cursor-pointer hover:shadow-md transition-shadow",
-        isSuggested ? "border-primary/30 border" : "border border-border/60"
-      )}
-      onClick={onTap}
-    >
-      <CardContent className="p-4 space-y-2">
-        {/* Suggestion reason */}
-        {isSuggested && reasons && reasons.length > 0 && (
-          <p className="text-[10px] text-primary font-medium bg-primary/10 rounded-full px-2.5 py-0.5 w-fit">
-            💡 {reasons.slice(0, 2).join(" · ")}
-          </p>
-        )}
-
-        <div className="flex items-start gap-3">
-          <Avatar className="w-12 h-12 shrink-0">
-            <AvatarImage src={local.avatar_url || undefined} />
-            <AvatarFallback>{local.display_name?.[0] || "?"}</AvatarFallback>
-          </Avatar>
-
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex items-center gap-1.5">
-              <h3 className="font-bold text-sm truncate">{local.display_name || "Local Guide"}</h3>
-              {local.is_verified && (
-                <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">✓</Badge>
-              )}
-            </div>
-
-            {local.location && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <MapPin className="w-3 h-3 shrink-0" /> {local.location}
-              </p>
-            )}
-
-            {local.bio && (
-              <p className="text-xs text-muted-foreground line-clamp-2">{local.bio}</p>
-            )}
-
-            {local.interests && local.interests.length > 0 && (
-              <div className="flex gap-1 flex-wrap">
-                {local.interests.slice(0, 3).map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">
-                    {tag}
-                  </Badge>
-                ))}
-                {local.interests.length > 3 && (
-                  <span className="text-[10px] text-muted-foreground">+{local.interests.length - 3}</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Quick action */}
-          <div className="shrink-0">
-            {connected ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="gap-1 text-xs"
-                onClick={(e) => { e.stopPropagation(); onMessage(); }}
-              >
-                <MessageSquare className="w-3.5 h-3.5" /> Chat
-              </Button>
-            ) : convoStatus ? (
-              <Badge variant="outline" className="text-[10px]">Pending</Badge>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1 text-xs"
-                onClick={(e) => { e.stopPropagation(); onTap(); }}
-              >
-                <Send className="w-3.5 h-3.5" /> Ask
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 };
 
