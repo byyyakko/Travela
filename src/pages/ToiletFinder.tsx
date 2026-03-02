@@ -25,6 +25,8 @@ import {
   Trees,
   HelpCircle,
   DollarSign,
+  GraduationCap,
+  Cross,
 } from "lucide-react";
 
 interface Toilet {
@@ -49,6 +51,8 @@ const typeIcons: Record<string, React.ElementType> = {
   restaurant: UtensilsCrossed,
   gas_station: Fuel,
   public: Trees,
+  university: GraduationCap,
+  hospital: Cross,
   other: HelpCircle,
 };
 
@@ -60,6 +64,8 @@ const typeLabels: Record<string, string> = {
   restaurant: "Restaurant",
   gas_station: "Gas Station",
   public: "Public Toilet",
+  university: "University",
+  hospital: "Hospital",
   other: "Other",
 };
 
