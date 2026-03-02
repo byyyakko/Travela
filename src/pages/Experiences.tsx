@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,10 +13,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Calendar as CalIcon, Users, Clock, Filter, X } from "lucide-react";
+import { Search, Plus, MapPin, Calendar as CalIcon, Users, Clock, Filter, X, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
+import { scoreExperiences, type UserPreferences } from "@/lib/recommendations";
 
 const TAG_CHIPS = ["Food", "Culture", "Outdoors", "Night", "Arts", "Tech", "Study", "Volunteering", "Photo", "Music"];
 
@@ -36,6 +37,29 @@ const Experiences = () => {
   const [timeFilter, setTimeFilter] = useState<string | null>(null);
   const [freeOnly, setFreeOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  // User profile for recommendations
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const prefs: UserPreferences | null = userProfile
+    ? {
+        interests: userProfile.interests || [],
+        location: userProfile.location,
+        destination: userProfile.destination,
+        languages: userProfile.languages || [],
+        travel_start_date: userProfile.travel_start_date,
+        travel_end_date: userProfile.travel_end_date,
+        activity_vibe: (userProfile as any).activity_vibe || "both",
+        time_availability: (userProfile as any).time_availability || [],
+      }
+    : null;
 
   const { data: experiences, isLoading } = useQuery({
     queryKey: ["experiences", search, activeTag, dateFilter?.toISOString(), timeFilter, freeOnly],
@@ -104,7 +128,12 @@ const Experiences = () => {
   });
 
   const hasActiveFilters = !!dateFilter || !!timeFilter || freeOnly;
+  const hasFiltersOrSearch = hasActiveFilters || !!search.trim() || !!activeTag;
 
+  const suggestedExperiences = useMemo(() => {
+    if (!prefs || !experiences || hasFiltersOrSearch) return [];
+    return scoreExperiences(prefs, experiences).slice(0, 3);
+  }, [prefs, experiences, hasFiltersOrSearch]);
   return (
     <AppLayout>
       <div className="space-y-5">
@@ -237,6 +266,37 @@ const Experiences = () => {
               </button>
             </div>
           </motion.div>
+        )}
+
+        {/* Suggested for you */}
+        {suggestedExperiences.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold flex items-center gap-1.5 text-primary">
+              <Sparkles className="w-4 h-4" /> Suggested for you
+            </h2>
+            <div className="grid gap-2">
+              {suggestedExperiences.map(({ item: exp, reasons }) => (
+                <Card
+                  key={(exp as any).id}
+                  className="cursor-pointer hover:shadow-md transition-shadow border-primary/30 border"
+                  onClick={() => navigate(`/experiences/${(exp as any).id}`)}
+                >
+                  <CardContent className="p-3 space-y-1">
+                    <p className="text-[10px] text-primary font-medium">
+                      💡 {reasons.slice(0, 2).join(" · ")}
+                    </p>
+                    <h3 className="font-bold text-sm">{(exp as any).title}</h3>
+                    {(exp as any).schedule && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <CalIcon className="w-3 h-3" />
+                        {format(new Date((exp as any).schedule), "MMM d, h:mm a")}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Experience cards */}

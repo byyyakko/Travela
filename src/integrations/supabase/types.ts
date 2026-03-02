@@ -670,6 +670,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activity_vibe: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string
@@ -689,12 +690,14 @@ export type Database = {
           restriction_reason: string | null
           subscription_tier: Database["public"]["Enums"]["user_subscription_tier"]
           theme: Database["public"]["Enums"]["user_theme"]
+          time_availability: string[] | null
           travel_end_date: string | null
           travel_start_date: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          activity_vibe?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -714,12 +717,14 @@ export type Database = {
           restriction_reason?: string | null
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
+          time_availability?: string[] | null
           travel_end_date?: string | null
           travel_start_date?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          activity_vibe?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -739,6 +744,7 @@ export type Database = {
           restriction_reason?: string | null
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
+          time_availability?: string[] | null
           travel_end_date?: string | null
           travel_start_date?: string | null
           updated_at?: string
