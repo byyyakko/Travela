@@ -26,28 +26,47 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a toilet/restroom finder assistant. Given GPS coordinates, identify real, well-known public restrooms, toilets in malls, train stations, convenience stores, gas stations, hotels, and restaurants nearby.
+    // First, reverse-geocode to get area context
+    let areaContext = "";
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=18&addressdetails=1`,
+        { headers: { "User-Agent": "Travela-App/1.0" } }
+      );
+      if (geoRes.ok) {
+        const geoData = await geoRes.json();
+        areaContext = geoData.display_name || "";
+      }
+    } catch {
+      // ignore geocoding errors
+    }
 
-IMPORTANT RULES:
-- Only suggest REAL places that are very likely to have public or semi-public restrooms
-- Focus on places within ~1km radius of the coordinates
-- For each toilet location, provide a realistic cleanliness rating based on the type of venue (e.g. hotel lobbies are typically very clean, public park toilets less so)
-- Provide practical walking directions from the user's coordinates
+    const systemPrompt = `You are a hyper-local toilet/restroom finder assistant. Given exact GPS coordinates and the resolved address/area name, identify REAL toilets and restrooms at the user's IMMEDIATE location and surroundings.
+
+CRITICAL RULES:
+- Use the resolved address to understand EXACTLY where the user is (e.g. if they are at a university campus, find toilets IN that campus — specific buildings, faculties, libraries, canteens, student centers)
+- If the user is at a campus, mall, airport, hospital, or large complex — find toilets WITHIN that complex first before looking outside
+- Focus on places within ~500m radius first, then expand to ~1km only if needed
+- Include specific building names, floor numbers, and wing/block details when possible
+- Only suggest REAL places that genuinely exist at these coordinates
+- For each toilet, provide a realistic cleanliness rating based on venue type
+- Provide practical walking directions from the user's exact coordinates
 - Return 5-8 results sorted by distance (nearest first)
+- Coordinates for each toilet must be realistic and close to the given location
 
 Return ONLY valid JSON with this exact structure:
 {
   "toilets": [
     {
-      "name": "Name of venue/location",
-      "type": "mall | station | convenience_store | hotel | restaurant | gas_station | public | other",
-      "distance_meters": 150,
-      "estimated_walk_minutes": 2,
+      "name": "Specific building/venue name",
+      "type": "mall | station | convenience_store | hotel | restaurant | gas_station | public | university | hospital | other",
+      "distance_meters": 50,
+      "estimated_walk_minutes": 1,
       "cleanliness": 4,
-      "cleanliness_label": "Very Clean",
+      "cleanliness_label": "Clean",
       "is_free": true,
-      "notes": "Located on B1 floor near the food court. Well-maintained.",
-      "directions": "Head north on the main road for 100m, turn right at the intersection, enter the mall on the left side.",
+      "notes": "Located on Level 1 near the main entrance. Wheelchair accessible.",
+      "directions": "Walk 50m north to the building entrance, restroom is on your left past the lobby.",
       "latitude": 0.0,
       "longitude": 0.0
     }
@@ -56,6 +75,10 @@ Return ONLY valid JSON with this exact structure:
 
 cleanliness is 1-5 scale: 1=Very Poor, 2=Poor, 3=Average, 4=Clean, 5=Very Clean.
 cleanliness_label must match the number.`;
+
+    const userMessage = areaContext
+      ? `Find nearby toilets/restrooms for coordinates: latitude ${latitude}, longitude ${longitude}. The user is currently at or near: "${areaContext}". Use this area context to find the most relevant and specific toilet locations. Return the JSON response.`
+      : `Find nearby toilets/restrooms for coordinates: latitude ${latitude}, longitude ${longitude}. Return the JSON response.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -67,10 +90,7 @@ cleanliness_label must match the number.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `Find nearby toilets/restrooms for coordinates: latitude ${latitude}, longitude ${longitude}. Return the JSON response.`,
-          },
+          { role: "user", content: userMessage },
         ],
       }),
     });
