@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -82,6 +83,7 @@ const ToiletFinder = () => {
   const [toilets, setToilets] = useState<Toilet[]>([]);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const findMutation = useMutation({
     mutationFn: async (coords: { lat: number; lng: number }) => {
@@ -125,9 +127,37 @@ const ToiletFinder = () => {
   };
 
   const openDirections = (toilet: Toilet) => {
-    if (!userPos) return;
-    const url = `https://www.google.com/maps/dir/${userPos.lat},${userPos.lng}/${toilet.latitude},${toilet.longitude}`;
+    const origin = userPos ? `${userPos.lat},${userPos.lng}` : "";
+    const url = origin
+      ? `https://www.google.com/maps/dir/${origin}/${toilet.latitude},${toilet.longitude}`
+      : `https://www.google.com/maps/search/${toilet.latitude},${toilet.longitude}`;
     window.open(url, "_blank");
+  };
+
+  const searchMutation = useMutation({
+    mutationFn: async (query: string) => {
+      const { data, error } = await supabase.functions.invoke("geocode-address", {
+        body: { address: query.trim() },
+      });
+      if (error) throw error;
+      if (!data?.latitude || !data?.longitude) {
+        throw new Error("Could not find that location. Try a more specific name.");
+      }
+      return { lat: data.latitude as number, lng: data.longitude as number };
+    },
+    onSuccess: (coords) => {
+      setUserPos(coords);
+      findMutation.mutate(coords);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Location not found", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    searchMutation.mutate(searchQuery);
   };
 
   const renderStars = (count: number) =>
@@ -156,7 +186,7 @@ const ToiletFinder = () => {
         <div className="flex justify-center">
           <Button
             onClick={handleLocate}
-            disabled={locating || findMutation.isPending}
+            disabled={locating || findMutation.isPending || searchMutation.isPending}
             size="lg"
             className="rounded-full gap-2 px-8"
           >
@@ -172,6 +202,37 @@ const ToiletFinder = () => {
               : "Find Toilets Near Me"}
           </Button>
         </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground font-medium">or search a location</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        {/* Search bar */}
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="relative flex-1">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="e.g. NUS, Changi Airport, Shibuya..."
+              className="pl-10"
+              maxLength={200}
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={!searchQuery.trim() || findMutation.isPending || searchMutation.isPending}
+          >
+            {searchMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              "Search"
+            )}
+          </Button>
+        </form>
 
         {/* Loading state */}
         {findMutation.isPending && (
