@@ -242,6 +242,101 @@ export type Database = {
         }
         Relationships: []
       }
+      experience_join_requests: {
+        Row: {
+          created_at: string
+          experience_id: string
+          id: string
+          message: string | null
+          status: string
+          traveller_id: string
+        }
+        Insert: {
+          created_at?: string
+          experience_id: string
+          id?: string
+          message?: string | null
+          status?: string
+          traveller_id: string
+        }
+        Update: {
+          created_at?: string
+          experience_id?: string
+          id?: string
+          message?: string | null
+          status?: string
+          traveller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_join_requests_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiences: {
+        Row: {
+          city: string | null
+          created_at: string
+          description: string | null
+          duration: string | null
+          host_id: string
+          id: string
+          itinerary: string[] | null
+          language: string | null
+          max_people: number | null
+          meeting_point: string | null
+          price: string | null
+          safety_guidelines: string | null
+          schedule: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          what_to_bring: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          host_id: string
+          id?: string
+          itinerary?: string[] | null
+          language?: string | null
+          max_people?: number | null
+          meeting_point?: string | null
+          price?: string | null
+          safety_guidelines?: string | null
+          schedule?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          what_to_bring?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          host_id?: string
+          id?: string
+          itinerary?: string[] | null
+          language?: string | null
+          max_people?: number | null
+          meeting_point?: string | null
+          price?: string | null
+          safety_guidelines?: string | null
+          schedule?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          what_to_bring?: string | null
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
