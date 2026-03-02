@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/layout/AppLayout";
@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   MapPin,
   Navigation,
@@ -78,12 +80,96 @@ const cleanlinessColors: Record<number, string> = {
   5: "text-emerald-500",
 };
 
+const CLEANLINESS_MARKER_COLORS: Record<number, string> = {
+  1: "#ef4444", 2: "#f97316", 3: "#eab308", 4: "#22c55e", 5: "#10b981",
+};
+
 const ToiletFinder = () => {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [toilets, setToilets] = useState<Toilet[]>([]);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Map refs
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+
+  const buildMap = useCallback(() => {
+    if (!mapContainerRef.current || toilets.length === 0) return;
+
+    // Destroy previous map
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    const center: L.LatLngExpression = userPos
+      ? [userPos.lat, userPos.lng]
+      : [toilets[0].latitude, toilets[0].longitude];
+
+    const map = L.map(mapContainerRef.current, { zoomControl: false }).setView(center, 15);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap",
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    // User marker
+    if (userPos) {
+      L.marker([userPos.lat, userPos.lng], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="width:14px;height:14px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 0 6px rgba(59,130,246,0.5)"></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+        }),
+      }).addTo(map).bindPopup("You are here");
+    }
+
+    // Toilet markers
+    const newMarkers: L.Marker[] = [];
+    toilets.forEach((t, idx) => {
+      const color = CLEANLINESS_MARKER_COLORS[t.cleanliness] || "#6b7280";
+      const marker = L.marker([t.latitude, t.longitude], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="width:28px;height:28px;background:${color};border:2px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer">🚻</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        }),
+      }).addTo(map);
+
+      marker.bindPopup(
+        `<strong>${t.name}</strong><br/>${t.distance_meters}m · ${t.cleanliness_label}<br/><em>${t.notes?.slice(0, 80) || ""}</em>`
+      );
+      marker.on("click", () => setExpandedIdx(idx));
+      newMarkers.push(marker);
+    });
+    markersRef.current = newMarkers;
+
+    // Fit bounds
+    const allPoints: L.LatLngExpression[] = toilets.map((t) => [t.latitude, t.longitude]);
+    if (userPos) allPoints.push([userPos.lat, userPos.lng]);
+    if (allPoints.length > 1) {
+      map.fitBounds(L.latLngBounds(allPoints), { padding: [30, 30] });
+    }
+
+    // Fix tile rendering
+    setTimeout(() => map.invalidateSize(), 200);
+  }, [toilets, userPos]);
+
+  useEffect(() => {
+    buildMap();
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [buildMap]);
 
   const findMutation = useMutation({
     mutationFn: async (coords: { lat: number; lng: number }) => {
@@ -253,6 +339,12 @@ const ToiletFinder = () => {
               <h2 className="text-lg font-bold">
                 Found {toilets.length} restroom{toilets.length !== 1 ? "s" : ""} nearby
               </h2>
+
+              {/* Mini Map */}
+              <div
+                ref={mapContainerRef}
+                className="w-full h-[280px] rounded-xl border-2 border-border overflow-hidden z-0"
+              />
 
               {toilets.map((toilet, idx) => {
                 const Icon = typeIcons[toilet.type] || HelpCircle;
