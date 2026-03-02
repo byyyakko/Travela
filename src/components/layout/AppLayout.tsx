@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays, MessageSquareHeart, DoorOpen, CircleDot, Compass, Globe, Sparkles } from "lucide-react";
+import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays, MessageSquareHeart, DoorOpen, CircleDot, Compass, Globe, Sparkles, Bath } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const navItems = [
   { path: "/planner", icon: CalendarDays, label: "Plan" },
   { path: "/messages", icon: MessageCircle, label: "Chat" },
   { path: "/circles", icon: CircleDot, label: "Circles" },
+  { path: "/toilet-finder", icon: Bath, label: "Toilet" },
   { path: "/profile", icon: User, label: "Me" },
 ];
 
