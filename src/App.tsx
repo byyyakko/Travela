@@ -34,6 +34,10 @@ import ToiletFinder from "./pages/ToiletFinder";
 import Circles from "./pages/Circles";
 import CircleDetail from "./pages/CircleDetail";
 import MeetupDetail from "./pages/MeetupDetail";
+import Experiences from "./pages/Experiences";
+import ExperienceDetail from "./pages/ExperienceDetail";
+import CreateExperience from "./pages/CreateExperience";
+import ExperienceRequests from "./pages/ExperienceRequests";
 import NotFound from "./pages/NotFound";
 import UserProfile from "./pages/UserProfile";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
@@ -111,6 +115,10 @@ const AppRoutes = () => {
       <Route path="/circles" element={<ProtectedRoute><Circles /></ProtectedRoute>} />
       <Route path="/circles/:circleId" element={<ProtectedRoute><CircleDetail /></ProtectedRoute>} />
       <Route path="/circles/:circleId/meetup/:meetupId" element={<ProtectedRoute><MeetupDetail /></ProtectedRoute>} />
+      <Route path="/experiences" element={<ProtectedRoute><Experiences /></ProtectedRoute>} />
+      <Route path="/experiences/create" element={<ProtectedRoute><CreateExperience /></ProtectedRoute>} />
+      <Route path="/experiences/my-requests" element={<ProtectedRoute><ExperienceRequests /></ProtectedRoute>} />
+      <Route path="/experiences/:experienceId" element={<ProtectedRoute><ExperienceDetail /></ProtectedRoute>} />
       {/* Merchant Dashboard Routes */}
       <Route path="/merchant-dashboard" element={<ProtectedRoute skipOnboardingCheck><MerchantDashboard /></ProtectedRoute>}>
         <Route index element={<MerchantHome />} />
