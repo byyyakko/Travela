@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,9 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Plus, Users, MapPin } from "lucide-react";
+import { Search, Plus, Users, MapPin, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { scoreCircles, type UserPreferences } from "@/lib/recommendations";
 
 const FILTER_CHIPS = [
   "Food", "Culture", "Outdoors", "Night", "Arts", "Tech", "Study", "Volunteering",
@@ -52,6 +53,37 @@ const Circles = () => {
       return data;
     },
   });
+
+  // User profile for recommendations
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const prefs: UserPreferences | null = userProfile
+    ? {
+        interests: userProfile.interests || [],
+        location: userProfile.location,
+        destination: userProfile.destination,
+        languages: userProfile.languages || [],
+        travel_start_date: userProfile.travel_start_date,
+        travel_end_date: userProfile.travel_end_date,
+        activity_vibe: (userProfile as any).activity_vibe || "both",
+        time_availability: (userProfile as any).time_availability || [],
+      }
+    : null;
+
+  const hasFiltersOrSearch = !!search.trim() || !!activeFilter;
+
+  const suggestedCircles = useMemo(() => {
+    if (!prefs || !circles || hasFiltersOrSearch) return [];
+    return scoreCircles(prefs, circles).slice(0, 3);
+  }, [prefs, circles, hasFiltersOrSearch]);
 
   const handleCreate = async () => {
     if (!user || !newCircle.name.trim()) return;
@@ -121,6 +153,39 @@ const Circles = () => {
             </button>
           ))}
         </div>
+
+        {/* Suggested for you */}
+        {suggestedCircles.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold flex items-center gap-1.5 text-primary">
+              <Sparkles className="w-4 h-4" /> Suggested for you
+            </h2>
+            <div className="grid gap-2">
+              {suggestedCircles.map(({ item: circle, reasons }) => (
+                <Card
+                  key={(circle as any).id}
+                  className="cursor-pointer hover:shadow-md transition-shadow border-primary/30 border"
+                  onClick={() => navigate(`/circles/${(circle as any).id}`)}
+                >
+                  <CardContent className="p-3 space-y-1">
+                    <p className="text-[10px] text-primary font-medium">
+                      💡 {reasons.slice(0, 2).join(" · ")}
+                    </p>
+                    <h3 className="font-bold text-sm">{(circle as any).name}</h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {(circle as any).city && (
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {(circle as any).city}</span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" /> {(circle as any).circle_memberships?.[0]?.count || 0}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Circle cards */}
         {isLoading ? (
