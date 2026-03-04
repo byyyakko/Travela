@@ -31,6 +31,7 @@ import SmartItinerary from "./pages/SmartItinerary";
 import NotFound from "./pages/NotFound";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
 import { useKeepAlive } from "@/hooks/useKeepAlive";
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
 
 const queryClient = new QueryClient();
 
@@ -127,6 +128,7 @@ const App = () => (
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>
+      <PWAInstallPrompt />
     </TooltipProvider>
   </QueryClientProvider>
 );
