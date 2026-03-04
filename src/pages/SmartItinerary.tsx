@@ -227,11 +227,35 @@ const SmartItinerary = () => {
         return;
       }
 
-      setItinerary(data);
+      // Handle case where AI returned unparsed raw content
+      let itineraryData = data;
+      if (data?.raw && !data?.title) {
+        try {
+          let cleaned = data.raw;
+          cleaned = cleaned.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, "");
+          cleaned = cleaned.replace(/\n?\s*```[\s\S]*$/i, "");
+          cleaned = cleaned.trim();
+          if (!cleaned.startsWith("{")) {
+            const idx = cleaned.indexOf("{");
+            if (idx !== -1) cleaned = cleaned.slice(idx);
+          }
+          itineraryData = JSON.parse(cleaned);
+        } catch {
+          toast({ title: "Error", description: "Failed to parse itinerary. Please try again.", variant: "destructive" });
+          return;
+        }
+      }
+
+      if (!itineraryData?.title || !itineraryData?.days) {
+        toast({ title: "Error", description: "Incomplete itinerary received. Please try again.", variant: "destructive" });
+        return;
+      }
+
+      setItinerary(itineraryData);
       setActiveDay(1);
       setAddedToPlanner(false);
       // Auto-save to history
-      await saveToHistory(prompt.trim(), data);
+      await saveToHistory(prompt.trim(), itineraryData);
     } catch (err) {
       toast({ title: "Error", description: "Failed to generate itinerary. Try again!", variant: "destructive" });
     } finally {
@@ -428,8 +452,8 @@ const SmartItinerary = () => {
             </Card>
 
             {/* Day tabs */}
-            <ScrollArea className="w-full">
-              <div className="flex gap-2 pb-2">
+            <div className="w-full overflow-x-auto scrollbar-thin">
+              <div className="flex gap-2 pb-3 min-w-max">
                 {itinerary.days?.map((day) => (
                   <button
                     key={day.day}
@@ -444,7 +468,7 @@ const SmartItinerary = () => {
                   </button>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Day theme */}
             {(itinerary.days || [])
