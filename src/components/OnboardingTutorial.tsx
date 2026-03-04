@@ -182,26 +182,6 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
           width="100%"
           height="100%"
         >
-          {/* Pulsing circle around the target */}
-          <circle
-            cx={targetRect.left + targetRect.width / 2}
-            cy={targetRect.top + targetRect.height / 2}
-            r={Math.max(targetRect.width, targetRect.height) / 2 + 8}
-            fill="none"
-            stroke="hsl(var(--primary))"
-            strokeWidth="3"
-            className="animate-[tutorial-pulse-circle_1.5s_ease-in-out_infinite]"
-          />
-          <circle
-            cx={targetRect.left + targetRect.width / 2}
-            cy={targetRect.top + targetRect.height / 2}
-            r={Math.max(targetRect.width, targetRect.height) / 2 + 16}
-            fill="none"
-            stroke="hsl(var(--primary))"
-            strokeWidth="1.5"
-            opacity="0.4"
-            className="animate-[tutorial-pulse-circle_1.5s_ease-in-out_infinite_0.3s]"
-          />
 
           {/* Arrow from tooltip pointing to the target */}
           {(() => {
