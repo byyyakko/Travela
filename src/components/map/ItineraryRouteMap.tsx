@@ -21,6 +21,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   adventure: "🧗",
   shopping: "🛍️",
   sightseeing: "📸",
+  transport: "🚗",
 };
 
 const CATEGORY_COLOR: Record<string, string> = {
@@ -29,6 +30,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   adventure: "#16a34a",
   shopping: "#db2777",
   sightseeing: "#2563eb",
+  transport: "#d97706",
 };
 
 const ItineraryRouteMap = ({ points }: ItineraryRouteMapProps) => {
