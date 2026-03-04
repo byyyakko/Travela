@@ -261,9 +261,19 @@ Return 6-10 attractions. Ensure coordinates are accurate real-world values. NEVE
 
     let parsed;
     try {
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      // Strip markdown code fences and any leading/trailing whitespace
+      let cleaned = content || "";
+      cleaned = cleaned.replace(/^[\s\S]*?```(?:json)?\s*\n?/i, "");
+      cleaned = cleaned.replace(/\n?\s*```[\s\S]*$/i, "");
+      cleaned = cleaned.trim();
+      // If still not starting with {, try to find the JSON object
+      if (!cleaned.startsWith("{") && !cleaned.startsWith("[")) {
+        const jsonStart = cleaned.indexOf("{");
+        if (jsonStart !== -1) cleaned = cleaned.slice(jsonStart);
+      }
       parsed = JSON.parse(cleaned);
-    } catch {
+    } catch (parseErr) {
+      console.error("JSON parse error:", parseErr, "Content preview:", (content || "").slice(0, 200));
       parsed = { raw: content };
     }
 
