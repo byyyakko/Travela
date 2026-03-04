@@ -6,7 +6,7 @@ declare global {
 }
 
 import { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const DISMISSED_KEY = 'pwa-install-dismissed'
@@ -93,9 +93,19 @@ export function PWAInstallPrompt() {
         />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-foreground">Install Travela</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {isIOS ? 'Tap to add to your Home Screen' : 'Add to your home screen for the best experience'}
-          </p>
+          {isIOS ? (
+            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 flex-wrap">
+              Tap
+              <span className="inline-flex items-center justify-center w-4 h-4 bg-muted rounded flex-shrink-0">
+                <Share2 className="w-2.5 h-2.5" />
+              </span>
+              then &ldquo;Add to Home Screen&rdquo;
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Add to your home screen for the best experience
+            </p>
+          )}
         </div>
         {!isIOS && (
           <Button

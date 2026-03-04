@@ -57,7 +57,7 @@ describe('PWAInstallPrompt', () => {
     )
     render(<PWAInstallPrompt />)
     expect(screen.getByText('Install Travela')).toBeInTheDocument()
-    expect(screen.getByText(/Tap to add to your Home Screen/i)).toBeInTheDocument()
+    expect(screen.getByText(/Add to Home Screen/i)).toBeInTheDocument()
   })
 
   it('does not show iOS banner on iOS Chrome (CriOS)', () => {
