@@ -452,13 +452,16 @@ const SmartItinerary = () => {
             </Card>
 
             {/* Day tabs */}
-            <div className="w-full overflow-x-auto scrollbar-thin">
+            <div className="w-full overflow-x-auto scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
               <div className="flex gap-2 pb-3 min-w-max">
                 {itinerary.days?.map((day) => (
                   <button
                     key={day.day}
-                    onClick={() => setActiveDay(day.day)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all border-2 ${
+                    onPointerUp={(e) => {
+                      e.stopPropagation();
+                      setActiveDay(day.day);
+                    }}
+                    className={`px-4 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border-2 select-none touch-manipulation ${
                       activeDay === day.day
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-secondary text-secondary-foreground border-transparent hover:border-primary/50"
