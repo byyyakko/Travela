@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon, Quote, MessageSquare } from "lucide-react";
+import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon, Quote, MessageSquare, Check } from "lucide-react";
+import AvatarPickerDialog from "@/components/AvatarPickerDialog";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VerifiedBadge from "@/components/VerifiedBadge";
@@ -116,6 +117,7 @@ const Profile = () => {
   const [interests, setInterests] = useState<string[]>([]);
   const [interestInput, setInterestInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [minAgePreference, setMinAgePreference] = useState(18);
@@ -542,6 +544,58 @@ const Profile = () => {
 
           {/* Edit Tab Content */}
           <TabsContent value="edit" className="mt-6 space-y-6">
+
+        {/* Avatar / Profile Picture */}
+        <Card className="border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Camera className="w-5 h-5" />
+              Profile Picture
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Choose a preset avatar or upload your own photo.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-4">
+            <Avatar className="w-24 h-24 border-2 border-primary/30">
+              <AvatarImage src={avatarUrl || undefined} alt="Profile" />
+              <AvatarFallback className="bg-secondary text-muted-foreground text-2xl">
+                {displayName ? displayName[0]?.toUpperCase() : "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAvatarPickerOpen(true)}
+              >
+                Choose Avatar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera className="w-4 h-4 mr-1" />
+                Upload Photo
+              </Button>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              accept="image/*"
+              className="hidden"
+            />
+          </CardContent>
+        </Card>
+
+        <AvatarPickerDialog
+          open={avatarPickerOpen}
+          onOpenChange={setAvatarPickerOpen}
+          currentAvatar={avatarUrl}
+          onAvatarChange={(url) => setAvatarUrl(url)}
+        />
 
         {/* Photo Gallery */}
         <Card className="border-primary/30">
