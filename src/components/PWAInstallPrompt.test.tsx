@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { PWAInstallPrompt } from './PWAInstallPrompt'
 
 // window.matchMedia is already stubbed in src/test/setup.ts (returns matches: false)
