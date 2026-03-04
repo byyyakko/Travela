@@ -23,7 +23,6 @@ const navItems = [
   { path: "/messages", icon: MessageCircle, label: "Chat", tour: "chat" },
   { path: "/circles", icon: CircleDot, label: "Circles", tour: "circles" },
   { path: "/toilet-finder", icon: Bath, label: "Toilet", tour: "toilet" },
-  { path: "/profile", icon: User, label: "Me", tour: "profile" },
 ];
 
 const AppLayout = ({ children }: AppLayoutProps) => {
@@ -54,7 +53,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               />
             </div>
           </div>
-          <Link to="/profile">
+          <Link to="/profile" data-tour="profile">
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-secondary">
               <User className="w-5 h-5" />
             </Button>
