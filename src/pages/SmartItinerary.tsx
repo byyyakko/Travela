@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map, ExternalLink, ChevronDown, ChevronUp, Globe } from "lucide-react";
+import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map, ExternalLink, ChevronDown, ChevronUp, Globe, Route } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { addDays, format } from "date-fns";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
+import { lazy, Suspense, useMemo } from "react";
+
+const LazyItineraryRouteMap = lazy(() => import("@/components/map/ItineraryRouteMap"));
 
 interface Activity {
   time: string;
@@ -108,6 +111,24 @@ const SmartItinerary = () => {
   const [isAddingToPlanner, setIsAddingToPlanner] = useState(false);
   const [addedToPlanner, setAddedToPlanner] = useState(false);
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
+  const [showMap, setShowMap] = useState(true);
+
+  // Compute map points for active day
+  const mapPoints = useMemo(() => {
+    if (!itinerary) return [];
+    const day = itinerary.days?.find((d) => d.day === activeDay);
+    if (!day) return [];
+    return day.activities
+      .map((a, idx) => ({
+        lat: a.latitude ?? 0,
+        lng: a.longitude ?? 0,
+        title: a.title,
+        time: a.time,
+        category: a.category,
+        order: idx,
+      }))
+      .filter((p) => p.lat !== 0 && p.lng !== 0);
+  }, [itinerary, activeDay]);
 
   const toggleExpanded = (key: string) => {
     setExpandedActivities(prev => {
@@ -316,6 +337,25 @@ const SmartItinerary = () => {
               .map((day) => (
                 <div key={day.day} className="space-y-3">
                   <p className="text-sm font-semibold text-primary">✨ {day.theme}</p>
+
+                  {/* Route Map */}
+                  {mapPoints.length > 0 && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setShowMap((v) => !v)}
+                        className="flex items-center gap-2 text-xs font-medium text-primary hover:underline"
+                      >
+                        <Route className="w-4 h-4" />
+                        {showMap ? "Hide Route Map" : "Show Route Map"}
+                      </button>
+                      {showMap && (
+                        <Suspense fallback={<div className="h-[300px] rounded-xl bg-secondary animate-pulse" />}>
+                          <LazyItineraryRouteMap points={mapPoints} />
+                        </Suspense>
+                      )}
+                    </div>
+                  )}
+
                     {(day.activities || []).map((activity, idx) => {
                      const IconComp = categoryIcons[activity.category] || MapPin;
                      const colorClass = categoryColors[activity.category] || "bg-gray-100 text-gray-700 border-gray-200";
