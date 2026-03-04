@@ -2,21 +2,28 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, Shield, HelpCircle, LogOut, MapPin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bell, Shield, HelpCircle, LogOut, MapPin, Globe, Moon, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 
 const Settings = () => {
   const { signOut } = useAuth();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language, setLanguage, t, languages } = useLanguage();
+  const { colorMode, setColorMode } = useTheme();
   const [isLocalGuide, setIsLocalGuide] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -26,7 +33,7 @@ const Settings = () => {
         .from("profiles")
         .select("is_local")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       if (data) {
         setIsLocalGuide(data.is_local || false);
@@ -64,56 +71,99 @@ const Settings = () => {
     <AppLayout>
       <div className="space-y-6 max-w-lg mx-auto">
         <h1 className="text-2xl font-display font-bold">
-          Settings
+          {t.settings}
         </h1>
 
-        <Card className="border-pink-200">
+        {/* Language */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Globe className="w-5 h-5" />
+              {t.language}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={language} onValueChange={(val) => setLanguage(val as any)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {lang.nativeLabel} ({lang.label})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Appearance */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Moon className="w-5 h-5" />
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Dark Mode</Label>
+              <Switch
+                checked={colorMode === "dark"}
+                onCheckedChange={(checked) => setColorMode(checked ? "dark" : "light")}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Bell className="w-5 h-5" />
-              Notifications
+              {t.notifications}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Push Notifications</Label>
-              <Switch className="data-[state=checked]:bg-pink-500" />
+              <Label>{t.pushNotifications}</Label>
+              <Switch />
             </div>
             <div className="flex items-center justify-between">
-              <Label>Email Notifications</Label>
-              <Switch className="data-[state=checked]:bg-pink-500" />
+              <Label>{t.emailNotifications}</Label>
+              <Switch />
             </div>
             <div className="flex items-center justify-between">
-              <Label>New Match Alerts</Label>
-              <Switch defaultChecked className="data-[state=checked]:bg-pink-500" />
+              <Label>{t.newMatchAlerts}</Label>
+              <Switch defaultChecked />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-pink-200">
+        <Card className="border-primary/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Shield className="w-5 h-5" />
-              Privacy
+              {t.privacy}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Show Online Status</Label>
-              <Switch defaultChecked className="data-[state=checked]:bg-pink-500" />
+              <Label>{t.showOnlineStatus}</Label>
+              <Switch defaultChecked />
             </div>
             <div className="flex items-center justify-between">
-              <Label>Show Profile in Search</Label>
-              <Switch defaultChecked className="data-[state=checked]:bg-pink-500" />
+              <Label>{t.showProfileInSearch}</Label>
+              <Switch defaultChecked />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-pink-200">
+        <Card className="border-primary/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <MapPin className="w-5 h-5" />
-              Local Guide
+              {t.localGuide}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -123,7 +173,7 @@ const Settings = () => {
                 checked={isLocalGuide}
                 onCheckedChange={handleLocalGuideToggle}
                 disabled={loading}
-                className="mt-1 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+                className="mt-1"
               />
               <div className="space-y-1">
                 <Label htmlFor="local-guide" className="font-medium cursor-pointer">
@@ -137,25 +187,29 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-pink-200">
+        <Card className="border-primary/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <HelpCircle className="w-5 h-5" />
-              Support
+              {t.support}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="ghost" className="w-full justify-start">
-              Help Center
+            <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setShowTutorial(true)}>
+              <RotateCcw className="w-4 h-4" />
+              Replay Tutorial
             </Button>
             <Button variant="ghost" className="w-full justify-start">
-              Contact Us
+              {t.helpCenter}
             </Button>
             <Button variant="ghost" className="w-full justify-start">
-              Terms of Service
+              {t.contactUs}
             </Button>
             <Button variant="ghost" className="w-full justify-start">
-              Privacy Policy
+              {t.termsOfService}
+            </Button>
+            <Button variant="ghost" className="w-full justify-start">
+              {t.privacyPolicy}
             </Button>
           </CardContent>
         </Card>
@@ -166,8 +220,12 @@ const Settings = () => {
           onClick={handleSignOut}
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
+          {t.signOut}
         </Button>
+
+        {showTutorial && (
+          <OnboardingTutorial forceShow onComplete={() => setShowTutorial(false)} />
+        )}
       </div>
     </AppLayout>
   );

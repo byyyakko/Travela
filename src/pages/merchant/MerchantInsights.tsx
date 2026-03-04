@@ -12,9 +12,8 @@ interface StoreContext {
   } | null;
 }
 
-const COLORS = ["#f472b6", "#c084fc", "#60a5fa", "#34d399", "#fbbf24"];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--ring))", "hsl(var(--muted-foreground))", "hsl(var(--secondary-foreground))"];
 
-// Simulated weekly traffic data
 const SIMULATED_WEEKLY = [
   { day: "Mon", visits: 24 },
   { day: "Tue", visits: 31 },
@@ -25,7 +24,6 @@ const SIMULATED_WEEKLY = [
   { day: "Sun", visits: 61 },
 ];
 
-// Simulated visitor origins
 const SIMULATED_COUNTRIES = [
   { name: "Singapore", value: 41 },
   { name: "Japan", value: 27 },
@@ -34,7 +32,6 @@ const SIMULATED_COUNTRIES = [
   { name: "Australia", value: 9 },
 ];
 
-// Simulated popular items
 const SIMULATED_POPULAR_ITEMS = [
   { name: "Matcha Latte", orders: 142 },
   { name: "Tonkotsu Ramen", orders: 118 },
@@ -48,44 +45,41 @@ const MerchantInsights = () => {
 
   const totalWeekly = SIMULATED_WEEKLY.reduce((sum, d) => sum + d.visits, 0);
   const busiestDay = SIMULATED_WEEKLY.reduce((max, d) => (d.visits > max.visits ? d : max), SIMULATED_WEEKLY[0]);
-  const topCountry = SIMULATED_COUNTRIES[0];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-pink-700">Insights</h1>
-        <p className="text-pink-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Insights</h1>
+        <p className="text-muted-foreground mt-1">
           Detailed analytics for {store?.store_name || "your store"}
-          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-600">
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
             Simulated Data
           </span>
         </p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Weekly Visitors", value: totalWeekly.toString(), icon: Users, accent: "from-pink-500 to-rose-500" },
-          { label: "Busiest Day", value: busiestDay.day, icon: TrendingUp, accent: "from-purple-500 to-indigo-500" },
-          { label: "Top Travellers' Country", value: "Japan", icon: Globe, accent: "from-blue-500 to-cyan-500" },
-          { label: "Avg Daily", value: Math.round(totalWeekly / 7).toString(), icon: MapPin, accent: "from-emerald-500 to-teal-500" },
+          { label: "Weekly Visitors", value: totalWeekly.toString(), icon: Users, accent: "from-primary to-primary/70" },
+          { label: "Busiest Day", value: busiestDay.day, icon: TrendingUp, accent: "from-accent to-accent/70" },
+          { label: "Top Travellers' Country", value: "Japan", icon: Globe, accent: "from-ring to-ring/70" },
+          { label: "Avg Daily", value: Math.round(totalWeekly / 7).toString(), icon: MapPin, accent: "from-accent to-primary" },
         ].map((stat) => (
-          <Card key={stat.label} className="border-pink-200 bg-white/80 backdrop-blur overflow-hidden">
+          <Card key={stat.label} className="border-border bg-card/80 backdrop-blur overflow-hidden">
             <CardContent className="p-4">
               <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${stat.accent} flex items-center justify-center mb-3`}>
-                <stat.icon className="w-5 h-5 text-white" />
+                <stat.icon className="w-5 h-5 text-primary-foreground" />
               </div>
-              <p className="text-2xl font-bold text-pink-700">{stat.value}</p>
-              <p className="text-xs text-pink-400 mt-0.5">{stat.label}</p>
+              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Weekly Traffic Chart */}
-      <Card className="border-pink-200 bg-white/80 backdrop-blur">
+      <Card className="border-border bg-card/80 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-lg text-pink-700 flex items-center gap-2">
+          <CardTitle className="text-lg text-foreground flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
             Weekly Traffic
           </CardTitle>
@@ -94,16 +88,16 @@ const MerchantInsights = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={SIMULATED_WEEKLY}>
-                <XAxis dataKey="day" stroke="#f472b6" />
-                <YAxis stroke="#f472b6" />
+                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #fbcfe8",
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
                   }}
                 />
-                <Bar dataKey="visits" fill="#f472b6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="visits" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -111,10 +105,9 @@ const MerchantInsights = () => {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Visitor Origins */}
-        <Card className="border-pink-200 bg-white/80 backdrop-blur">
+        <Card className="border-border bg-card/80 backdrop-blur">
           <CardHeader>
-            <CardTitle className="text-lg text-pink-700 flex items-center gap-2">
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
               <Globe className="w-5 h-5" />
               Visitor Origins
             </CardTitle>
@@ -144,10 +137,9 @@ const MerchantInsights = () => {
           </CardContent>
         </Card>
 
-        {/* Popular Items */}
-        <Card className="border-pink-200 bg-white/80 backdrop-blur">
+        <Card className="border-border bg-card/80 backdrop-blur">
           <CardHeader>
-            <CardTitle className="text-lg text-pink-700 flex items-center gap-2">
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
               <Utensils className="w-5 h-5" />
               Popular Items
             </CardTitle>
@@ -155,15 +147,15 @@ const MerchantInsights = () => {
           <CardContent className="space-y-3">
             {SIMULATED_POPULAR_ITEMS.map((item, i) => (
               <div key={item.name} className="flex items-center gap-3">
-                <span className="text-sm font-bold text-pink-400 w-6">#{i + 1}</span>
+                <span className="text-sm font-bold text-muted-foreground w-6">#{i + 1}</span>
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-pink-700">{item.name}</span>
-                    <span className="text-xs text-pink-400">{item.orders} orders</span>
+                    <span className="text-sm font-medium text-foreground">{item.name}</span>
+                    <span className="text-xs text-muted-foreground">{item.orders} orders</span>
                   </div>
-                  <div className="h-2 bg-pink-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-pink-400 to-purple-400 rounded-full"
+                      className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
                       style={{ width: `${(item.orders / SIMULATED_POPULAR_ITEMS[0].orders) * 100}%` }}
                     />
                   </div>
@@ -174,30 +166,29 @@ const MerchantInsights = () => {
         </Card>
       </div>
 
-      {/* Quick Stats */}
-      <Card className="border-pink-200 bg-white/80 backdrop-blur">
+      <Card className="border-border bg-card/80 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-lg text-pink-700 flex items-center gap-2">
+          <CardTitle className="text-lg text-foreground flex items-center gap-2">
             <Star className="w-5 h-5" />
             Peak Time Analysis
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-pink-50 rounded-lg">
-              <p className="text-sm text-pink-500">Busiest Hour</p>
-              <p className="text-lg font-semibold text-pink-700">12:00 – 1:00 PM</p>
-              <p className="text-xs text-pink-400 mt-1">Lunch rush</p>
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">Busiest Hour</p>
+              <p className="text-lg font-semibold text-foreground">12:00 – 1:00 PM</p>
+              <p className="text-xs text-muted-foreground mt-1">Lunch rush</p>
             </div>
-            <div className="p-4 bg-pink-50 rounded-lg">
-              <p className="text-sm text-pink-500">Quietest Day</p>
-              <p className="text-lg font-semibold text-pink-700">Wednesday</p>
-              <p className="text-xs text-pink-400 mt-1">18 visitors avg</p>
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">Quietest Day</p>
+              <p className="text-lg font-semibold text-foreground">Wednesday</p>
+              <p className="text-xs text-muted-foreground mt-1">18 visitors avg</p>
             </div>
-            <div className="p-4 bg-pink-50 rounded-lg">
-              <p className="text-sm text-pink-500">Return Visitors</p>
-              <p className="text-lg font-semibold text-pink-700">34%</p>
-              <p className="text-xs text-pink-400 mt-1">Came back within 7 days</p>
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">Return Visitors</p>
+              <p className="text-lg font-semibold text-foreground">34%</p>
+              <p className="text-xs text-muted-foreground mt-1">Came back within 7 days</p>
             </div>
           </div>
         </CardContent>

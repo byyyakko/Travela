@@ -65,27 +65,296 @@ export type Database = {
         }
         Relationships: []
       }
-      conversations: {
+      circle_meetup_requests: {
         Row: {
           created_at: string
+          id: string
+          post_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_meetup_requests_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "circle_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_memberships: {
+        Row: {
+          circle_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          circle_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          circle_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_memberships_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_posts: {
+        Row: {
+          author_id: string
+          circle_id: string
+          created_at: string
+          date_time: string | null
+          id: string
+          location: string | null
+          max_people: number | null
+          post_type: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          circle_id: string
+          created_at?: string
+          date_time?: string | null
+          id?: string
+          location?: string | null
+          max_people?: number | null
+          post_type?: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          circle_id?: string
+          created_at?: string
+          date_time?: string | null
+          id?: string
+          location?: string | null
+          max_people?: number | null
+          post_type?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_posts_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circles: {
+        Row: {
+          city: string | null
+          cover_image: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          cover_image?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          cover_image?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          accepted: boolean | null
+          created_at: string
+          declined_at: string | null
           id: string
           participant1_id: string
           participant2_id: string
           updated_at: string
         }
         Insert: {
+          accepted?: boolean | null
           created_at?: string
+          declined_at?: string | null
           id?: string
           participant1_id: string
           participant2_id: string
           updated_at?: string
         }
         Update: {
+          accepted?: boolean | null
           created_at?: string
+          declined_at?: string | null
           id?: string
           participant1_id?: string
           participant2_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      experience_join_requests: {
+        Row: {
+          created_at: string
+          experience_id: string
+          id: string
+          message: string | null
+          status: string
+          traveller_id: string
+        }
+        Insert: {
+          created_at?: string
+          experience_id: string
+          id?: string
+          message?: string | null
+          status?: string
+          traveller_id: string
+        }
+        Update: {
+          created_at?: string
+          experience_id?: string
+          id?: string
+          message?: string | null
+          status?: string
+          traveller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_join_requests_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiences: {
+        Row: {
+          city: string | null
+          created_at: string
+          description: string | null
+          duration: string | null
+          host_id: string
+          id: string
+          itinerary: string[] | null
+          language: string | null
+          max_people: number | null
+          meeting_point: string | null
+          price: string | null
+          safety_guidelines: string | null
+          schedule: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          what_to_bring: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          host_id: string
+          id?: string
+          itinerary?: string[] | null
+          language?: string | null
+          max_people?: number | null
+          meeting_point?: string | null
+          price?: string | null
+          safety_guidelines?: string | null
+          schedule?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          what_to_bring?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          host_id?: string
+          id?: string
+          itinerary?: string[] | null
+          language?: string | null
+          max_people?: number | null
+          meeting_point?: string | null
+          price?: string | null
+          safety_guidelines?: string | null
+          schedule?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          what_to_bring?: string | null
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
         }
         Relationships: []
       }
@@ -314,36 +583,94 @@ export type Database = {
       }
       posts: {
         Row: {
+          category: string | null
           content: string
           created_at: string
           id: string
           image_url: string | null
+          image_urls: string[] | null
           location_tag: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          category?: string | null
           content: string
           created_at?: string
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           location_tag?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          category?: string | null
           content?: string
           created_at?: string
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           location_tag?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
+      profile_photos: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          photo_url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          photo_url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          photo_url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profile_prompts: {
+        Row: {
+          answer: string
+          created_at: string
+          display_order: number
+          id: string
+          question: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          question: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          question?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          activity_vibe: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string
@@ -351,22 +678,27 @@ export type Database = {
           destination: string | null
           display_name: string | null
           email: string
+          has_seen_tutorial: boolean
           id: string
           interests: string[] | null
           is_local: boolean | null
+          is_restricted: boolean
           is_verified: boolean | null
           languages: string[] | null
           location: string | null
           max_age_preference: number | null
           min_age_preference: number | null
+          restriction_reason: string | null
           subscription_tier: Database["public"]["Enums"]["user_subscription_tier"]
           theme: Database["public"]["Enums"]["user_theme"]
+          time_availability: string[] | null
           travel_end_date: string | null
           travel_start_date: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          activity_vibe?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -374,22 +706,27 @@ export type Database = {
           destination?: string | null
           display_name?: string | null
           email: string
+          has_seen_tutorial?: boolean
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
+          is_restricted?: boolean
           is_verified?: boolean | null
           languages?: string[] | null
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
+          restriction_reason?: string | null
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
+          time_availability?: string[] | null
           travel_end_date?: string | null
           travel_start_date?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          activity_vibe?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -397,16 +734,20 @@ export type Database = {
           destination?: string | null
           display_name?: string | null
           email?: string
+          has_seen_tutorial?: boolean
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
+          is_restricted?: boolean
           is_verified?: boolean | null
           languages?: string[] | null
           location?: string | null
           max_age_preference?: number | null
           min_age_preference?: number | null
+          restriction_reason?: string | null
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
+          time_availability?: string[] | null
           travel_end_date?: string | null
           travel_start_date?: string | null
           updated_at?: string
@@ -728,7 +1069,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "user" | "merchant"
+      app_role: "user" | "merchant" | "admin"
       store_type: "attractions" | "food" | "entertainment"
       subscription_tier: "tier_0" | "tier_1" | "tier_2"
       user_subscription_tier: "tier_0" | "tier_1" | "tier_2"
@@ -860,7 +1201,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["user", "merchant"],
+      app_role: ["user", "merchant", "admin"],
       store_type: ["attractions", "food", "entertainment"],
       subscription_tier: ["tier_0", "tier_1", "tier_2"],
       user_subscription_tier: ["tier_0", "tier_1", "tier_2"],

@@ -40,6 +40,8 @@
 
     --radius: 0.75rem;
 
+    --logo-bg: 215 70% 55%;
+
     /* Custom tokens */
     --gradient-warm: linear-gradient(135deg, hsl(16 65% 55%) 0%, hsl(35 70% 60%) 100%);
     --gradient-hero: linear-gradient(180deg, hsla(20, 20%, 15%, 0.4) 0%, hsla(20, 20%, 15%, 0.1) 100%);
@@ -85,6 +87,8 @@
     --input: 20 15% 20%;
     --ring: 16 65% 60%;
 
+    --logo-bg: 215 70% 55%;
+
     --sidebar-background: 20 15% 10%;
     --sidebar-foreground: 30 20% 95%;
     --sidebar-primary: 16 65% 60%;
@@ -111,60 +115,111 @@
 
 /* Cutesy Theme - Hand-drawn notebook doodle aesthetic */
 body.theme-cutesy {
-  --background: 48 50% 97%;
-  --foreground: 30 60% 20%;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 8%;
 
   --card: 0 0% 100%;
-  --card-foreground: 30 60% 20%;
+  --card-foreground: 0 0% 8%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 30 60% 20%;
+  --popover-foreground: 0 0% 8%;
 
-  /* Warm brown primary for hand-drawn style */
-  --primary: 30 50% 35%;
+  /* Black primary */
+  --primary: 0 0% 10%;
   --primary-foreground: 0 0% 100%;
 
-  /* Light cream secondary */
-  --secondary: 48 60% 92%;
-  --secondary-foreground: 30 50% 25%;
+  /* Light gray secondary */
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 0 0% 15%;
 
-  --muted: 48 30% 90%;
-  --muted-foreground: 30 30% 45%;
+  --muted: 0 0% 93%;
+  --muted-foreground: 0 0% 40%;
 
-  /* Soft sky blue accent */
-  --accent: 200 70% 65%;
+  /* Dark gray accent */
+  --accent: 0 0% 25%;
   --accent-foreground: 0 0% 100%;
 
-  /* Additional cutesy colors */
-  --cutesy-yellow: 48 90% 70%;
-  --cutesy-green: 140 50% 55%;
-  --cutesy-orange: 25 85% 60%;
-  --cutesy-pink: 350 70% 70%;
-  --cutesy-blue: 200 70% 65%;
+  /* Pastel grays for pills */
+  --cutesy-yellow: 0 0% 93%;
+  --cutesy-green: 0 0% 93%;
+  --cutesy-orange: 0 0% 93%;
+  --cutesy-pink: 0 0% 93%;
+  --cutesy-blue: 0 0% 93%;
 
-  --destructive: 0 70% 55%;
+  --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 30 40% 75%;
+  --border: 0 0% 82%;
   --input: 0 0% 100%;
-  --ring: 30 50% 35%;
+  --ring: 0 0% 10%;
 
   --radius: 1.5rem;
 
-  --gradient-warm: linear-gradient(135deg, hsl(48 90% 70%) 0%, hsl(200 70% 65%) 100%);
-  --shadow-card: 0 4px 24px -4px hsla(30, 50%, 35%, 0.1);
-  --shadow-card-hover: 0 12px 36px -8px hsla(30, 50%, 35%, 0.15);
+  --gradient-warm: linear-gradient(135deg, hsl(0 0% 10%) 0%, hsl(0 0% 30%) 100%);
+  --shadow-card: 0 4px 24px -4px hsla(0, 0%, 0%, 0.06);
+  --shadow-card-hover: 0 12px 36px -8px hsla(0, 0%, 0%, 0.12);
 
   --sidebar-background: 0 0% 100%;
-  --sidebar-foreground: 30 60% 20%;
-  --sidebar-primary: 30 50% 35%;
+  --sidebar-foreground: 0 0% 8%;
+  --sidebar-primary: 0 0% 10%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 48 60% 92%;
-  --sidebar-accent-foreground: 30 50% 25%;
-  --sidebar-border: 30 40% 75%;
-  --sidebar-ring: 30 50% 35%;
+  --sidebar-accent: 0 0% 95%;
+  --sidebar-accent-foreground: 0 0% 15%;
+  --sidebar-border: 0 0% 82%;
+  --sidebar-ring: 0 0% 10%;
 
   font-family: "Quicksand", system-ui, sans-serif;
+}
+
+/* Cutesy Dark Mode */
+.dark body.theme-cutesy,
+html.dark body.theme-cutesy {
+  --background: 0 0% 6%;
+  --foreground: 0 0% 92%;
+
+  --card: 0 0% 10%;
+  --card-foreground: 0 0% 92%;
+
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 92%;
+
+  --primary: 0 0% 92%;
+  --primary-foreground: 0 0% 6%;
+
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 90%;
+
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 55%;
+
+  --accent: 0 0% 75%;
+  --accent-foreground: 0 0% 6%;
+
+  --cutesy-yellow: 0 0% 18%;
+  --cutesy-green: 0 0% 18%;
+  --cutesy-orange: 0 0% 18%;
+  --cutesy-pink: 0 0% 18%;
+  --cutesy-blue: 0 0% 18%;
+
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 20%;
+  --input: 0 0% 12%;
+  --ring: 0 0% 92%;
+
+  --gradient-warm: linear-gradient(135deg, hsl(0 0% 92%) 0%, hsl(0 0% 60%) 100%);
+  --shadow-card: 0 4px 24px -4px hsla(0, 0%, 0%, 0.4);
+  --shadow-card-hover: 0 12px 36px -8px hsla(0, 0%, 0%, 0.5);
+
+  --sidebar-background: 0 0% 6%;
+  --sidebar-foreground: 0 0% 92%;
+  --sidebar-primary: 0 0% 92%;
+  --sidebar-primary-foreground: 0 0% 6%;
+  --sidebar-accent: 0 0% 15%;
+  --sidebar-accent-foreground: 0 0% 90%;
+  --sidebar-border: 0 0% 20%;
+  --sidebar-ring: 0 0% 92%;
 }
 
 body.theme-cutesy h1,
@@ -177,53 +232,60 @@ body.theme-cutesy h6 {
   font-weight: 700;
 }
 
-/* Dotted grid background for cutesy theme */
+/* Subtle minimal grid background for cutesy theme */
 body.theme-cutesy .cutesy-grid-bg {
-  background-image: 
-    radial-gradient(circle, hsl(30 40% 75% / 0.4) 1px, transparent 1px);
-  background-size: 16px 16px;
+  background-image: none;
 }
 
-/* Hand-drawn border effect */
+/* Thick border effect */
 body.theme-cutesy .cutesy-border {
-  border: 3px solid hsl(30 50% 35%);
-  border-radius: 24px;
-  box-shadow: 2px 3px 0 hsl(30 50% 35% / 0.3);
+  border: 3px solid hsl(0 0% 75%);
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+html.dark body.theme-cutesy .cutesy-border {
+  border-color: hsl(0 0% 25%);
 }
 
 /* Squiggly underline effect */
 body.theme-cutesy .cutesy-underline {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23785c42' stroke-width='2.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23222222' stroke-width='2.5'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-position: bottom;
   background-size: 50px 8px;
   padding-bottom: 8px;
 }
 
-/* Category pill styles for cutesy theme */
-body.theme-cutesy .cutesy-pill-yellow {
-  background-color: hsl(48 90% 70%);
-  color: hsl(30 60% 20%);
+html.dark body.theme-cutesy .cutesy-underline {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0 6 Q 12.5 0, 25 6 T 50 6 T 75 6 T 100 6' fill='none' stroke='%23dddddd' stroke-width='2.5'/%3E%3C/svg%3E");
 }
 
-body.theme-cutesy .cutesy-pill-green {
-  background-color: hsl(140 50% 55%);
-  color: white;
-}
-
-body.theme-cutesy .cutesy-pill-orange {
-  background-color: hsl(25 85% 60%);
-  color: white;
-}
-
-body.theme-cutesy .cutesy-pill-pink {
-  background-color: hsl(350 70% 70%);
-  color: white;
-}
-
+/* Category pill styles */
+body.theme-cutesy .cutesy-pill-yellow,
+body.theme-cutesy .cutesy-pill-green,
+body.theme-cutesy .cutesy-pill-orange,
+body.theme-cutesy .cutesy-pill-pink,
 body.theme-cutesy .cutesy-pill-blue {
-  background-color: hsl(200 70% 65%);
-  color: white;
+  background-color: hsl(0 0% 95%);
+  color: hsl(0 0% 15%);
+  border: 2px solid hsl(0 0% 75%);
+}
+
+html.dark body.theme-cutesy .cutesy-pill-yellow,
+html.dark body.theme-cutesy .cutesy-pill-green,
+html.dark body.theme-cutesy .cutesy-pill-orange,
+html.dark body.theme-cutesy .cutesy-pill-pink,
+html.dark body.theme-cutesy .cutesy-pill-blue {
+  background-color: hsl(0 0% 18%);
+  color: hsl(0 0% 85%);
+  border-color: hsl(0 0% 30%);
+}
+
+/* Tori-Tan mascot visibility in dark mode */
+html.dark body.theme-cutesy .mix-blend-multiply {
+  mix-blend-mode: normal;
+  filter: brightness(1.3) drop-shadow(0 0 8px hsla(0, 0%, 80%, 0.4));
 }
 
 /* Anime Theme - Ghibli-style soft greens, sky blues, warm fields */
@@ -285,4 +347,27 @@ body.theme-anime h5,
 body.theme-anime h6 {
   font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
   font-weight: 700;
+}
+
+/* Tutorial highlight */
+.tutorial-highlight {
+  position: relative;
+  z-index: 9999 !important;
+  box-shadow: 0 0 0 4px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.4);
+  border-radius: 12px;
+  animation: tutorial-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.4); }
+  50% { box-shadow: 0 0 0 6px hsl(var(--primary)), 0 0 30px hsl(var(--primary) / 0.6); }
+}
+
+@keyframes tutorial-pulse-circle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+}
+
+@keyframes dash {
+  to { stroke-dashoffset: -20; }
 }

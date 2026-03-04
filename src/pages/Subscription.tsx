@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Sparkles, MessageCircle, Map, MapPin, Globe, Wifi, Languages, Heart, Users, ArrowLeft } from "lucide-react";
+import { Check, Star, Sparkles, MessageCircle, Map, MapPin, Globe, Wifi, Languages, Heart, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -92,7 +92,7 @@ const Subscription = () => {
         .from("profiles")
         .select("subscription_tier")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return (data?.subscription_tier as SubscriptionTier) || "tier_0";
@@ -147,19 +147,9 @@ const Subscription = () => {
     <AppLayout>
       <div className="space-y-6 pb-8">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="rounded-full"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Subscription</h1>
-            <p className="text-sm text-muted-foreground">Choose your travel style</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Subscription</h1>
+          <p className="text-sm text-muted-foreground">Choose your travel style</p>
         </div>
 
         {/* Mascot Banner */}

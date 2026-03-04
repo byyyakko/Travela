@@ -26,7 +26,7 @@ export const useMerchantSetup = () => {
     const setupMerchantAccount = async () => {
       if (!user) return;
 
-      const pendingDataStr = localStorage.getItem("pendingMerchantData");
+      const pendingDataStr = sessionStorage.getItem("pendingMerchantData");
       if (!pendingDataStr) {
         setSetupComplete(true);
         return;
@@ -51,8 +51,8 @@ export const useMerchantSetup = () => {
 
         if (existingStore) {
           // Store already created, clean up and redirect
-          localStorage.removeItem("pendingMerchantData");
-          localStorage.removeItem("selectedRole");
+          sessionStorage.removeItem("pendingMerchantData");
+          sessionStorage.removeItem("selectedRole");
           setSetupComplete(true);
           navigate("/merchant-dashboard");
           return;
@@ -80,8 +80,8 @@ export const useMerchantSetup = () => {
         }
 
         // Clean up and redirect
-        localStorage.removeItem("pendingMerchantData");
-        localStorage.removeItem("selectedRole");
+        sessionStorage.removeItem("pendingMerchantData");
+        sessionStorage.removeItem("selectedRole");
 
         toast({
           title: "Welcome aboard! 🎉",

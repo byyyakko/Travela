@@ -18,8 +18,8 @@ L.Icon.Default.mergeOptions({
 interface Place {
   id: string;
   name: string;
-  type: "store" | "local" | "itinerary";
-  storeType?: "food" | "attractions" | "entertainment";
+  type: "store" | "local" | "itinerary" | "ai" | "pinned";
+  storeType?: "food" | "attractions" | "entertainment" | "hotels";
   lat: number;
   lng: number;
   description?: string;
@@ -72,9 +72,9 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
   // Update center when it changes
   useEffect(() => {
     if (mapRef.current) {
-      mapRef.current.setView(center, mapRef.current.getZoom());
+      mapRef.current.setView(center, 15);
     }
-  }, [center]);
+  }, [center[0], center[1]]);
 
   // Update user position marker
   useEffect(() => {
@@ -120,27 +120,30 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
 
     // Add new markers
     places.forEach((place) => {
-      // Determine icon based on store type
-      let markerColor = "#22c55e"; // Default green for itinerary
+      let markerColor = "#22c55e";
       let markerEmoji = "📋";
       
-      if (place.type === "store") {
+      if (place.type === "store" || place.type === "ai" || place.type === "pinned") {
         switch (place.storeType) {
           case "food":
-            markerColor = "#f97316"; // Orange for food
+            markerColor = "#f97316";
             markerEmoji = "🍜";
             break;
           case "attractions":
-            markerColor = "#8b5cf6"; // Purple for attractions
+            markerColor = "#8b5cf6";
             markerEmoji = "🏛️";
             break;
           case "entertainment":
-            markerColor = "#ec4899"; // Pink for entertainment
+            markerColor = "#ec4899";
             markerEmoji = "🎮";
             break;
+          case "hotels":
+            markerColor = "#0ea5e9";
+            markerEmoji = "🏨";
+            break;
           default:
-            markerColor = "#3b82f6"; // Blue fallback
-            markerEmoji = "🏪";
+            markerColor = place.type === "pinned" ? "#ef4444" : place.type === "ai" ? "#6366f1" : "#3b82f6";
+            markerEmoji = place.type === "pinned" ? "📌" : place.type === "ai" ? "✨" : "🏪";
         }
       }
 
@@ -177,7 +180,7 @@ const MapComponent = ({ center, userPosition, places, onLocationFound }: MapComp
               background: #f3f4f6;
               border-radius: 12px;
               font-size: 11px;
-            ">${markerEmoji} ${place.type === "store" ? (place.storeType || "Store") : "Itinerary"}</span>
+            ">${markerEmoji} ${place.type === "store" ? (place.storeType || "Store") : place.type === "ai" ? `AI · ${place.storeType || "Place"}` : place.type === "pinned" ? `📌 ${place.storeType || "Saved"}` : "Itinerary"}</span>
           </div>
         `);
 

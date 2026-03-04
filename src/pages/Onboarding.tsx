@@ -2,6 +2,8 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadAndModerate } from "@/lib/moderateImage";
+import { validateRealLocation } from "@/lib/validateLocation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +15,15 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { 
   Camera, MapPin, Plane, ChevronRight, ChevronLeft, 
-  User, Sparkles, Check, Globe
+  User, Sparkles, Check, Globe, LogOut
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { PRESET_AVATARS } from "@/components/AvatarPickerDialog";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { containsProfanity, containsProfanityWithAI } from "@/lib/profanity";
+import { COMMON_LANGUAGES } from "@/lib/languages";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STEPS = [
   { id: 1, title: "Welcome", icon: Sparkles },
@@ -34,7 +40,7 @@ const SUGGESTED_INTERESTS = [
 ];
 
 const Onboarding = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { track } = useAnalytics("onboarding");
@@ -57,45 +63,179 @@ const Onboarding = () => {
 
   const progress = (currentStep / STEPS.length) * 100;
 
-  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [avatarChecking, setAvatarChecking] = useState(false);
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    setAvatarFile(file);
+    // Show preview immediately
     const previewUrl = URL.createObjectURL(file);
     setAvatarUrl(previewUrl);
+    setAvatarFile(file);
+    
+    // Moderate the image right away
+    setAvatarChecking(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const tempFileName = `${user?.id}/temp_check_${Date.now()}.${fileExt}`;
+      
+      await uploadAndModerate("avatars", tempFileName, file, { upsert: true });
+      
+      // Moderation passed — clean up temp file, keep the local file for final upload
+      await supabase.storage.from("avatars").remove([tempFileName]);
+      
+      toast({ title: "Photo accepted ✓", description: "Your photo passed our content check." });
+    } catch (err: any) {
+      // Moderation failed — clear the photo
+      setAvatarFile(null);
+      setAvatarUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast({
+        title: "Photo rejected",
+        description: err.message || "This image was flagged as inappropriate and cannot be used.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarChecking(false);
+    }
   };
 
   const toggleInterest = (interest: string) => {
     if (interests.includes(interest)) {
       setInterests(interests.filter(i => i !== interest));
-    } else if (interests.length < 10) {
+    } else {
       setInterests([...interests, interest]);
     }
   };
 
   const addCustomInterest = () => {
-    if (customInterest.trim() && !interests.includes(customInterest.trim()) && interests.length < 10) {
+    if (customInterest.trim() && !interests.includes(customInterest.trim())) {
+      if (containsProfanity(customInterest)) {
+        toast({ title: "Inappropriate content", description: "Your interest contains inappropriate language.", variant: "destructive" });
+        return;
+      }
       setInterests([...interests, customInterest.trim()]);
       setCustomInterest("");
     }
   };
 
-  const addLanguage = () => {
-    if (languageInput.trim() && !languages.includes(languageInput.trim())) {
-      setLanguages([...languages, languageInput.trim()]);
-      setLanguageInput("");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [showOtherLanguage, setShowOtherLanguage] = useState(false);
+
+  const addLanguageFromDropdown = (lang: string) => {
+    if (lang === "__other__") {
+      setShowOtherLanguage(true);
+      setSelectedLanguage("");
+      return;
     }
+    if (lang && !languages.includes(lang)) {
+      setLanguages([...languages, lang]);
+    }
+    setSelectedLanguage("");
+  };
+
+  const addCustomLanguage = () => {
+    const trimmed = languageInput.trim();
+    if (!trimmed || languages.includes(trimmed)) return;
+    if (containsProfanity(trimmed)) {
+      toast({ title: "Inappropriate content", description: "Your language entry contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+    setLanguages([...languages, trimmed]);
+    setLanguageInput("");
+    setShowOtherLanguage(false);
   };
 
   const removeLanguage = (lang: string) => {
     setLanguages(languages.filter(l => l !== lang));
   };
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length) {
-      setCurrentStep(currentStep + 1);
+  const [aiChecking, setAiChecking] = useState(false);
+
+  const canProceedFromStep = (step: number): boolean => {
+    switch (step) {
+      case 2:
+        if (avatarChecking) {
+          toast({ title: "Please wait", description: "Your photo is being checked...", variant: "destructive" });
+          return false;
+        }
+        if (!displayName.trim()) {
+          toast({ title: "Display name is required", variant: "destructive" });
+          return false;
+        }
+        if (containsProfanity(displayName)) {
+          toast({ title: "Inappropriate content", description: "Your display name contains inappropriate language.", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 3:
+        if (containsProfanity(bio)) {
+          toast({ title: "Inappropriate content", description: "Your bio contains inappropriate language.", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 4:
+        if (interests.length === 0) {
+          toast({ title: "Please select at least 1 interest", variant: "destructive" });
+          return false;
+        }
+        if (interests.some(i => containsProfanity(i))) {
+          toast({ title: "Inappropriate content", description: "One of your interests contains inappropriate language.", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 5:
+        if (!location.trim()) {
+          toast({ title: "Location is required", variant: "destructive" });
+          return false;
+        }
+        if (containsProfanity(location)) {
+          toast({ title: "Inappropriate content", description: "Your location contains inappropriate language.", variant: "destructive" });
+          return false;
+        }
+        return true;
+      default:
+        return true;
     }
+  };
+
+  const handleNext = async () => {
+    if (currentStep >= STEPS.length || !canProceedFromStep(currentStep)) return;
+
+    // AI profanity check on text fields for the current step
+    const textsToCheck: string[] = [];
+    if (currentStep === 2) textsToCheck.push(displayName);
+    if (currentStep === 3) textsToCheck.push(bio, ...languages);
+    if (currentStep === 4) textsToCheck.push(...interests.filter(i => !SUGGESTED_INTERESTS.includes(i)));
+    if (currentStep === 5) textsToCheck.push(location);
+
+    const nonEmpty = textsToCheck.filter(t => t && t.trim().length > 0);
+    if (nonEmpty.length > 0) {
+      setAiChecking(true);
+      try {
+        const results = await Promise.all(nonEmpty.map(t => containsProfanityWithAI(t)));
+        if (results.some(r => r)) {
+          toast({ title: "Inappropriate content detected", description: "Please remove any inappropriate language before proceeding.", variant: "destructive" });
+          setAiChecking(false);
+          return;
+        }
+      } catch { /* fail open */ }
+    }
+
+    // Validate location is a real place on step 5
+    if (currentStep === 5 && location.trim()) {
+      setAiChecking(true);
+      const locationResult = await validateRealLocation(location);
+      if (!locationResult.valid) {
+        toast({ title: "Invalid location", description: "Please enter a real city or place name (e.g., 'Barcelona, Spain').", variant: "destructive" });
+        setAiChecking(false);
+        return;
+      }
+    }
+
+    setAiChecking(false);
+    setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
@@ -106,37 +246,41 @@ const Onboarding = () => {
 
   const handleComplete = async () => {
     if (!user) return;
+    if (!canProceedFromStep(5)) return;
+
+    // Validate location is real
+    if (location.trim()) {
+      setLoading(true);
+      const locationResult = await validateRealLocation(location);
+      if (!locationResult.valid) {
+        toast({ title: "Invalid location", description: "Please enter a real city or place name.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       let finalAvatarUrl = null;
-      const safeDisplayName = displayName.trim() || (user.email ? user.email.split("@")[0] : "");
+      const safeDisplayName = displayName.trim() || (user.email ? user.email.split("@")[0] : "Traveler");
 
-      // Upload avatar if selected
+      // Upload avatar if a file was selected, or use preset URL directly
       if (avatarFile) {
         const fileExt = avatarFile.name.split(".").pop();
         const fileName = `${user.id}/avatar.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(fileName, avatarFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(fileName);
-
+        const { publicUrl } = await uploadAndModerate("avatars", fileName, avatarFile, { upsert: true });
         finalAvatarUrl = publicUrl;
+      } else if (avatarUrl) {
+        // Preset avatar URL selected (no file to upload)
+        finalAvatarUrl = avatarUrl;
       }
 
       // Update profile
       const { error } = await supabase
         .from("profiles")
         .update({
-          // Ensure onboarding can complete even if the user leaves fields blank
-          // (prevents redirect loops caused by an "empty" profile)
-          display_name: safeDisplayName || null,
+          display_name: safeDisplayName,
           avatar_url: finalAvatarUrl,
           bio: bio.trim() || null,
           interests: interests.length > 0 ? interests : null,
@@ -148,10 +292,10 @@ const Onboarding = () => {
 
       if (error) throw error;
 
-      // Immediately unblock ProtectedRoute + refresh dependent queries
+      // Mark onboarding as complete in cache — do NOT invalidate to avoid race condition
       queryClient.setQueryData(["onboarding-check", user.id], false);
+      // Refresh profile data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["onboarding-check", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["userProfile", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["profile", user.id] }),
       ]);
@@ -167,7 +311,7 @@ const Onboarding = () => {
         description: "Your profile is all set up.",
       });
 
-      navigate("/home");
+      navigate("/home", { replace: true });
     } catch (error: any) {
       toast({
         title: "Error saving profile",
@@ -232,18 +376,23 @@ const Onboarding = () => {
             <div className="text-center">
               <h2 className="text-xl font-display font-semibold">Add a Profile Photo</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Help others recognize you with a friendly photo
+                Upload your own photo or pick a preset avatar
               </p>
             </div>
             
             <div className="flex justify-center">
               <div className="relative">
-                <Avatar className="w-32 h-32 ring-4 ring-primary/20">
+                <Avatar className={cn("w-32 h-32 ring-4 ring-primary/20", avatarChecking && "opacity-50")}>
                   <AvatarImage src={avatarUrl || ""} />
                   <AvatarFallback className="text-4xl bg-muted">
                     {displayName ? displayName[0].toUpperCase() : <User className="w-12 h-12" />}
                   </AvatarFallback>
                 </Avatar>
+                {avatarChecking && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -255,19 +404,59 @@ const Onboarding = () => {
                   size="icon"
                   className="absolute -bottom-2 -right-2 rounded-full h-10 w-10"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarChecking}
                 >
                   <Camera className="w-5 h-5" />
                 </Button>
               </div>
             </div>
 
+            {/* Preset Avatars */}
             <div className="space-y-2">
-              <Label>Display Name</Label>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">or pick an avatar</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <div className="grid grid-cols-6 gap-2 justify-items-center">
+                {PRESET_AVATARS.map((url) => {
+                  const isSelected = avatarUrl === url;
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => {
+                        setAvatarUrl(url);
+                        setAvatarFile(null); // clear any uploaded file
+                      }}
+                      className={cn(
+                        "relative rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary",
+                        isSelected && "ring-2 ring-primary scale-110"
+                      )}
+                    >
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={url} alt="Preset avatar" />
+                        <AvatarFallback>?</AvatarFallback>
+                      </Avatar>
+                      {isSelected && (
+                        <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                          <Check className="w-3 h-3" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Display Name <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="What should we call you?"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 maxLength={50}
+                required
               />
             </div>
           </div>
@@ -302,15 +491,28 @@ const Onboarding = () => {
                 <Globe className="w-4 h-4" />
                 Languages I Speak
               </Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a language..."
-                  value={languageInput}
-                  onChange={(e) => setLanguageInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addLanguage())}
-                />
-                <Button onClick={addLanguage} variant="outline">Add</Button>
-              </div>
+              <Select value={selectedLanguage} onValueChange={addLanguageFromDropdown}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a language..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 bg-background z-50">
+                  {COMMON_LANGUAGES.filter(l => !languages.includes(l)).map((lang) => (
+                    <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                  ))}
+                  <SelectItem value="__other__">Other (type your own)</SelectItem>
+                </SelectContent>
+              </Select>
+              {showOtherLanguage && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type your language..."
+                    value={languageInput}
+                    onChange={(e) => setLanguageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addCustomLanguage())}
+                  />
+                  <Button onClick={addCustomLanguage} variant="outline">Add</Button>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {languages.map((lang) => (
                   <span
@@ -330,9 +532,9 @@ const Onboarding = () => {
         return (
           <div className="space-y-6 py-4">
             <div className="text-center">
-              <h2 className="text-xl font-display font-semibold">Your Interests</h2>
+              <h2 className="text-xl font-display font-semibold">Your Interests <span className="text-destructive">*</span></h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Select up to 10 interests to help find the perfect matches
+                Select at least 1 interest (up to 10) to help find the perfect matches
               </p>
             </div>
 
@@ -368,7 +570,7 @@ const Onboarding = () => {
             </div>
 
             <p className="text-center text-sm text-muted-foreground">
-              {interests.length}/10 selected
+              {interests.length} selected
             </p>
           </div>
         );
@@ -384,7 +586,7 @@ const Onboarding = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>City / Location</Label>
+              <Label>City / Location <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -425,8 +627,24 @@ const Onboarding = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
+      {/* Back / Sign out button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleSignOut}
+        className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        Sign Out
+      </Button>
+
       <div className="w-full max-w-md">
         {/* Progress */}
         <div className="mb-6">
@@ -477,8 +695,8 @@ const Onboarding = () => {
               )}
               
               {currentStep < STEPS.length ? (
-                <Button onClick={handleNext} className="flex-1">
-                  Continue
+                <Button onClick={handleNext} className="flex-1" disabled={aiChecking}>
+                  {aiChecking ? "Checking..." : "Continue"}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               ) : (

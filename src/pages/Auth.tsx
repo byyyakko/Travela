@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Plane, Globe, Check, X, Mail, ArrowLeft } from "lucide-react";
+import { Check, X, Mail, ArrowLeft, Globe, MapPin } from "lucide-react";
+import mascotImage from "@/assets/mascot-cutesy.png";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { containsProfanity } from "@/lib/profanity";
 
 // Password validation rules
 const validatePassword = (password: string) => {
@@ -71,6 +73,15 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (containsProfanity(email)) {
+      toast({
+        title: "Inappropriate content",
+        description: "Your email contains inappropriate language. Please use a different email.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!isPasswordValid) {
       toast({
@@ -223,8 +234,8 @@ const Auth = () => {
         {/* Logo */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
-              <Plane className="w-8 h-8 text-primary-foreground" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: 'hsl(var(--logo-bg))' }}>
+              <img src={mascotImage} alt="Tori-Tan" className="w-10 h-10 object-contain" />
             </div>
           </div>
           <div>

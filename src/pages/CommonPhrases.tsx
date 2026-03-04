@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Globe, Volume2, ArrowLeft, Sparkles, BookOpen } from "lucide-react";
+import { Search, Globe, Volume2, Sparkles, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -94,14 +94,9 @@ const CommonPhrases = () => {
     <AppLayout>
       <div className="space-y-6 pb-8">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Common Phrases</h1>
-            <p className="text-sm text-muted-foreground">Learn essential phrases for your trip</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Common Phrases</h1>
+          <p className="text-sm text-muted-foreground">Learn essential phrases for your trip</p>
         </div>
 
         {/* Free badge */}

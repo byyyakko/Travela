@@ -14,6 +14,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock } from "lucide-react";
 import { motion } from "framer-motion";
@@ -42,13 +48,24 @@ const mascotMessages = [
 const TORI_TAN_GREETING = mascotMessages[0];
 const getRandomMessage = () => mascotMessages[Math.floor(Math.random() * (mascotMessages.length - 1)) + 1];
 
-// Category filter pills with hand-drawn style colors
-const categoryFilters = [
+// All available category flairs
+export const allCategoryFlairs = [
   { label: "Local Favorites", color: "cutesy-pill-yellow" },
-  { label: "Budget Friendly", color: "cutesy-pill-green" },
-  { label: "Must See", color: "cutesy-pill-orange" },
-  { label: "Foodie Finds", color: "cutesy-pill-pink" },
+  { label: "Budget Friendly", color: "cutesy-pill-yellow" },
+  { label: "Must See", color: "cutesy-pill-yellow" },
+  { label: "Foodie Finds", color: "cutesy-pill-yellow" },
+  { label: "Hidden Gems", color: "cutesy-pill-yellow" },
+  { label: "Adventure", color: "cutesy-pill-yellow" },
+  { label: "Nightlife", color: "cutesy-pill-yellow" },
+  { label: "Culture", color: "cutesy-pill-yellow" },
+  { label: "Nature", color: "cutesy-pill-yellow" },
+  { label: "Shopping", color: "cutesy-pill-yellow" },
+  { label: "Relaxation", color: "cutesy-pill-yellow" },
+  { label: "Photography", color: "cutesy-pill-yellow" },
 ];
+
+// The first 4 shown inline
+const inlineCategoryFilters = allCategoryFlairs.slice(0, 4);
 
 // Quick action icons
 const quickActions = [
@@ -60,80 +77,10 @@ const quickActions = [
   { icon: Crown, label: "Subscribe", path: "/subscription", paid: false },
 ];
 
-const DEMO_POSTS = [
-  {
-    id: "demo-post-1",
-    content: "Just discovered the most amazing ramen spot in Shibuya! 🍜 The tonkotsu broth was simmered for 18 hours and the chashu melted in my mouth. If you're ever in Tokyo, this is a MUST visit!",
-    image_url: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&h=400&fit=crop",
-    location_tag: "Tokyo, Japan",
-    category: "Foodie Finds",
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    user_id: "demo-user-1",
-    profiles: {
-      display_name: "Haruki",
-      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      location: "Tokyo, Japan",
-    },
-    post_likes: [{ user_id: "a" }, { user_id: "b" }, { user_id: "c" }],
-    post_comments: [{ id: "c1" }, { id: "c2" }],
-  },
-  {
-    id: "demo-post-2",
-    content: "Caught the sunrise at Marina Bay Sands this morning ☀️ Singapore never gets old! The skyline reflecting off the water was absolutely magical. Who else is in SG right now?",
-    image_url: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&h=400&fit=crop",
-    location_tag: "Singapore",
-    category: "Must See",
-    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    user_id: "demo-user-2",
-    profiles: {
-      display_name: "Mei Lin",
-      avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-      location: "Singapore",
-    },
-    post_likes: [{ user_id: "a" }, { user_id: "b" }, { user_id: "c" }, { user_id: "d" }, { user_id: "e" }],
-    post_comments: [{ id: "c1" }, { id: "c2" }, { id: "c3" }],
-  },
-  {
-    id: "demo-post-3",
-    content: "Rice terraces in Ubud are unreal 🌾 Spent the whole day trekking through Tegallalang with a local guide. The views were breathtaking and the stories she shared about Balinese culture were priceless!",
-    image_url: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop",
-    location_tag: "Bali, Indonesia",
-    category: "Local Favorites",
-    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    user_id: "demo-user-3",
-    profiles: {
-      display_name: "Amara",
-      avatar_url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop&crop=face",
-      location: "Bali, Indonesia",
-    },
-    post_likes: [{ user_id: "a" }, { user_id: "b" }],
-    post_comments: [{ id: "c1" }],
-  },
-  {
-    id: "demo-post-4",
-    content: "Pro tip: skip the touristy La Rambla restaurants and head to El Born for authentic tapas 🇪🇸 Had the best patatas bravas of my life at a tiny spot with only 6 tables. The locals know best!",
-    location_tag: "Barcelona, Spain",
-    category: "Budget Friendly",
-    image_url: null,
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    user_id: "demo-user-4",
-    profiles: {
-      display_name: "Sofia",
-      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
-      location: "Barcelona, Spain",
-    },
-    post_likes: [{ user_id: "a" }, { user_id: "b" }, { user_id: "c" }, { user_id: "d" }],
-    post_comments: [{ id: "c1" }, { id: "c2" }, { id: "c3" }, { id: "c4" }],
-  },
-];
-
 // Map category labels to their pill CSS class for flair badges
-const categoryColorMap: Record<string, string> = {
-  "Local Favorites": "cutesy-pill-yellow",
-  "Budget Friendly": "cutesy-pill-green",
-  "Must See": "cutesy-pill-orange",
-  "Foodie Finds": "cutesy-pill-pink",
-};
+export const categoryColorMap: Record<string, string> = Object.fromEntries(
+  allCategoryFlairs.map(f => [f.label, f.color])
+);
 
 interface CutesyHomeProps {
   displayName?: string;
@@ -143,6 +90,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [showFlairsSheet, setShowFlairsSheet] = useState(false);
   const [showPaidDialog, setShowPaidDialog] = useState(false);
   const [hasSeenGreeting, setHasSeenGreeting] = useState(() => {
     return sessionStorage.getItem('toriTanGreeted') === 'true';
@@ -163,7 +111,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
         .from("profiles")
         .select("subscription_tier")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       return data?.subscription_tier || "tier_0";
     },
     enabled: !!user?.id,
@@ -210,59 +158,58 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   return (
     <div className="space-y-6">
       {/* Personalized Greeting with dotted grid background */}
-      <Card className="p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary mb-1">
+      <Card className="p-4 sm:p-5 cutesy-grid-bg cutesy-border bg-card/95 relative overflow-hidden">
+        {/* Top row: greeting text + mascot */}
+        <div className="flex items-start gap-2">
+          <div className="z-10 flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-primary mb-1">
               Hello, {displayName || "Traveler"}! 👋
             </h1>
             <p className="text-muted-foreground text-sm">
               Where would you like to explore today?
-          </p>
+            </p>
           </div>
-          {/* Mascot with Speech Bubble */}
-          <div className="relative flex items-start">
-            {/* Speech Bubble */}
-            <motion.div 
-              className="absolute -left-36 top-0 bg-white border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-[140px]"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-            >
-              <p className="text-xs text-primary font-medium leading-snug">
-                {mascotMessage}
-              </p>
-              {/* Speech bubble tail */}
-              <div className="absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-white" />
-              <div className="absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
-            </motion.div>
-            {/* Mascot */}
-            <motion.img 
-              src={mascotCutesy} 
-              alt="Cute cat mascot" 
-              className="w-20 h-20 object-contain -mt-2 -mr-1 drop-shadow-md mix-blend-multiply"
-              animate={floatAnimation}
-            />
-          </div>
+          {/* Mascot only (no speech bubble overlapping) */}
+          <motion.img 
+            src={mascotCutesy} 
+            alt="Tori-Tan mascot" 
+            className="w-20 h-20 sm:w-36 sm:h-36 object-contain -mt-2 -mr-2 sm:-mt-5 sm:-mr-5 drop-shadow-md mix-blend-multiply flex-shrink-0"
+            animate={floatAnimation}
+          />
         </div>
 
+        {/* Speech Bubble - below greeting on mobile, absolute on desktop */}
+        <motion.div 
+          className="mt-2 sm:mt-0 sm:absolute sm:right-40 sm:top-3 bg-card border-2 border-primary/40 rounded-2xl px-3 py-2 shadow-md max-w-full sm:max-w-[140px] z-10 relative"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
+          <p className="text-xs text-primary font-medium leading-snug">
+            {mascotMessage}
+          </p>
+          {/* Speech bubble tail - points up to mascot on mobile, right on desktop */}
+          <div className="hidden sm:block absolute -right-2 top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-card" />
+          <div className="hidden sm:block absolute -right-[10px] top-4 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[8px] border-l-primary/40" style={{ zIndex: -1 }} />
+        </motion.div>
+
         {/* Quick action icons */}
-        <div className="flex justify-center gap-8 mt-6">
+        <div className="grid grid-cols-3 sm:flex sm:justify-center gap-4 sm:gap-8 mt-4 sm:mt-6">
           {quickActions.map((action) => (
             <button
               key={action.label}
               onClick={() => handleQuickAction(action)}
-              className="flex flex-col items-center gap-2 group"
+              className="flex flex-col items-center gap-1.5 sm:gap-2 group"
             >
-              <div className="w-16 h-16 rounded-full bg-secondary border-[3px] border-primary flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm relative">
-                <action.icon className="w-7 h-7 text-primary" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-secondary border-[3px] border-primary flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm relative">
+                <action.icon className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
                 {action.paid && subscriptionTier !== "tier_1" && subscriptionTier !== "tier_2" && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <Lock className="w-3 h-3 text-primary-foreground" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary-foreground" />
                   </div>
                 )}
               </div>
-              <span className="text-xs font-semibold text-primary">{action.label}</span>
+              <span className="text-[10px] sm:text-xs font-semibold text-primary">{action.label}</span>
             </button>
           ))}
         </div>
@@ -305,7 +252,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
 
         {/* Category filter pills */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {categoryFilters.map((filter) => (
+          {inlineCategoryFilters.map((filter) => (
             <button
               key={filter.label}
               onClick={() => setActiveFilter(activeFilter === filter.label ? null : filter.label)}
@@ -318,11 +265,52 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
               {filter.label}
             </button>
           ))}
-          <button className="px-4 py-1.5 rounded-full text-sm font-semibold bg-muted text-muted-foreground flex items-center gap-1 hover:bg-muted/80 transition-colors">
+          <button
+            onClick={() => setShowFlairsSheet(true)}
+            className="px-4 py-1.5 rounded-full text-sm font-semibold bg-muted text-muted-foreground flex items-center gap-1 hover:bg-muted/80 transition-colors"
+          >
             More <ChevronRight className="w-3 h-3" />
           </button>
         </div>
       </div>
+
+      {/* All Flairs Sheet */}
+      <Sheet open={showFlairsSheet} onOpenChange={setShowFlairsSheet}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle className="text-lg font-bold">All Categories</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-wrap gap-2 mt-4 pb-4">
+            {allCategoryFlairs.map((flair) => (
+              <button
+                key={flair.label}
+                onClick={() => {
+                  setActiveFilter(activeFilter === flair.label ? null : flair.label);
+                  setShowFlairsSheet(false);
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-full text-sm font-semibold transition-all border-2 border-transparent",
+                  flair.color,
+                  activeFilter === flair.label && "ring-2 ring-primary ring-offset-2"
+                )}
+              >
+                {flair.label}
+              </button>
+            ))}
+            {activeFilter && (
+              <button
+                onClick={() => {
+                  setActiveFilter(null);
+                  setShowFlairsSheet(false);
+                }}
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Create Post */}
       <CreatePost onPostCreated={refetch} />
@@ -333,11 +321,14 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : !posts || posts.length === 0 ? (
+          <Card className="text-center py-8 cutesy-border bg-card/90">
+            <p className="text-muted-foreground">No posts yet. Be the first to share your travel experience! ✈️</p>
+          </Card>
         ) : (() => {
-          const allPosts = posts && posts.length > 0 ? posts : DEMO_POSTS;
           const filtered = activeFilter
-            ? allPosts.filter((p: any) => p.category === activeFilter)
-            : allPosts;
+            ? posts.filter((p: any) => p.category === activeFilter)
+            : posts;
           return filtered.length === 0 ? (
             <Card className="text-center py-8 cutesy-border bg-card/90">
               <p className="text-muted-foreground">No posts matching "{activeFilter}". Try another category!</p>

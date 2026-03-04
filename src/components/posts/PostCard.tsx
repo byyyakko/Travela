@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,16 +22,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import { Heart, MessageCircle, Bookmark, MapPin, MoreHorizontal, Trash2, Send, ChevronLeft, ChevronRight, X, UserPlus, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { containsProfanity } from "@/lib/profanity";
+import { categoryColorMap } from "@/components/home/CutesyHome";
 
 interface PostCardProps {
   post: {
     id: string;
     content: string;
     image_url: string | null;
+    image_urls?: string[] | null;
     location_tag: string | null;
     created_at: string;
     user_id: string;
@@ -47,12 +55,8 @@ interface PostCardProps {
   onUpdate: () => void;
 }
 
-const categoryColorMap: Record<string, string> = {
-  "Local Favorites": "bg-yellow-200 text-yellow-900",
-  "Budget Friendly": "bg-green-200 text-green-900",
-  "Must See": "bg-orange-200 text-orange-900",
-  "Foodie Finds": "bg-pink-200 text-pink-900",
-};
+// Use shared color map, with fallback
+const getCategoryColor = (cat: string) => categoryColorMap[cat] || "bg-muted text-muted-foreground";
 
 interface Comment {
   id: string;
@@ -66,6 +70,7 @@ interface Comment {
 }
 
 const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(
     post.post_likes.some((like) => like.user_id === currentUserId)
@@ -76,9 +81,62 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const [isDeleting, setIsDeleting] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [fullscreenIndex, setFullscreenIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Combine image_url and image_urls into one array
+  const allImages: string[] = (() => {
+    const urls: string[] = [];
+    if (post.image_urls && post.image_urls.length > 0) {
+      urls.push(...post.image_urls);
+    } else if (post.image_url) {
+      urls.push(post.image_url);
+    }
+    return urls;
+  })();
 
   const isOwnPost = currentUserId === post.user_id;
-  const isDemo = post.id.startsWith("demo-");
+  const isDemo = false;
+
+  // Check if current user follows this post's author
+  const { data: isFollowingAuthor } = useQuery({
+    queryKey: ["isFollowing", currentUserId, post.user_id],
+    queryFn: async () => {
+      if (!currentUserId) return false;
+      const { data } = await supabase
+        .from("follows")
+        .select("id")
+        .eq("follower_id", currentUserId)
+        .eq("following_id", post.user_id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!currentUserId && !isOwnPost,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentUserId) throw new Error("Not authenticated");
+      if (isFollowingAuthor) {
+        const { error } = await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUserId)
+          .eq("following_id", post.user_id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("follows")
+          .insert({ follower_id: currentUserId, following_id: post.user_id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["isFollowing", currentUserId, post.user_id] });
+      toast({ title: isFollowingAuthor ? "Unfollowed" : "Followed!" });
+    },
+  });
 
   // Fetch comments when expanded
   const { data: comments = [], isLoading: commentsLoading } = useQuery({
@@ -94,7 +152,6 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
 
       if (error) throw error;
 
-      // Fetch profiles for commenters
       const userIds = [...new Set(data.map(c => c.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -126,7 +183,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
     onSuccess: () => {
       setCommentText("");
       queryClient.invalidateQueries({ queryKey: ["comments", post.id] });
-      onUpdate(); // Refresh post comment count
+      onUpdate();
       toast({ title: "Comment added!" });
     },
     onError: (error: any) => {
@@ -221,8 +278,9 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
     setIsDeleting(true);
     
     try {
-      if (post.image_url) {
-        const imagePath = post.image_url.split("/post-images/")[1];
+      // Delete all images
+      for (const url of allImages) {
+        const imagePath = url.split("/post-images/")[1];
         if (imagePath) {
           await supabase.storage.from("post-images").remove([imagePath]);
         }
@@ -257,18 +315,30 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim() || isDemo) return;
+    if (containsProfanity(commentText)) {
+      toast({ title: "Inappropriate content", description: "Your comment contains inappropriate language. Please revise it.", variant: "destructive" });
+      return;
+    }
     addCommentMutation.mutate(commentText.trim());
   };
 
   const displayName = post.profiles?.display_name || "Traveler";
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
 
+  const openFullscreen = (index: number) => {
+    setFullscreenIndex(index);
+    setFullscreenOpen(true);
+  };
+
   return (
     <>
       <Card className="overflow-hidden cutesy-border bg-card/95">
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate(`/user/${post.user_id}`)}
+          >
             <Avatar className="w-10 h-10 ring-[3px] ring-primary">
               <AvatarImage src={post.profiles?.avatar_url || ""} />
               <AvatarFallback className="bg-secondary text-primary font-bold">
@@ -277,13 +347,13 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
             </Avatar>
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-medium text-foreground">
+                <p className="font-medium text-foreground hover:underline">
                   {displayName}
                 </p>
                 {category && (
                   <span className={cn(
                     "px-2 py-0.5 rounded-full text-[10px] font-bold",
-                    categoryColorMap[category] || "bg-muted text-muted-foreground"
+                    getCategoryColor(category)
                   )}>
                     {category}
                   </span>
@@ -296,7 +366,10 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
                 {post.location_tag && (
                   <>
                     <span className="text-muted-foreground">·</span>
-                    <span className="flex items-center gap-1 text-primary">
+                    <span
+                      className="flex items-center gap-1 text-primary"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <MapPin className="w-3 h-3" />
                       {post.location_tag}
                     </span>
@@ -306,24 +379,46 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
             </div>
           </div>
           
-          {isOwnPost && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                  <MoreHorizontal className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete post
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <div className="flex items-center gap-1">
+            {/* Follow button */}
+            {!isOwnPost && currentUserId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => followMutation.mutate()}
+                disabled={followMutation.isPending}
+                className={cn(
+                  "text-xs h-7 px-2",
+                  isFollowingAuthor ? "text-muted-foreground" : "text-primary"
+                )}
+              >
+                {isFollowingAuthor ? (
+                  <UserCheck className="w-4 h-4" />
+                ) : (
+                  <UserPlus className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+
+            {isOwnPost && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete post
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -333,14 +428,51 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
           </p>
         </div>
 
-        {/* Image */}
-        {post.image_url && (
+        {/* Images - carousel if multiple, single if one */}
+        {allImages.length > 0 && (
           <div className="px-4 pb-3">
-            <img
-              src={post.image_url}
-              alt="Post"
-              className="w-full rounded-xl object-cover max-h-96 ring-[3px] ring-primary/40"
-            />
+            <div className="relative">
+              <img
+                src={allImages[currentImageIndex]}
+                alt="Post"
+                className="w-full rounded-xl cursor-pointer border-[3px] border-primary/20"
+                onClick={() => openFullscreen(currentImageIndex)}
+              />
+              {/* Carousel controls */}
+              {allImages.length > 1 && (
+                <>
+                  {currentImageIndex > 0 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i - 1); }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border border-border hover:bg-background"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  )}
+                  {currentImageIndex < allImages.length - 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i + 1); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border border-border hover:bg-background"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  )}
+                  {/* Dots indicator */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {allImages.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i); }}
+                        className={cn(
+                          "w-2 h-2 rounded-full transition-all",
+                          i === currentImageIndex ? "bg-foreground scale-125" : "bg-foreground/40"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -462,6 +594,55 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
           </div>
         )}
       </Card>
+
+      {/* Fullscreen Image Viewer */}
+      <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none overflow-hidden flex items-center justify-center">
+          <button
+            onClick={() => setFullscreenOpen(false)}
+            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={allImages[fullscreenIndex]}
+            alt="Fullscreen"
+            className="max-w-full max-h-[90vh] object-contain"
+          />
+          {allImages.length > 1 && (
+            <>
+              {fullscreenIndex > 0 && (
+                <button
+                  onClick={() => setFullscreenIndex(i => i - 1)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
+              {fullscreenIndex < allImages.length - 1 && (
+                <button
+                  onClick={() => setFullscreenIndex(i => i + 1)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {allImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setFullscreenIndex(i)}
+                    className={cn(
+                      "w-2.5 h-2.5 rounded-full transition-all",
+                      i === fullscreenIndex ? "bg-white scale-125" : "bg-white/40"
+                    )}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

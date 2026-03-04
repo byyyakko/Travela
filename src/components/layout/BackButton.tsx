@@ -22,8 +22,8 @@ const BackButton = ({ className, fallbackPath = "/home" }: BackButtonProps) => {
   }
 
   const handleBack = () => {
-    // Check if there's history to go back to
-    if (window.history.length > 2) {
+    // Use history length as a more reliable check
+    if (window.history.length > 1) {
       navigate(-1);
     } else {
       navigate(fallbackPath);

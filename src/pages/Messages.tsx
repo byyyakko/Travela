@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -15,105 +15,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, MessageCircle, ArrowLeft, Languages, Star, Loader2 } from "lucide-react";
+import { Send, MessageCircle, ArrowLeft, Languages, Star, Loader2, Check, X, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
-
-const DEMO_CONVERSATIONS = [
-  {
-    id: "demo-conv-1",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-1",
-    updated_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Mei Lin",
-      avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "Yes! The hawker center on Smith Street is the best 🍜",
-      created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "demo-conv-2",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-2",
-    updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Haruki",
-      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "I'll send you the address of that izakaya! It's in Shimokitazawa",
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "demo-conv-3",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-3",
-    updated_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Amara",
-      avatar_url: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "The sunrise surf session was incredible! Let's do it again tomorrow 🏄‍♀️",
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-  {
-    id: "demo-conv-4",
-    participant1_id: "current-user",
-    participant2_id: "demo-user-4",
-    updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    otherUser: {
-      display_name: "Sofia",
-      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face",
-    },
-    lastMessage: {
-      content: "Definitely try the patatas bravas at Cal Pep — you won't regret it!",
-      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  },
-];
-
-const DEMO_MESSAGES: Record<string, Message[]> = {
-  "demo-conv-1": [
-    { id: "m1", content: "Hey Mei Lin! I just arrived in Singapore. Any food recommendations?", sender_id: "current-user", created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), read: true },
-    { id: "m2", content: "Welcome!! 🎉 You HAVE to try the chicken rice at Tian Tian in Maxwell Food Centre", sender_id: "demo-user-1", created_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(), read: true },
-    { id: "m3", content: "That sounds amazing! Is it crowded?", sender_id: "current-user", created_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(), read: true },
-    { id: "m4", content: "Go before 11am to avoid the queue. Trust me on this one 😄", sender_id: "demo-user-1", created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(), read: true },
-    { id: "m5", content: "Got it! Any other hidden gems?", sender_id: "current-user", created_at: new Date(Date.now() - 12 * 60 * 1000).toISOString(), read: true },
-    { id: "m6", content: "Yes! The hawker center on Smith Street is the best 🍜", sender_id: "demo-user-1", created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(), read: true },
-  ],
-  "demo-conv-2": [
-    { id: "m7", content: "Haruki! Your ramen post made me so hungry 😭", sender_id: "current-user", created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m8", content: "Haha! You should come to Tokyo then 🍜", sender_id: "demo-user-2", created_at: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m9", content: "Actually I'm planning a trip next month! Any must-visit spots?", sender_id: "current-user", created_at: new Date(Date.now() - 2.3 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m10", content: "I'll send you the address of that izakaya! It's in Shimokitazawa", sender_id: "demo-user-2", created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-  "demo-conv-3": [
-    { id: "m11", content: "Hi Amara! I saw you offer surf lessons in Bali?", sender_id: "current-user", created_at: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m12", content: "Yes! I teach at Canggu beach every morning at 6am 🌊", sender_id: "demo-user-3", created_at: new Date(Date.now() - 25.5 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m13", content: "That sounds perfect. I'm a total beginner though!", sender_id: "current-user", created_at: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m14", content: "No worries, everyone starts somewhere! I'll take care of you 😊", sender_id: "demo-user-3", created_at: new Date(Date.now() - 24.5 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m15", content: "The sunrise surf session was incredible! Let's do it again tomorrow 🏄‍♀️", sender_id: "demo-user-3", created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-  "demo-conv-4": [
-    { id: "m16", content: "Sofia! I'm heading to Barcelona next week. Tapas tips?", sender_id: "current-user", created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m17", content: "Skip La Rambla!! Go to El Born neighborhood instead 🇪🇸", sender_id: "demo-user-4", created_at: new Date(Date.now() - 3.8 * 24 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: "m18", content: "Definitely try the patatas bravas at Cal Pep — you won't regret it!", sender_id: "demo-user-4", created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-};
+import { containsProfanity } from "@/lib/profanity";
 
 interface Conversation {
   id: string;
   participant1_id: string;
   participant2_id: string;
   updated_at: string;
+  accepted: boolean | null;
+  declined_at: string | null;
   otherUser?: {
     display_name: string | null;
     avatar_url: string | null;
@@ -134,6 +49,7 @@ interface Message {
 
 const Messages = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { track } = useAnalytics("messages");
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -229,23 +145,9 @@ const Messages = () => {
     enabled: !!user,
   });
 
-  const isDemo = selectedConversation?.id.startsWith("demo-");
-
   // Fetch messages for selected conversation
   useEffect(() => {
     if (!selectedConversation) return;
-
-    // If it's a demo conversation, use the demo messages
-    if (selectedConversation.id.startsWith("demo-")) {
-      const userId = user?.id || "current-user";
-      const demoMsgs = DEMO_MESSAGES[selectedConversation.id] || [];
-      // Replace "current-user" sender_id with actual user id for display
-      setMessages(demoMsgs.map(m => ({
-        ...m,
-        sender_id: m.sender_id === "current-user" ? userId : m.sender_id,
-      })));
-      return;
-    }
 
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -286,9 +188,57 @@ const Messages = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Determine if current user can send messages in this conversation
+  const canSendMessage = (conv: Conversation | null): boolean => {
+    if (!conv || !user) return false;
+    // Accepted conversations: both can send
+    if (conv.accepted === true) return true;
+    // Declined: nobody can send
+    if (conv.accepted === false) return false;
+    // Pending (null): only the initiator (participant1) can send the first message
+    return conv.participant1_id === user.id;
+  };
+
+  // Check if current user is the recipient of a pending request
+  const isPendingRequestForMe = (conv: Conversation | null): boolean => {
+    if (!conv || !user) return false;
+    return conv.accepted === null && conv.participant2_id === user.id;
+  };
+
+  const handleAcceptConversation = async (convId: string) => {
+    const { error } = await supabase
+      .from("conversations")
+      .update({ accepted: true })
+      .eq("id", convId);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["conversations", user?.id] });
+      if (selectedConversation?.id === convId) {
+        setSelectedConversation({ ...selectedConversation!, accepted: true });
+      }
+      toast({ title: "Message request accepted!" });
+    }
+  };
+
+  const handleDeclineConversation = async (convId: string) => {
+    const { error } = await supabase
+      .from("conversations")
+      .update({ accepted: false, declined_at: new Date().toISOString() } as any)
+      .eq("id", convId);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["conversations", user?.id] });
+      setSelectedConversation(null);
+      toast({ title: "Message request declined" });
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
+    if (!canSendMessage(selectedConversation)) return;
 
+    if (containsProfanity(newMessage)) {
+      toast({ title: "Inappropriate content", description: "Your message contains inappropriate language. Please revise it.", variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("messages").insert({
       conversation_id: selectedConversation.id,
       sender_id: user.id,
@@ -328,6 +278,11 @@ const Messages = () => {
           {/* Messages area */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
+              {messages.length === 0 && (
+                <p className="text-center text-muted-foreground text-sm py-8">
+                  No messages yet. Say hello! 👋
+                </p>
+              )}
               {messages.map((msg) => {
                 const isOwn = msg.sender_id === user?.id;
                 return (
@@ -369,23 +324,79 @@ const Messages = () => {
             </div>
           </ScrollArea>
 
-          {/* Message input */}
-          <div className="p-4 border-t border-primary/30 flex gap-2">
-            <Input
-              placeholder="Type a message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-              className="bg-secondary/50 border-primary/30"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+          {/* Accept/Decline banner for pending requests */}
+          {isPendingRequestForMe(selectedConversation) && (
+            <div className="p-4 border-t border-primary/30 bg-secondary/50">
+              <p className="text-sm text-muted-foreground mb-3 text-center">
+                <strong>{selectedConversation.otherUser?.display_name || "Someone"}</strong> wants to message you
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => handleDeclineConversation(selectedConversation.id)}
+                >
+                  <X className="w-4 h-4" /> Decline
+                </Button>
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={() => handleAcceptConversation(selectedConversation.id)}
+                >
+                  <Check className="w-4 h-4" /> Accept
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Declined notice */}
+          {selectedConversation.accepted === false && (
+            <div className="p-4 border-t border-primary/30 text-center">
+              <p className="text-sm text-muted-foreground">This conversation has been declined.</p>
+            </div>
+          )}
+
+          {/* Pending notice for sender */}
+          {selectedConversation.accepted === null && selectedConversation.participant1_id === user?.id && (
+            <div className="p-4 border-t border-primary/30">
+              <p className="text-xs text-muted-foreground text-center mb-3">
+                Waiting for {selectedConversation.otherUser?.display_name || "them"} to accept your message request
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                  className="bg-secondary/50 border-primary/30"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim()}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Normal message input for accepted conversations */}
+          {selectedConversation.accepted === true && (
+            <div className="p-4 border-t border-primary/30 flex gap-2">
+              <Input
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                className="bg-secondary/50 border-primary/30"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* Cultural Translation Dialog */}
@@ -462,39 +473,92 @@ const Messages = () => {
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : !conversations || conversations.length === 0 ? (
+          <Card className="p-12 text-center bg-secondary/50 border-primary/30">
+            <MessageCircle className="w-16 h-16 mx-auto mb-4 text-primary/40" />
+            <h3 className="text-xl font-display font-semibold mb-2">No Conversations Yet</h3>
+            <p className="text-muted-foreground">
+              Match with locals to start chatting! When you both like each other, a conversation will appear here.
+            </p>
+          </Card>
         ) : (
-          <div className="space-y-2">
-            {(conversations && conversations.length > 0 ? conversations : DEMO_CONVERSATIONS).map((conv) => (
-              <Card
-                key={conv.id}
-                className="p-4 cursor-pointer transition-all hover:shadow-md border-primary/30 hover:bg-secondary/50"
-                onClick={() => setSelectedConversation(conv)}
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar className="ring-2 ring-primary/30">
-                    <AvatarImage src={conv.otherUser?.avatar_url || ""} />
-                    <AvatarFallback className="bg-secondary text-primary">
-                      {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">
-                      {conv.otherUser?.display_name || "User"}
-                    </p>
-                    {conv.lastMessage && (
-                      <p className="text-sm truncate text-muted-foreground">
-                        {conv.lastMessage.content}
+          <div className="space-y-4">
+            {/* Pending message requests for current user */}
+            {(() => {
+              const pendingRequests = conversations.filter(
+                (c) => c.accepted === null && c.participant2_id === user?.id
+              );
+              if (pendingRequests.length === 0) return null;
+              return (
+                <div className="space-y-2">
+                  <h2 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                    <Inbox className="w-4 h-4" /> Message Requests ({pendingRequests.length})
+                  </h2>
+                  {pendingRequests.map((conv) => (
+                    <Card
+                      key={conv.id}
+                      className="p-4 cursor-pointer transition-all hover:shadow-md border-accent hover:bg-secondary/50"
+                      onClick={() => setSelectedConversation(conv)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="ring-2 ring-accent">
+                          <AvatarImage src={conv.otherUser?.avatar_url || ""} />
+                          <AvatarFallback className="bg-secondary text-primary">
+                            {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">
+                            {conv.otherUser?.display_name || "User"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Wants to message you</p>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">New</Badge>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Active conversations (accepted or sent by me pending) */}
+            <div className="space-y-2">
+              {conversations
+                .filter((c) => c.accepted !== false && !(c.accepted === null && c.participant2_id === user?.id))
+                .map((conv) => (
+                <Card
+                  key={conv.id}
+                  className="p-4 cursor-pointer transition-all hover:shadow-md border-primary/30 hover:bg-secondary/50"
+                  onClick={() => setSelectedConversation(conv)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="ring-2 ring-primary/30">
+                      <AvatarImage src={conv.otherUser?.avatar_url || ""} />
+                      <AvatarFallback className="bg-secondary text-primary">
+                        {(conv.otherUser?.display_name || "U")[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">
+                        {conv.otherUser?.display_name || "User"}
                       </p>
+                      {conv.lastMessage ? (
+                        <p className="text-sm truncate text-muted-foreground">
+                          {conv.lastMessage.content}
+                        </p>
+                      ) : conv.accepted === null ? (
+                        <p className="text-xs text-muted-foreground italic">Pending acceptance</p>
+                      ) : null}
+                    </div>
+                    {conv.lastMessage && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true })}
+                      </span>
                     )}
                   </div>
-                  {conv.lastMessage && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(conv.lastMessage.created_at), { addSuffix: true })}
-                    </span>
-                  )}
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
           </div>
         )}
       </div>

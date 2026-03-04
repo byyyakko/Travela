@@ -25,6 +25,7 @@ const CTA = () => {
               size="lg" 
               variant="secondary"
               className="text-lg px-8 py-6 group"
+              onClick={() => window.location.href = '/auth'}
             >
               Get Started Free
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -33,6 +34,7 @@ const CTA = () => {
               size="lg" 
               variant="outline"
               className="text-lg px-8 py-6 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => window.location.href = '/auth'}
             >
               Become a Local Guide
             </Button>

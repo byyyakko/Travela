@@ -1,1 +1,19 @@
 project_id = "mpnfpyphwxmnmaosxjao"
+
+[functions.ai-travel]
+verify_jwt = false
+
+[functions.check-profanity]
+verify_jwt = false
+
+[functions.geocode-address]
+verify_jwt = false
+
+[functions.moderate-image]
+verify_jwt = false
+
+[functions.tori-tan-chat]
+verify_jwt = false
+
+[functions.find-toilets]
+verify_jwt = false
