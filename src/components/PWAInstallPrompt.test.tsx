@@ -51,13 +51,23 @@ describe('PWAInstallPrompt', () => {
     expect(screen.queryByText('Install Travela')).not.toBeInTheDocument()
   })
 
-  it('shows iOS guide banner on iOS Safari', () => {
+  it('shows iOS banner on iOS Safari', () => {
     mockUserAgent(
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
     )
     render(<PWAInstallPrompt />)
     expect(screen.getByText('Install Travela')).toBeInTheDocument()
-    expect(screen.getByText(/Add to Home Screen/i)).toBeInTheDocument()
+    expect(screen.getByText(/step-by-step install guide/i)).toBeInTheDocument()
+  })
+
+  it('shows step-by-step guide overlay when iOS banner is tapped', () => {
+    mockUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    )
+    render(<PWAInstallPrompt />)
+    fireEvent.click(screen.getByRole('button', { name: /show install guide/i }))
+    expect(screen.getAllByText(/Safari toolbar/i).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/Add to Home Screen/i).length).toBeGreaterThanOrEqual(1)
   })
 
   it('does not show iOS banner on iOS Chrome (CriOS)', () => {
