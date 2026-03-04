@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { PRESET_AVATARS } from "@/components/AvatarPickerDialog";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { containsProfanity, containsProfanityWithAI } from "@/lib/profanity";
 import { COMMON_LANGUAGES } from "@/lib/languages";
@@ -264,13 +265,15 @@ const Onboarding = () => {
       let finalAvatarUrl = null;
       const safeDisplayName = displayName.trim() || (user.email ? user.email.split("@")[0] : "Traveler");
 
-      // Upload avatar if selected
+      // Upload avatar if a file was selected, or use preset URL directly
       if (avatarFile) {
         const fileExt = avatarFile.name.split(".").pop();
         const fileName = `${user.id}/avatar.${fileExt}`;
-
         const { publicUrl } = await uploadAndModerate("avatars", fileName, avatarFile, { upsert: true });
         finalAvatarUrl = publicUrl;
+      } else if (avatarUrl) {
+        // Preset avatar URL selected (no file to upload)
+        finalAvatarUrl = avatarUrl;
       }
 
       // Update profile
@@ -373,7 +376,7 @@ const Onboarding = () => {
             <div className="text-center">
               <h2 className="text-xl font-display font-semibold">Add a Profile Photo</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Help others recognize you with a friendly photo
+                Upload your own photo or pick a preset avatar
               </p>
             </div>
             
@@ -405,6 +408,44 @@ const Onboarding = () => {
                 >
                   <Camera className="w-5 h-5" />
                 </Button>
+              </div>
+            </div>
+
+            {/* Preset Avatars */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">or pick an avatar</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <div className="grid grid-cols-6 gap-2 justify-items-center">
+                {PRESET_AVATARS.map((url) => {
+                  const isSelected = avatarUrl === url;
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => {
+                        setAvatarUrl(url);
+                        setAvatarFile(null); // clear any uploaded file
+                      }}
+                      className={cn(
+                        "relative rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary",
+                        isSelected && "ring-2 ring-primary scale-110"
+                      )}
+                    >
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={url} alt="Preset avatar" />
+                        <AvatarFallback>?</AvatarFallback>
+                      </Avatar>
+                      {isSelected && (
+                        <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                          <Check className="w-3 h-3" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

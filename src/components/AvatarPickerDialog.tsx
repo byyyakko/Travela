@@ -9,7 +9,7 @@ import { uploadAndModerate } from "@/lib/moderateImage";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const PRESET_AVATARS = [
+export const PRESET_AVATARS = [
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Traveler1&backgroundColor=b6e3f4",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Traveler2&backgroundColor=ffdfbf",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Explorer1&backgroundColor=c0aede",
