@@ -53,6 +53,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               />
             </div>
           </div>
+          <Link to="/profile">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-secondary">
+              <User className="w-5 h-5" />
+            </Button>
+          </Link>
           <Link to="/settings">
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-secondary">
               <Settings className="w-5 h-5" />
