@@ -6,7 +6,7 @@ declare global {
 }
 
 import { useState, useEffect } from 'react'
-import { X, Share } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const DISMISSED_KEY = 'pwa-install-dismissed'
@@ -57,7 +57,21 @@ export function PWAInstallPrompt() {
     setDeferredPrompt(null)
   }
 
-  const handleDismiss = () => {
+  const handleIOSInstall = async () => {
+    if (!navigator.share) return
+    try {
+      await navigator.share({
+        title: 'Travela',
+        text: 'Connect with locals worldwide',
+        url: window.location.href,
+      })
+    } catch {
+      // User cancelled share sheet — no action needed
+    }
+  }
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation()
     localStorage.setItem(DISMISSED_KEY, 'true')
     setShow(false)
   }
@@ -66,7 +80,12 @@ export function PWAInstallPrompt() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-safe">
-      <div className="bg-card border border-border rounded-xl shadow-lg p-4 flex items-center gap-3 max-w-md mx-auto">
+      <div
+        className={`bg-card border border-border rounded-xl shadow-lg p-4 flex items-center gap-3 max-w-md mx-auto ${isIOS ? 'cursor-pointer active:opacity-80' : ''}`}
+        onClick={isIOS ? handleIOSInstall : undefined}
+        role={isIOS ? 'button' : undefined}
+        aria-label={isIOS ? 'Add Travela to Home Screen' : undefined}
+      >
         <img
           src="/pwa-192x192.png"
           alt="Travela"
@@ -74,16 +93,9 @@ export function PWAInstallPrompt() {
         />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-foreground">Install Travela</p>
-          {isIOS ? (
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 flex-wrap">
-              Tap <Share className="w-3 h-3 inline flex-shrink-0" /> Share then
-              &ldquo;Add to Home Screen&rdquo;
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Add to your home screen for the best experience
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isIOS ? 'Tap to add to your Home Screen' : 'Add to your home screen for the best experience'}
+          </p>
         </div>
         {!isIOS && (
           <Button
