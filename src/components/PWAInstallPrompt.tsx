@@ -6,7 +6,7 @@ declare global {
 }
 
 import { useState, useEffect } from 'react'
-import { X, Share2, Plus } from 'lucide-react'
+import { X, Share2, Plus, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const DISMISSED_KEY = 'pwa-install-dismissed'
@@ -103,11 +103,11 @@ export function PWAInstallPrompt() {
                   1
                 </span>
                 <span className="text-sm text-foreground">
-                  Tap the{' '}
+                  Tap{' '}
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded text-xs font-medium">
-                    <Share2 className="w-3 h-3" /> Share
+                    <MoreHorizontal className="w-3 h-3" /> &bull;&bull;&bull;
                   </span>{' '}
-                  button in your Safari toolbar at the bottom of the screen
+                  at the bottom right of your Safari bar
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -115,10 +115,11 @@ export function PWAInstallPrompt() {
                   2
                 </span>
                 <span className="text-sm text-foreground">
-                  Scroll down and tap{' '}
+                  Tap{' '}
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded text-xs font-medium">
-                    <Plus className="w-3 h-3" /> Add to Home Screen
-                  </span>
+                    <Share2 className="w-3 h-3" /> Share
+                  </span>{' '}
+                  from the menu
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -126,7 +127,10 @@ export function PWAInstallPrompt() {
                   3
                 </span>
                 <span className="text-sm text-foreground">
-                  Tap <strong>Add</strong> in the top-right corner
+                  Tap{' '}
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded text-xs font-medium">
+                    <Plus className="w-3 h-3" /> Add to Home Screen
+                  </span>
                 </span>
               </li>
             </ol>
