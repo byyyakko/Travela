@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Shield, HelpCircle, LogOut, MapPin, Globe, Moon } from "lucide-react";
+import { Bell, Shield, HelpCircle, LogOut, MapPin, Globe, Moon, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 
 const Settings = () => {
   const { signOut } = useAuth();
@@ -22,6 +23,7 @@ const Settings = () => {
   const { colorMode, setColorMode } = useTheme();
   const [isLocalGuide, setIsLocalGuide] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -193,6 +195,10 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setShowTutorial(true)}>
+              <RotateCcw className="w-4 h-4" />
+              Replay Tutorial
+            </Button>
             <Button variant="ghost" className="w-full justify-start">
               {t.helpCenter}
             </Button>
@@ -216,6 +222,10 @@ const Settings = () => {
           <LogOut className="w-4 h-4 mr-2" />
           {t.signOut}
         </Button>
+
+        {showTutorial && (
+          <OnboardingTutorial forceShow onComplete={() => setShowTutorial(false)} />
+        )}
       </div>
     </AppLayout>
   );

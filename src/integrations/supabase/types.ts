@@ -678,6 +678,7 @@ export type Database = {
           destination: string | null
           display_name: string | null
           email: string
+          has_seen_tutorial: boolean
           id: string
           interests: string[] | null
           is_local: boolean | null
@@ -705,6 +706,7 @@ export type Database = {
           destination?: string | null
           display_name?: string | null
           email: string
+          has_seen_tutorial?: boolean
           id?: string
           interests?: string[] | null
           is_local?: boolean | null
@@ -732,6 +734,7 @@ export type Database = {
           destination?: string | null
           display_name?: string | null
           email?: string
+          has_seen_tutorial?: boolean
           id?: string
           interests?: string[] | null
           is_local?: boolean | null

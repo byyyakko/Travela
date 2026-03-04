@@ -348,3 +348,17 @@ body.theme-anime h6 {
   font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
   font-weight: 700;
 }
+
+/* Tutorial highlight */
+.tutorial-highlight {
+  position: relative;
+  z-index: 9999 !important;
+  box-shadow: 0 0 0 4px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.4);
+  border-radius: 12px;
+  animation: tutorial-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.4); }
+  50% { box-shadow: 0 0 0 6px hsl(var(--primary)), 0 0 30px hsl(var(--primary) / 0.6); }
+}

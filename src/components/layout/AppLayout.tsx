@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays, MessageSquareHeart, DoorOpen, CircleDot, Compass, Globe, Sparkles, Bath } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import BackButton from "@/components/layout/BackButton";
 import ToriTanChat from "@/components/ToriTanChat";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 import bgCute from "@/assets/bg-cute.png";
 import mascotImg from "@/assets/mascot-cutesy.png";
 
@@ -14,15 +15,15 @@ interface AppLayoutProps {
 }
 
 const navItems = [
-  { path: "/home", icon: Home, label: "Home" },
-  { path: "/experiences", icon: Compass, label: "Explore" },
-  { path: "/match", icon: Sparkles, label: "For You" },
-  { path: "/ask-local", icon: Globe, label: "Ask Local" },
-  { path: "/planner", icon: CalendarDays, label: "Plan" },
-  { path: "/messages", icon: MessageCircle, label: "Chat" },
-  { path: "/circles", icon: CircleDot, label: "Circles" },
-  { path: "/toilet-finder", icon: Bath, label: "Toilet" },
-  { path: "/profile", icon: User, label: "Me" },
+  { path: "/home", icon: Home, label: "Home", tour: "home" },
+  { path: "/experiences", icon: Compass, label: "Explore", tour: "explore" },
+  { path: "/match", icon: Sparkles, label: "For You", tour: "for-you" },
+  { path: "/ask-local", icon: Globe, label: "Ask Local", tour: "ask-local" },
+  { path: "/planner", icon: CalendarDays, label: "Plan", tour: "plan" },
+  { path: "/messages", icon: MessageCircle, label: "Chat", tour: "chat" },
+  { path: "/circles", icon: CircleDot, label: "Circles", tour: "circles" },
+  { path: "/toilet-finder", icon: Bath, label: "Toilet", tour: "toilet" },
+  { path: "/profile", icon: User, label: "Me", tour: "profile" },
 ];
 
 const AppLayout = ({ children }: AppLayoutProps) => {
@@ -82,6 +83,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
+                data-tour={item.tour}
                 className={cn(
                   "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all",
                   isActive && "text-foreground",
@@ -113,6 +115,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
+                data-tour={item.tour}
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-xl transition-all",
                   isActive && "bg-secondary border-2 border-primary text-primary",
@@ -129,6 +132,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Tori-Tan AI Chat */}
       <ToriTanChat />
+
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial />
     </div>
   );
 };
