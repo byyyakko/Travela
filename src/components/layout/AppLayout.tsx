@@ -1,9 +1,12 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays, MessageSquareHeart, DoorOpen, CircleDot, Compass, Globe, Sparkles, Bath } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import BackButton from "@/components/layout/BackButton";
 import ToriTanChat from "@/components/ToriTanChat";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
@@ -27,6 +30,21 @@ const navItems = [
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
+  const { user } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+    };
+    fetchAvatar();
+  }, [user]);
 
   return (
     <div 
@@ -54,9 +72,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
           </div>
           <Link to="/profile" data-tour="profile">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-secondary">
-              <User className="w-5 h-5" />
-            </Button>
+            <Avatar className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+              <AvatarImage src={avatarUrl || undefined} alt="Profile" />
+              <AvatarFallback className="bg-secondary text-muted-foreground">
+                <User className="w-4 h-4" />
+              </AvatarFallback>
+            </Avatar>
           </Link>
           <Link to="/settings">
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-secondary">
