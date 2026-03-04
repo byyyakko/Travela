@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from "react";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays, MessageSquareHeart, DoorOpen, CircleDot, Compass, Globe, Sparkles, Bath } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import BackButton from "@/components/layout/BackButton";
 import ToriTanChat from "@/components/ToriTanChat";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
-import AvatarPickerDialog from "@/components/AvatarPickerDialog";
 import bgCute from "@/assets/bg-cute.png";
 import mascotImg from "@/assets/mascot-cutesy.png";
 
@@ -31,10 +30,8 @@ const navItems = [
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
 
   useEffect(() => {
     const fetchAvatar = async () => {
@@ -74,18 +71,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               />
             </div>
           </div>
-          <div data-tour="profile">
-            <Avatar
-              className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-              onClick={() => setAvatarPickerOpen(true)}
-              onDoubleClick={() => navigate("/profile")}
-            >
+          <Link to="/profile" data-tour="profile">
+            <Avatar className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
               <AvatarImage src={avatarUrl || undefined} alt="Profile" />
               <AvatarFallback className="bg-secondary text-muted-foreground">
                 <User className="w-4 h-4" />
               </AvatarFallback>
             </Avatar>
-          </div>
+          </Link>
           <Link to="/settings">
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-secondary">
               <Settings className="w-5 h-5" />
@@ -162,14 +155,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Onboarding Tutorial */}
       <OnboardingTutorial />
-
-      {/* Avatar Picker */}
-      <AvatarPickerDialog
-        open={avatarPickerOpen}
-        onOpenChange={setAvatarPickerOpen}
-        currentAvatar={avatarUrl}
-        onAvatarChange={(url) => setAvatarUrl(url)}
-      />
     </div>
   );
 };
