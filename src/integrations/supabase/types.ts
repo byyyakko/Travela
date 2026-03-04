@@ -358,6 +358,36 @@ export type Database = {
         }
         Relationships: []
       }
+      itinerary_history: {
+        Row: {
+          created_at: string
+          id: string
+          itinerary_data: Json
+          prompt: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          itinerary_data: Json
+          prompt: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          itinerary_data?: Json
+          prompt?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       itinerary_items: {
         Row: {
           category: string | null

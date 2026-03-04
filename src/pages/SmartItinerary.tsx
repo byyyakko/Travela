@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map, ExternalLink, ChevronDown, ChevronUp, Globe, Route } from "lucide-react";
+import { MapPin, Sparkles, Clock, Utensils, Camera, ShoppingBag, Compass, Star, CalendarPlus, Check, Hotel, Car, Map, ExternalLink, ChevronDown, ChevronUp, Globe, Route, History, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { addDays, format } from "date-fns";
+import { addDays, format, formatDistanceToNow } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 import { lazy, Suspense, useMemo } from "react";
 
@@ -112,6 +113,61 @@ const SmartItinerary = () => {
   const [addedToPlanner, setAddedToPlanner] = useState(false);
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
   const [showMap, setShowMap] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  // Fetch past itinerary history
+  const { data: historyItems } = useQuery({
+    queryKey: ["itinerary-history", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("itinerary_history" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!user,
+  });
+
+  // Save itinerary to history
+  const saveToHistory = useCallback(async (p: string, data: ItineraryData) => {
+    if (!user) return;
+    try {
+      const { data: inserted, error } = await supabase
+        .from("itinerary_history" as any)
+        .insert({ user_id: user.id, prompt: p, title: data.title, itinerary_data: data as any })
+        .select("id")
+        .single();
+      if (!error && inserted) {
+        setCurrentHistoryId((inserted as any).id);
+        queryClient.invalidateQueries({ queryKey: ["itinerary-history"] });
+      }
+    } catch { /* silent */ }
+  }, [user, queryClient]);
+
+  // Load a past itinerary
+  const loadFromHistory = (item: any) => {
+    setPrompt(item.prompt);
+    setItinerary(item.itinerary_data as ItineraryData);
+    setActiveDay(1);
+    setAddedToPlanner(false);
+    setCurrentHistoryId(item.id);
+    setShowHistory(false);
+  };
+
+  // Delete a history item
+  const deleteHistoryItem = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await supabase.from("itinerary_history" as any).delete().eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["itinerary-history"] });
+    if (currentHistoryId === id) setCurrentHistoryId(null);
+    toast({ title: "Deleted", description: "Itinerary removed from history." });
+  };
 
   // Compute map points for active day
   const mapPoints = useMemo(() => {
@@ -172,6 +228,8 @@ const SmartItinerary = () => {
       setItinerary(data);
       setActiveDay(1);
       setAddedToPlanner(false);
+      // Auto-save to history
+      await saveToHistory(prompt.trim(), data);
     } catch (err) {
       toast({ title: "Error", description: "Failed to generate itinerary. Try again!", variant: "destructive" });
     } finally {
@@ -240,10 +298,65 @@ const SmartItinerary = () => {
     <AppLayout>
       <div className="space-y-6 pb-8">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-primary">Smart Itinerary</h1>
-          <p className="text-sm text-muted-foreground">AI-powered local travel plans</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-primary">Smart Itinerary</h1>
+            <p className="text-sm text-muted-foreground">AI-powered local travel plans</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setShowHistory((v) => !v)}
+          >
+            <History className="w-4 h-4" />
+            History
+          </Button>
         </div>
+
+        {/* Past itineraries panel */}
+        {showHistory && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+            <Card className="p-4 cutesy-border bg-card/95 space-y-2">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <History className="w-4 h-4 text-primary" /> Past Itineraries
+              </h3>
+              {!historyItems || historyItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-3 text-center">No saved itineraries yet. Generate one to get started!</p>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {historyItems.map((item: any) => (
+                    <div
+                      key={item.id}
+                      onClick={() => loadFromHistory(item)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:border-primary/50 hover:bg-secondary/50 ${
+                        currentHistoryId === item.id ? "border-primary bg-primary/5" : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-foreground truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{item.prompt}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
+                          onClick={(e) => deleteHistoryItem(item.id, e)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+        )}
 
         {/* Travela Plus badge */}
         <Badge className="bg-blue-100 text-blue-700 border-blue-200">
