@@ -194,60 +194,59 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
             className="animate-[tutorial-pulse-circle_1.5s_ease-in-out_infinite_0.3s]"
           />
 
-          {/* Arrow from circle to tooltip */}
+          {/* Arrow from tooltip pointing to the target */}
           {(() => {
             const isMobile = window.innerWidth < 768;
-            const cx = targetRect.left + targetRect.width / 2;
-            const cy = targetRect.top + targetRect.height / 2;
+            const targetCx = targetRect.left + targetRect.width / 2;
+            const targetCy = targetRect.top + targetRect.height / 2;
             const r = Math.max(targetRect.width, targetRect.height) / 2 + 16;
 
             if (isMobile) {
-              // Arrow pointing up from tooltip to target
-              const startX = cx;
-              const startY = cy - r;
-              const endX = tooltipPos.left + 150;
-              const endY = tooltipPos.top + 180;
-              const midY = (startY + endY) / 2;
+              // Arrow goes from bottom of tooltip down to top of target circle
+              const tipX = tooltipPos.left + 150;
+              const tipY = tooltipPos.top + 190;
+              const targetX = targetCx;
+              const targetY = targetCy - r;
+              const midY = (tipY + targetY) / 2;
               return (
                 <g>
                   <path
-                    d={`M ${endX} ${endY} C ${endX} ${midY}, ${startX} ${midY}, ${startX} ${startY}`}
+                    d={`M ${tipX} ${tipY} C ${tipX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}`}
                     fill="none"
                     stroke="hsl(var(--primary))"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                     strokeDasharray="6 4"
                     className="animate-[dash_1s_linear_infinite]"
                   />
-                  {/* Arrowhead */}
+                  {/* Arrowhead pointing at target */}
                   <polygon
-                    points={`${startX},${startY} ${startX - 6},${startY - 10} ${startX + 6},${startY - 10}`}
+                    points={`${targetX},${targetY} ${targetX - 6},${targetY - 12} ${targetX + 6},${targetY - 12}`}
                     fill="hsl(var(--primary))"
-                    transform={`rotate(180, ${startX}, ${startY - 5})`}
                   />
                 </g>
               );
             } else {
-              // Arrow pointing left from tooltip to target
-              const startX = cx + r;
-              const startY = cy;
-              const endX = tooltipPos.left;
-              const endY = tooltipPos.top + 40;
-              const midX = (startX + endX) / 2;
+              // Arrow goes from left edge of tooltip to right edge of target circle
+              const tipX = tooltipPos.left;
+              const tipY = tooltipPos.top + 60;
+              const targetX = targetCx + r;
+              const targetY = targetCy;
+              const midX = (tipX + targetX) / 2;
               return (
                 <g>
                   <path
-                    d={`M ${endX} ${endY} C ${midX} ${endY}, ${midX} ${startY}, ${startX} ${startY}`}
+                    d={`M ${tipX} ${tipY} C ${midX} ${tipY}, ${midX} ${targetY}, ${targetX} ${targetY}`}
                     fill="none"
                     stroke="hsl(var(--primary))"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                     strokeDasharray="6 4"
                     className="animate-[dash_1s_linear_infinite]"
                   />
-                  {/* Arrowhead */}
+                  {/* Arrowhead pointing at target */}
                   <polygon
-                    points={`${startX},${startY} ${startX + 10},${startY - 5} ${startX + 10},${startY + 5}`}
+                    points={`${targetX},${targetY} ${targetX + 12},${targetY - 6} ${targetX + 12},${targetY + 6}`}
                     fill="hsl(var(--primary))"
-                    transform={`rotate(180, ${startX + 5}, ${startY})`}
+                    transform={`rotate(180, ${targetX + 6}, ${targetY})`}
                   />
                 </g>
               );
