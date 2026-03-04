@@ -107,15 +107,19 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
       const isMobile = window.innerWidth < 768;
 
       if (isMobile) {
+        // Center tooltip horizontally, well above the bottom nav
         setTooltipPos({
-          top: rect.top - 200,
-          left: Math.max(16, Math.min(rect.left + rect.width / 2 - 150, window.innerWidth - 316)),
+          top: Math.max(60, rect.top - 220),
+          left: Math.max(16, (window.innerWidth - 300) / 2),
           arrowSide: "bottom",
         });
       } else {
+        // Position tooltip on the far right side of the screen
+        const tooltipWidth = 300;
+        const rightMargin = 32;
         setTooltipPos({
-          top: Math.max(16, rect.top - 20),
-          left: rect.right + 24,
+          top: Math.max(80, rect.top + rect.height / 2 - 80),
+          left: window.innerWidth - tooltipWidth - rightMargin,
           arrowSide: "left",
         });
       }
