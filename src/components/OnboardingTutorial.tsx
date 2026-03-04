@@ -92,7 +92,16 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
     if (!show) return;
 
     const step = tutorialSteps[currentStep];
-    const el = document.querySelector(step.selector);
+    // Find the visible element (desktop sidebar or mobile bottom nav)
+    const allEls = document.querySelectorAll(step.selector);
+    let el: Element | null = null;
+    for (const candidate of allEls) {
+      const rect = candidate.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        el = candidate;
+        break;
+      }
+    }
     if (!el) return;
 
     // Scroll element into view
