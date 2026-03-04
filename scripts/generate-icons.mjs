@@ -4,8 +4,7 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const svgPath = resolve(__dirname, '../public/travela-icon.svg')
-const svg = readFileSync(svgPath)
+const sourcePath = resolve(__dirname, '../public/travela-icon.png')
 
 const icons = [
   { size: 192, output: '../public/pwa-192x192.png' },
@@ -14,8 +13,8 @@ const icons = [
 ]
 
 for (const { size, output } of icons) {
-  await sharp(svg)
-    .resize(size, size)
+  await sharp(sourcePath)
+    .resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
     .png()
     .toFile(resolve(__dirname, output))
   console.log(`Generated ${size}x${size} icon`)
