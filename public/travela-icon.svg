@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- White background -->
+  <rect width="512" height="512" fill="#FFFFFF"/>
+
+  <!-- Jellyfish body -->
+  <path d="M 101,260 Q 98,82 256,80 Q 414,82 411,260 Q 362,278 256,275 Q 150,278 101,260 Z"
+        fill="#E8B87A"/>
+
+  <!-- Tentacles -->
+  <rect x="148" y="263" width="30" height="178" rx="15" fill="#C8903A"/>
+  <rect x="241" y="263" width="30" height="188" rx="15" fill="#C8903A"/>
+  <rect x="334" y="263" width="30" height="178" rx="15" fill="#C8903A"/>
+
+  <!-- Left eye (X shape) -->
+  <g stroke="#3D2B1F" stroke-width="10" stroke-linecap="round">
+    <line x1="165" y1="158" x2="199" y2="188"/>
+    <line x1="199" y1="158" x2="165" y2="188"/>
+  </g>
+
+  <!-- Right eye (X shape) -->
+  <g stroke="#3D2B1F" stroke-width="10" stroke-linecap="round">
+    <line x1="283" y1="154" x2="317" y2="184"/>
+    <line x1="317" y1="154" x2="283" y2="184"/>
+  </g>
+</svg>
