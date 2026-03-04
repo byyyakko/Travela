@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_INPUT_LENGTH = 500;
+const MAX_INPUT_LENGTH = 1000;
 const MAX_COUNTRY_LENGTH = 100;
 const VALID_TYPES = ["phrases", "itinerary", "cultural-translation", "explore-attractions"];
 
@@ -78,6 +78,20 @@ serve(async (req) => {
     let systemPrompt = "";
     let userPrompt = "";
 
+    // Detect trip length from prompt for model selection
+    let useProModel = false;
+    if (type === "itinerary") {
+      const prompt = (body.prompt || "").toLowerCase();
+      // Use pro model for trips longer than 7 days
+      const dayMatch = prompt.match(/(\d+)\s*days?/);
+      const weekMatch = prompt.match(/(\d+)\s*weeks?/);
+      const monthMatch = prompt.match(/(\d+)\s*months?/);
+      const estimatedDays = (dayMatch ? parseInt(dayMatch[1]) : 0)
+        + (weekMatch ? parseInt(weekMatch[1]) * 7 : 0)
+        + (monthMatch ? parseInt(monthMatch[1]) * 30 : 0);
+      if (estimatedDays > 7) useProModel = true;
+    }
+
     if (type === "phrases") {
       const country = sanitizeInput(body.country || "", MAX_COUNTRY_LENGTH);
       if (!country) {
@@ -110,6 +124,14 @@ Include 4-6 phrases per category. Only return valid JSON, no markdown.`;
         });
       }
       systemPrompt = `You are a local travel expert who creates authentic, off-the-beaten-path itineraries. Focus on local experiences, hidden gems, and cultural immersion rather than tourist traps.
+
+CRITICAL RULES FOR MULTI-DAY TRIPS:
+- You MUST generate an entry for EVERY SINGLE DAY the user requests. If they ask for 30 days, return exactly 30 day objects.
+- Each day MUST have 3-5 activities minimum. Never skip days or combine multiple days into one.
+- For multi-week or multi-country road trips, plan the route logically day by day with driving/travel segments as activities.
+- Include border crossings, rest stops, and scenic drives as activities when relevant.
+- For week-by-week requests, still break it down into individual days (Day 1, Day 2, ... Day 30).
+
 Return a JSON object with this structure:
 {
   "title": "Itinerary title",
@@ -119,7 +141,7 @@ Return a JSON object with this structure:
       "day": 1,
       "theme": "Day theme",
       "activities": [
-        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name", "summary": "A detailed 3-5 sentence AI summary about this place — what makes it special, best time to visit, and insider tips", "source_url": "https://www.tripadvisor.com/Search?q=Place+Name+City or https://www.lonelyplanet.com/search?q=Place+Name" }
+        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing|transport", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name", "summary": "A detailed 3-5 sentence AI summary about this place — what makes it special, best time to visit, and insider tips", "source_url": "https://www.tripadvisor.com/Search?q=Place+Name+City or https://www.lonelyplanet.com/search?q=Place+Name" }
       ]
     }
   ],
@@ -130,14 +152,20 @@ Return a JSON object with this structure:
     "from_airport": "How to get from the airport to the city center, including options and estimated costs",
     "getting_around": "Best ways to get around the city/area day-to-day",
     "modes": [
-      { "mode": "Metro/Bus/Taxi/Grab/Walk/Train", "description": "When and how to use this mode", "estimated_cost": "Cost range", "tip": "Insider tip" }
+      { "mode": "Metro/Bus/Taxi/Grab/Walk/Train/Drive", "description": "When and how to use this mode", "estimated_cost": "Cost range", "tip": "Insider tip" }
     ],
     "day_travel_times": [
-      { "from": "Activity/Area A", "to": "Activity/Area B", "duration": "~15 min", "recommended_mode": "Walk/Metro/Taxi" }
+      { "from": "Activity/Area A", "to": "Activity/Area B", "duration": "~15 min", "recommended_mode": "Walk/Metro/Taxi/Drive" }
     ]
   }
 }
-IMPORTANT: For each activity, include accurate real-world latitude and longitude coordinates, the location/neighborhood name, a detailed AI summary (3-5 sentences about what makes the place special, best time to visit, insider tips), and a source_url. NEVER use Wikipedia. For source_url, ONLY use search URLs from reputable travel sites that will always resolve (never 404). Use this format: "https://www.tripadvisor.com/Search?q=Place+Name+City" or "https://www.lonelyplanet.com/search?q=Place+Name" or "https://www.google.com/search?q=Place+Name+City+travel+guide". Never guess or fabricate direct article URLs — always use search query URLs that are guaranteed to work. For each accommodation, include accurate latitude and longitude coordinates and a real booking URL (use Booking.com search URL like "https://www.booking.com/searchresults.html?ss=Hotel+Name+City" or Agoda search URL). Create the number of days the user specifies in their prompt (default to 3 if not specified). Each day should have 4-5 activities. Include 3-5 accommodation suggestions and comprehensive transport info. Only return valid JSON, no markdown.`;
+IMPORTANT: 
+- Generate ALL days requested (if user says 30 days, you MUST return 30 day objects — no exceptions).
+- For each activity, include accurate real-world latitude and longitude coordinates.
+- NEVER use Wikipedia. For source_url, ONLY use search URLs like "https://www.tripadvisor.com/Search?q=Place+Name+City".
+- For driving/road trips, include driving segments with estimated drive times as activities with category "transport".
+- Include 3-5 accommodation suggestions per region/city visited.
+- Only return valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
@@ -199,11 +227,12 @@ Return 6-10 attractions. Ensure coordinates are accurate real-world values. NEVE
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: useProModel ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        ...(useProModel ? { max_tokens: 16000 } : {}),
       }),
     });
 

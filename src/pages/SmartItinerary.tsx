@@ -77,6 +77,7 @@ const categoryIcons: Record<string, React.ElementType> = {
   adventure: Compass,
   shopping: ShoppingBag,
   sightseeing: Camera,
+  transport: Car,
 };
 
 const categoryColors: Record<string, string> = {
@@ -85,6 +86,7 @@ const categoryColors: Record<string, string> = {
   adventure: "bg-green-100 text-green-700 border-green-200",
   shopping: "bg-pink-100 text-pink-700 border-pink-200",
   sightseeing: "bg-blue-100 text-blue-700 border-blue-200",
+  transport: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
 const examplePrompts = [
