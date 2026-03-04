@@ -116,18 +116,18 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
       const isMobile = window.innerWidth < 768;
 
       if (isMobile) {
-        // Center tooltip horizontally, well above the bottom nav
+        // Fixed center position on mobile
         setTooltipPos({
-          top: Math.max(60, rect.top - 220),
+          top: Math.max(60, window.innerHeight / 2 - 120),
           left: Math.max(16, (window.innerWidth - 300) / 2),
           arrowSide: "bottom",
         });
       } else {
-        // Position tooltip on the far right side of the screen
+        // Fixed position on the right side, vertically centered
         const tooltipWidth = 300;
         const rightMargin = 32;
         setTooltipPos({
-          top: Math.max(80, rect.top + rect.height / 2 - 80),
+          top: Math.max(80, window.innerHeight / 2 - 100),
           left: window.innerWidth - tooltipWidth - rightMargin,
           arrowSide: "left",
         });
