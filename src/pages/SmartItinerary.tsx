@@ -452,8 +452,8 @@ const SmartItinerary = () => {
             </Card>
 
             {/* Day tabs */}
-            <ScrollArea className="w-full">
-              <div className="flex gap-2 pb-2">
+            <div className="w-full overflow-x-auto scrollbar-thin">
+              <div className="flex gap-2 pb-3 min-w-max">
                 {itinerary.days?.map((day) => (
                   <button
                     key={day.day}
@@ -468,7 +468,7 @@ const SmartItinerary = () => {
                   </button>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Day theme */}
             {(itinerary.days || [])
