@@ -62,6 +62,7 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [show, setShow] = useState(false);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrowSide: "top" | "bottom" | "left" | "right" }>({ top: 0, left: 0, arrowSide: "bottom" });
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -102,20 +103,19 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
 
     const updatePosition = () => {
       const rect = el.getBoundingClientRect();
+      setTargetRect(rect);
       const isMobile = window.innerWidth < 768;
 
       if (isMobile) {
-        // Position tooltip above the bottom nav
         setTooltipPos({
-          top: rect.top - 180,
+          top: rect.top - 200,
           left: Math.max(16, Math.min(rect.left + rect.width / 2 - 150, window.innerWidth - 316)),
           arrowSide: "bottom",
         });
       } else {
-        // Position tooltip to the right of sidebar items
         setTooltipPos({
           top: Math.max(16, rect.top - 20),
-          left: rect.right + 16,
+          left: rect.right + 24,
           arrowSide: "left",
         });
       }
@@ -162,10 +162,100 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={handleSkip} />
 
+      {/* Animated circle around target element */}
+      {targetRect && (
+        <svg
+          className="fixed inset-0 z-[9999] pointer-events-none"
+          width="100%"
+          height="100%"
+        >
+          {/* Pulsing circle around the target */}
+          <circle
+            cx={targetRect.left + targetRect.width / 2}
+            cy={targetRect.top + targetRect.height / 2}
+            r={Math.max(targetRect.width, targetRect.height) / 2 + 8}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="3"
+            className="animate-[tutorial-pulse-circle_1.5s_ease-in-out_infinite]"
+          />
+          <circle
+            cx={targetRect.left + targetRect.width / 2}
+            cy={targetRect.top + targetRect.height / 2}
+            r={Math.max(targetRect.width, targetRect.height) / 2 + 16}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="1.5"
+            opacity="0.4"
+            className="animate-[tutorial-pulse-circle_1.5s_ease-in-out_infinite_0.3s]"
+          />
+
+          {/* Arrow from circle to tooltip */}
+          {(() => {
+            const isMobile = window.innerWidth < 768;
+            const cx = targetRect.left + targetRect.width / 2;
+            const cy = targetRect.top + targetRect.height / 2;
+            const r = Math.max(targetRect.width, targetRect.height) / 2 + 16;
+
+            if (isMobile) {
+              // Arrow pointing up from tooltip to target
+              const startX = cx;
+              const startY = cy - r;
+              const endX = tooltipPos.left + 150;
+              const endY = tooltipPos.top + 180;
+              const midY = (startY + endY) / 2;
+              return (
+                <g>
+                  <path
+                    d={`M ${endX} ${endY} C ${endX} ${midY}, ${startX} ${midY}, ${startX} ${startY}`}
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="2"
+                    strokeDasharray="6 4"
+                    className="animate-[dash_1s_linear_infinite]"
+                  />
+                  {/* Arrowhead */}
+                  <polygon
+                    points={`${startX},${startY} ${startX - 6},${startY - 10} ${startX + 6},${startY - 10}`}
+                    fill="hsl(var(--primary))"
+                    transform={`rotate(180, ${startX}, ${startY - 5})`}
+                  />
+                </g>
+              );
+            } else {
+              // Arrow pointing left from tooltip to target
+              const startX = cx + r;
+              const startY = cy;
+              const endX = tooltipPos.left;
+              const endY = tooltipPos.top + 40;
+              const midX = (startX + endX) / 2;
+              return (
+                <g>
+                  <path
+                    d={`M ${endX} ${endY} C ${midX} ${endY}, ${midX} ${startY}, ${startX} ${startY}`}
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="2"
+                    strokeDasharray="6 4"
+                    className="animate-[dash_1s_linear_infinite]"
+                  />
+                  {/* Arrowhead */}
+                  <polygon
+                    points={`${startX},${startY} ${startX + 10},${startY - 5} ${startX + 10},${startY + 5}`}
+                    fill="hsl(var(--primary))"
+                    transform={`rotate(180, ${startX + 5}, ${startY})`}
+                  />
+                </g>
+              );
+            }
+          })()}
+        </svg>
+      )}
+
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="fixed z-[9999] w-[300px] animate-in fade-in slide-in-from-bottom-2 duration-300"
+        className="fixed z-[10000] w-[300px] animate-in fade-in slide-in-from-bottom-2 duration-300"
         style={{ top: tooltipPos.top, left: tooltipPos.left }}
       >
         <div className="bg-card border-2 border-primary rounded-2xl p-4 shadow-xl relative">
