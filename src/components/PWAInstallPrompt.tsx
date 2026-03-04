@@ -105,7 +105,7 @@ export function PWAInstallPrompt() {
                 <span className="text-sm text-foreground">
                   Tap{' '}
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded text-xs font-medium">
-                    <MoreHorizontal className="w-3 h-3" /> &bull;&bull;&bull;
+                    <MoreHorizontal className="w-3 h-3" />
                   </span>{' '}
                   at the bottom right of your Safari bar
                 </span>
@@ -117,7 +117,7 @@ export function PWAInstallPrompt() {
                 <span className="text-sm text-foreground">
                   Tap{' '}
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded text-xs font-medium">
-                    <Share2 className="w-3 h-3" /> Share
+                    Share
                   </span>{' '}
                   from the menu
                 </span>
