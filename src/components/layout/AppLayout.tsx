@@ -47,7 +47,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <div 
-      className="min-h-screen pb-20 md:pb-0 md:pl-20 bg-background"
+      className="min-h-screen pb-16 md:pb-0 md:pl-20 bg-background"
     >
       {/* Top bar with search */}
       <header className="fixed top-0 left-0 right-0 z-40 px-4 py-3 md:left-20 bg-background/95 backdrop-blur-md border-b border-border">
@@ -95,7 +95,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Bottom navigation (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/98 backdrop-blur-md border-t-2 border-foreground/10 safe-bottom">
-        <div className="flex overflow-x-auto scrollbar-none py-2 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex overflow-x-auto scrollbar-none py-1.5 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -104,17 +104,18 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 to={item.path}
                 data-tour={item.tour}
                 className={cn(
-                  "flex flex-col items-center gap-1 min-w-[3.5rem] flex-1 py-2 rounded-xl transition-all touch-manipulation",
+                  "flex flex-col items-center gap-0.5 min-w-[3rem] flex-1 py-1 rounded-xl transition-all touch-manipulation",
                   isActive && "text-foreground",
                   !isActive && "text-foreground/50 hover:text-foreground/80"
                 )}
               >
                 <div className={cn(
-                  isActive && "bg-primary text-primary-foreground p-2 rounded-full -mt-6 shadow-md border-2 border-foreground/10"
+                  "flex items-center justify-center",
+                  isActive && "bg-primary text-primary-foreground p-1.5 rounded-full -mt-4 shadow-md border-2 border-foreground/10"
                 )}>
-                  <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
+                  <item.icon className={cn("w-4 h-4", isActive && "w-4 h-4")} />
                 </div>
-                <span className="text-[10px] font-semibold leading-tight">{item.label}</span>
+                <span className="text-[9px] font-semibold leading-tight">{item.label}</span>
               </Link>
             );
           })}
