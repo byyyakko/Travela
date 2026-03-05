@@ -95,7 +95,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Bottom navigation (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/98 backdrop-blur-md border-t-2 border-foreground/10 safe-bottom">
-        <div className="flex overflow-x-auto scrollbar-none py-1.5 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex overflow-x-auto scrollbar-none h-8 items-end px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -104,16 +104,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 to={item.path}
                 data-tour={item.tour}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 min-w-[3rem] flex-1 py-1 rounded-xl transition-all touch-manipulation",
+                  "flex flex-col items-center gap-0.5 min-w-[3rem] flex-1 rounded-xl transition-all touch-manipulation",
                   isActive && "text-foreground",
                   !isActive && "text-foreground/50 hover:text-foreground/80"
                 )}
               >
                 <div className={cn(
                   "flex items-center justify-center",
-                  isActive && "bg-primary text-primary-foreground p-1.5 rounded-full -mt-4 shadow-md border-2 border-foreground/10"
+                  isActive && "bg-primary text-primary-foreground p-2 rounded-full -mt-6 shadow-md border-2 border-foreground/10"
                 )}>
-                  <item.icon className={cn("w-4 h-4", isActive && "w-4 h-4")} />
+                  <item.icon className="w-5 h-5" />
                 </div>
                 <span className="text-[9px] font-semibold leading-tight">{item.label}</span>
               </Link>
