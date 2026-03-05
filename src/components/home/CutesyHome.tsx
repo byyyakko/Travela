@@ -21,7 +21,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock, Globe } from "lucide-react";
+import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock, Globe, MessageSquareHeart, Instagram } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
@@ -69,12 +69,14 @@ const inlineCategoryFilters = allCategoryFlairs.slice(0, 4);
 
 // Quick action icons
 const quickActions = [
-  { icon: Globe, label: "Ask Local", path: "/ask-local", paid: false, tour: "ask-local" },
-  { icon: MapPin, label: "Plan", path: "/planner", paid: false, tour: "plan" },
-  { icon: BookOpen, label: "Phrases", path: "/common-phrases", paid: false, tour: "phrases" },
-  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: true, tour: "ai-trip" },
-  { icon: MapIcon, label: "Map", path: "/map", paid: false, tour: "map" },
-  { icon: Crown, label: "Subscribe", path: "/subscription", paid: false, tour: "subscribe" },
+  { icon: Globe, label: "Ask Local", path: "/ask-local", paid: false, tour: "ask-local", external: false },
+  { icon: MapPin, label: "Plan", path: "/planner", paid: false, tour: "plan", external: false },
+  { icon: BookOpen, label: "Phrases", path: "/common-phrases", paid: false, tour: "phrases", external: false },
+  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: true, tour: "ai-trip", external: false },
+  { icon: MapIcon, label: "Map", path: "/map", paid: false, tour: "map", external: false },
+  { icon: Crown, label: "Subscribe", path: "/subscription", paid: false, tour: "subscribe", external: false },
+  { icon: MessageSquareHeart, label: "Feedback", path: "https://docs.google.com/forms/d/e/1FAIpQLSdSJzpsXHeVMqX0aJoi4bRbwT-k0Xjj2bzM2YaoySeZLmi_jw/viewform?usp=publish-editor", paid: false, tour: "feedback", external: true },
+  { icon: Instagram, label: "Instagram", path: "https://www.instagram.com/travelayourway?igsh=MzIweG5jaTByMWE2&utm_source=qr", paid: false, tour: "instagram", external: true },
 ];
 
 // Map category labels to their pill CSS class for flair badges
@@ -150,6 +152,10 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   const handleQuickAction = (action: typeof quickActions[0]) => {
     if (action.paid && subscriptionTier !== "tier_1" && subscriptionTier !== "tier_2") {
       setShowPaidDialog(true);
+      return;
+    }
+    if (action.external) {
+      window.open(action.path, "_blank", "noopener,noreferrer");
       return;
     }
     navigate(action.path);
