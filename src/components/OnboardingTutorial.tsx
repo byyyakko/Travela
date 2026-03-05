@@ -12,6 +12,11 @@ const tutorialSteps = [
     message: "Welcome to Travela! This is your Home feed~ See posts from other travelers and locals, share your adventures, and stay connected! ✨",
   },
   {
+    selector: '[data-tour="quick-actions"]',
+    title: "Quick Actions ⚡",
+    message: "Your shortcuts to everything! Ask locals, plan trips, find phrases, generate AI itineraries, and more — all right here~ 🌟",
+  },
+  {
     selector: '[data-tour="explore"]',
     title: "Explore 🧭",
     message: "Discover amazing local experiences here! From food tours to city walks, find unique activities hosted by real locals~ 🌸",
@@ -20,16 +25,6 @@ const tutorialSteps = [
     selector: '[data-tour="for-you"]',
     title: "For You ✨",
     message: "This is your personalized feed! I'll recommend circles and experiences based on your interests and travel plans~ Super smart, right? 🧠",
-  },
-  {
-    selector: '[data-tour="ask-local"]',
-    title: "Ask a Local 🌍",
-    message: "Want to connect with local guides? Browse verified locals in your destination and send them a connection request! 🤝",
-  },
-  {
-    selector: '[data-tour="plan"]',
-    title: "Trip Planner 📅",
-    message: "Plan your dream trips here! Create itineraries, add activities day by day, and even get AI-powered suggestions~ 🗺️",
   },
   {
     selector: '[data-tour="chat"]',
