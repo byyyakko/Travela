@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import CutesyHome from "@/components/home/CutesyHome";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 const Home = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const [showTutorial, setShowTutorial] = useState(!!(location.state as any)?.replayTutorial);
   useAnalytics("home");
 
   // Fetch user profile for display name
@@ -29,6 +34,9 @@ const Home = () => {
   return (
     <AppLayout>
       <CutesyHome displayName={displayName} />
+      {showTutorial && (
+        <OnboardingTutorial forceShow onComplete={() => setShowTutorial(false)} />
+      )}
     </AppLayout>
   );
 };
