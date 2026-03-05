@@ -181,11 +181,6 @@ export function PWAInstallPrompt() {
                     alt="Travela"
                     className="w-12 h-12 rounded-xl"
                   />
-                  <motion.div
-                    className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full"
-                    animate={{ scale: [1, 1.3, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-foreground flex items-center gap-1.5">
