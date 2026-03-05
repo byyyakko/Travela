@@ -95,8 +95,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </main>
 
       {/* Bottom navigation (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/98 backdrop-blur-md border-t-2 border-foreground/10">
-        <div className="flex justify-around py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/98 backdrop-blur-md border-t-2 border-foreground/10 safe-bottom">
+        <div className="flex overflow-x-auto scrollbar-none py-2 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -105,7 +105,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 to={item.path}
                 data-tour={item.tour}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all",
+                  "flex flex-col items-center gap-1 min-w-[3.5rem] flex-1 py-2 rounded-xl transition-all touch-manipulation",
                   isActive && "text-foreground",
                   !isActive && "text-foreground/50 hover:text-foreground/80"
                 )}
@@ -115,7 +115,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 )}>
                   <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
                 </div>
-                <span className="text-xs font-semibold">{item.label}</span>
+                <span className="text-[10px] font-semibold leading-tight">{item.label}</span>
               </Link>
             );
           })}
