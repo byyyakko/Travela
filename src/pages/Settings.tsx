@@ -195,7 +195,7 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setShowTutorial(true)}>
+            <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => navigate("/home", { state: { replayTutorial: true } })}>
               <RotateCcw className="w-4 h-4" />
               Replay Tutorial
             </Button>
