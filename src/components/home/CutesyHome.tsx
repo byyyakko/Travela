@@ -21,7 +21,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock } from "lucide-react";
+import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
@@ -69,7 +69,7 @@ const inlineCategoryFilters = allCategoryFlairs.slice(0, 4);
 
 // Quick action icons
 const quickActions = [
-  { icon: Users, label: "Connect", path: "/match", paid: false },
+  { icon: Globe, label: "Ask Local", path: "/ask-local", paid: false },
   { icon: MapPin, label: "Plan", path: "/planner", paid: false },
   { icon: BookOpen, label: "Phrases", path: "/common-phrases", paid: false },
   { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: true },
