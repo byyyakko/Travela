@@ -6,7 +6,7 @@ declare global {
 }
 
 import { useState, useEffect } from 'react'
-import { X, Plus, MoreHorizontal, Download, Smartphone } from 'lucide-react'
+import { X, Plus, MoreHorizontal, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -162,39 +162,6 @@ export function PWAInstallPrompt() {
       {/* Prominent top banner + bottom bar */}
       <AnimatePresence>
         {show && (
-          <>
-            {/* Eye-catching top banner */}
-            <motion.div
-              className="fixed top-0 left-0 right-0 z-[60]"
-              initial={{ y: -100 }}
-              animate={{ y: 0 }}
-              exit={{ y: -100 }}
-              transition={{ type: 'spring', damping: 20, delay: 0.3 }}
-            >
-              <div
-                className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-center gap-3 cursor-pointer"
-                onClick={isIOS ? () => setShowGuide(true) : handleInstall}
-              >
-                <motion.div
-                  animate={{ y: [0, -3, 0] }}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-                >
-                  <Download className="w-5 h-5" />
-                </motion.div>
-                <p className="text-sm font-semibold">
-                  📲 Get the Travela App — Install it free for the best experience!
-                </p>
-                <button
-                  onClick={handleDismiss}
-                  aria-label="Dismiss"
-                  className="ml-2 p-1 rounded-full hover:bg-primary-foreground/20 transition-colors flex-shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Bottom floating card */}
             <motion.div
               className="fixed bottom-0 left-0 right-0 z-40 p-4 pb-safe"
               initial={{ y: 100 }}
@@ -245,7 +212,6 @@ export function PWAInstallPrompt() {
                 </button>
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </>
