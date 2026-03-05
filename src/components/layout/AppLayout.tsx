@@ -95,7 +95,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Bottom navigation (mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/98 backdrop-blur-md border-t-2 border-foreground/10 safe-bottom">
-        <div className="flex overflow-x-auto scrollbar-none h-8 items-end px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex overflow-x-auto scrollbar-none h-14 items-end px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
