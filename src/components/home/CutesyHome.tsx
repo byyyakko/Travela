@@ -194,7 +194,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
         </motion.div>
 
         {/* Quick action icons */}
-        <div className="grid grid-cols-3 sm:flex sm:justify-center gap-4 sm:gap-8 mt-4 sm:mt-6">
+        <div data-tour="quick-actions" className="grid grid-cols-3 sm:flex sm:justify-center gap-4 sm:gap-8 mt-4 sm:mt-6">
           {quickActions.map((action) => (
             <button
               key={action.label}
