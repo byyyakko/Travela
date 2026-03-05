@@ -22,7 +22,6 @@ const navItems = [
   { path: "/experiences", icon: Compass, label: "Explore", tour: "explore" },
   { path: "/match", icon: Sparkles, label: "For You", tour: "for-you" },
   { path: "/ask-local", icon: Globe, label: "Ask Local", tour: "ask-local" },
-  { path: "/planner", icon: CalendarDays, label: "Plan", tour: "plan" },
   { path: "/messages", icon: MessageCircle, label: "Chat", tour: "chat" },
   { path: "/circles", icon: CircleDot, label: "Circles", tour: "circles" },
   { path: "/toilet-finder", icon: Bath, label: "Toilet", tour: "toilet" },
