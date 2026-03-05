@@ -37,14 +37,14 @@ export function PWAInstallPrompt() {
 
     if (isIOSSafari()) {
       setIsIOS(true)
-      setShow(true)
-      return
     }
+
+    // Always show the banner for non-standalone users
+    setShow(true)
 
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      setShow(true)
     }
 
     window.addEventListener('beforeinstallprompt', handler)
