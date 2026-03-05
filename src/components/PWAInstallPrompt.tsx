@@ -163,25 +163,23 @@ export function PWAInstallPrompt() {
       <AnimatePresence>
         {show && (
             <motion.div
-              className="fixed bottom-0 left-0 right-0 z-40 p-4 pb-safe"
-              initial={{ y: 100 }}
-              animate={{ y: 0 }}
-              exit={{ y: 100 }}
-              transition={{ type: 'spring', damping: 20, delay: 0.5 }}
+              className="fixed bottom-[4.5rem] md:bottom-4 left-0 right-0 z-40 px-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
             >
               <div
-                className={`bg-card border-2 border-primary/30 rounded-2xl shadow-xl p-4 flex items-center gap-4 max-w-md mx-auto ${isIOS ? 'cursor-pointer active:opacity-80' : ''}`}
+                className={`bg-card border-2 border-primary/30 rounded-2xl shadow-xl p-3 flex items-center gap-3 max-w-md mx-auto ${isIOS ? 'cursor-pointer active:opacity-80' : ''}`}
                 onClick={isIOS ? () => setShowGuide(true) : undefined}
                 role={isIOS ? 'button' : undefined}
                 aria-label={isIOS ? 'Show install guide' : undefined}
               >
-                <div className="relative flex-shrink-0">
-                  <img
-                    src="/pwa-192x192.png"
-                    alt="Travela"
-                    className="w-12 h-12 rounded-xl"
-                  />
-                </div>
+                <img
+                  src="/pwa-192x192.png"
+                  alt="Travela"
+                  className="w-10 h-10 rounded-xl flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-foreground flex items-center gap-1.5">
                     <Smartphone className="w-4 h-4 text-primary" />
@@ -190,7 +188,7 @@ export function PWAInstallPrompt() {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {isIOS
                       ? 'Tap here for easy step-by-step instructions'
-                      : 'Add to home screen — works offline, loads instantly!'}
+                      : 'Add to home screen for the best experience'}
                   </p>
                 </div>
                 {!isIOS && (
