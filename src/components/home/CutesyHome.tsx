@@ -69,12 +69,12 @@ const inlineCategoryFilters = allCategoryFlairs.slice(0, 4);
 
 // Quick action icons
 const quickActions = [
-  { icon: Globe, label: "Ask Local", path: "/ask-local", paid: false },
-  { icon: MapPin, label: "Plan", path: "/planner", paid: false },
-  { icon: BookOpen, label: "Phrases", path: "/common-phrases", paid: false },
-  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: true },
-  { icon: MapIcon, label: "Map", path: "/map", paid: false },
-  { icon: Crown, label: "Subscribe", path: "/subscription", paid: false },
+  { icon: Globe, label: "Ask Local", path: "/ask-local", paid: false, tour: "ask-local" },
+  { icon: MapPin, label: "Plan", path: "/planner", paid: false, tour: "plan" },
+  { icon: BookOpen, label: "Phrases", path: "/common-phrases", paid: false, tour: "phrases" },
+  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: true, tour: "ai-trip" },
+  { icon: MapIcon, label: "Map", path: "/map", paid: false, tour: "map" },
+  { icon: Crown, label: "Subscribe", path: "/subscription", paid: false, tour: "subscribe" },
 ];
 
 // Map category labels to their pill CSS class for flair badges
@@ -198,6 +198,7 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
           {quickActions.map((action) => (
             <button
               key={action.label}
+              data-tour={action.tour}
               onClick={() => handleQuickAction(action)}
               className="flex flex-col items-center gap-1.5 sm:gap-2 group"
             >

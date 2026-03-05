@@ -12,9 +12,29 @@ const tutorialSteps = [
     message: "Welcome to Travela! This is your Home feed~ See posts from other travelers and locals, share your adventures, and stay connected! ✨",
   },
   {
-    selector: '[data-tour="quick-actions"]',
-    title: "Quick Actions ⚡",
-    message: "Your shortcuts to everything! Ask locals, plan trips, find phrases, generate AI itineraries, and more — all right here~ 🌟",
+    selector: '[data-tour="ask-local"]',
+    title: "Ask a Local 🌍",
+    message: "Want to connect with local guides? Browse verified locals in your destination and send them a connection request! 🤝",
+  },
+  {
+    selector: '[data-tour="plan"]',
+    title: "Trip Planner 📅",
+    message: "Plan your dream trips here! Create itineraries, add activities day by day, and even get AI-powered suggestions~ 🗺️",
+  },
+  {
+    selector: '[data-tour="phrases"]',
+    title: "Common Phrases 📖",
+    message: "Learn essential local phrases for your destination! Super handy when you need quick translations on the go~ 🗣️",
+  },
+  {
+    selector: '[data-tour="ai-trip"]',
+    title: "AI Trip ✨",
+    message: "Let AI plan your perfect itinerary! Just tell me where you're going and I'll create a custom day-by-day plan~ 🤖",
+  },
+  {
+    selector: '[data-tour="map"]',
+    title: "Map View 🗺️",
+    message: "See everything on a live map! Find nearby spots, experiences, and other travelers around you~ 📍",
   },
   {
     selector: '[data-tour="explore"]',
