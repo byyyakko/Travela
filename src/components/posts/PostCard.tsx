@@ -337,7 +337,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
         <div className="p-4 flex items-center justify-between">
           <div
             className="flex items-center gap-3 cursor-pointer"
-            onClick={() => navigate(`/user/${post.user_id}`)}
+            onClick={() => navigate(isOwnPost ? '/profile' : `/user/${post.user_id}`)}
           >
             <Avatar className="w-10 h-10 ring-[3px] ring-primary">
               <AvatarImage src={post.profiles?.avatar_url || ""} />
