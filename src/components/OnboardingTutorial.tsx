@@ -195,73 +195,13 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={handleSkip} />
 
-      {/* Animated circle around target element */}
+      {/* Highlight cutout around target element */}
       {targetRect && (
         <svg
           className="fixed inset-0 z-[9999] pointer-events-none"
           width="100%"
           height="100%"
-        >
-
-          {/* Arrow from tooltip pointing to the target */}
-          {(() => {
-            const isMobile = window.innerWidth < 768;
-            const targetCx = targetRect.left + targetRect.width / 2;
-            const targetCy = targetRect.top + targetRect.height / 2;
-            const r = Math.max(targetRect.width, targetRect.height) / 2 + 16;
-
-            if (isMobile) {
-              // Arrow goes from bottom of tooltip down to top of target circle
-              const tipX = tooltipPos.left + 150;
-              const tipY = tooltipPos.top + 190;
-              const targetX = targetCx;
-              const targetY = targetCy - r;
-              const midY = (tipY + targetY) / 2;
-              return (
-                <g>
-                  <path
-                    d={`M ${tipX} ${tipY} C ${tipX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}`}
-                    fill="none"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="2.5"
-                    strokeDasharray="6 4"
-                    className="animate-[dash_1s_linear_infinite]"
-                  />
-                  {/* Arrowhead pointing at target */}
-                  <polygon
-                    points={`${targetX},${targetY} ${targetX - 6},${targetY - 12} ${targetX + 6},${targetY - 12}`}
-                    fill="hsl(var(--primary))"
-                  />
-                </g>
-              );
-            } else {
-              // Arrow goes from left edge of tooltip to right edge of target circle
-              const tipX = tooltipPos.left;
-              const tipY = tooltipPos.top + 60;
-              const targetX = targetCx + r;
-              const targetY = targetCy;
-              const midX = (tipX + targetX) / 2;
-              return (
-                <g>
-                  <path
-                    d={`M ${tipX} ${tipY} C ${midX} ${tipY}, ${midX} ${targetY}, ${targetX} ${targetY}`}
-                    fill="none"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="2.5"
-                    strokeDasharray="6 4"
-                    className="animate-[dash_1s_linear_infinite]"
-                  />
-                  {/* Arrowhead pointing at target */}
-                  <polygon
-                    points={`${targetX},${targetY} ${targetX + 12},${targetY - 6} ${targetX + 12},${targetY + 6}`}
-                    fill="hsl(var(--primary))"
-                    transform={`rotate(180, ${targetX + 6}, ${targetY})`}
-                  />
-                </g>
-              );
-            }
-          })()}
-        </svg>
+        />
       )}
 
       {/* Tooltip */}
