@@ -22,7 +22,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   const { user } = useAuth();
   const [content, setContent] = useState("");
   const [locationTag, setLocationTag] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -98,14 +98,14 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
         image_url: uploadedUrls[0] || null,
         image_urls: uploadedUrls.length > 0 ? uploadedUrls : [],
         location_tag: locationTag.trim() || null,
-        category: selectedCategory,
+        category: selectedCategories.length > 0 ? selectedCategories.join(",") : null,
       });
 
       if (error) throw error;
 
       setContent("");
       setLocationTag("");
-      setSelectedCategory(null);
+      setSelectedCategories([]);
       setShowCategoryPicker(false);
       setImageFiles([]);
       setImagePreviews([]);
@@ -160,28 +160,31 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             </div>
           )}
 
-          {/* Category flair picker */}
-          {selectedCategory && (
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "px-3 py-1 rounded-full text-xs font-semibold",
-                allCategoryFlairs.find(f => f.label === selectedCategory)?.color || "bg-muted text-muted-foreground"
-              )}>
-                {selectedCategory}
-              </span>
-              <button onClick={() => setSelectedCategory(null)} className="text-muted-foreground hover:text-foreground">
-                <X className="w-3 h-3" />
-              </button>
+          {/* Selected category flairs */}
+          {selectedCategories.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedCategories.map((cat) => (
+                <span key={cat} className="flex items-center gap-1">
+                  <span className={cn(
+                    "px-3 py-1 rounded-full text-xs font-semibold",
+                    allCategoryFlairs.find(f => f.label === cat)?.color || "bg-muted text-muted-foreground"
+                  )}>
+                    {cat}
+                  </span>
+                  <button onClick={() => setSelectedCategories(prev => prev.filter(c => c !== cat))} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
             </div>
           )}
           {showCategoryPicker && (
             <div className="flex flex-wrap gap-1.5">
-              {allCategoryFlairs.map((flair) => (
+              {allCategoryFlairs.filter(f => !selectedCategories.includes(f.label)).map((flair) => (
                 <button
                   key={flair.label}
                   onClick={() => {
-                    setSelectedCategory(flair.label);
-                    setShowCategoryPicker(false);
+                    setSelectedCategories(prev => [...prev, flair.label]);
                   }}
                   className={cn("px-3 py-1 rounded-full text-xs font-semibold transition-all", flair.color)}
                 >
@@ -227,7 +230,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               onClick={() => setShowCategoryPicker(!showCategoryPicker)}
               className={cn(
                 "border-2 border-primary/40 text-primary hover:bg-secondary rounded-full",
-                selectedCategory && "bg-secondary"
+                selectedCategories.length > 0 && "bg-secondary"
               )}
             >
               <Tag className="w-4 h-4" />

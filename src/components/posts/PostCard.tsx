@@ -350,14 +350,14 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
                 <p className="font-medium text-foreground hover:underline">
                   {displayName}
                 </p>
-                {category && (
-                  <span className={cn(
+                {category && category.split(",").map((cat) => (
+                  <span key={cat} className={cn(
                     "px-2 py-0.5 rounded-full text-[10px] font-bold",
-                    getCategoryColor(category)
+                    getCategoryColor(cat.trim())
                   )}>
-                    {category}
+                    {cat.trim()}
                   </span>
-                )}
+                ))}
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">
