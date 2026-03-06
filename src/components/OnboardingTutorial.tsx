@@ -131,11 +131,16 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
       const isMobile = window.innerWidth < 768;
 
       if (isMobile) {
-        // Position tooltip near the top on mobile so it doesn't block action buttons
+        const rect = el.getBoundingClientRect();
+        const targetIsInBottomHalf = rect.top > window.innerHeight / 2;
+        // If target is in bottom half (e.g. bottom tab), place tooltip near top
+        // If target is in top half (e.g. quick actions), place tooltip near bottom
         setTooltipPos({
-          top: Math.max(60, Math.min(window.innerHeight * 0.15, 120)),
+          top: targetIsInBottomHalf
+            ? Math.max(60, Math.min(window.innerHeight * 0.15, 120))
+            : window.innerHeight - 280,
           left: Math.max(16, (window.innerWidth - 300) / 2),
-          arrowSide: "bottom",
+          arrowSide: targetIsInBottomHalf ? "bottom" : "top",
         });
       } else {
         // Fixed position on the right side, vertically centered
