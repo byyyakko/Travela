@@ -11,12 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon, Quote, MessageSquare, Check } from "lucide-react";
+import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon, Quote, MessageSquare, Check, UserPlus, Heart } from "lucide-react";
 import AvatarPickerDialog from "@/components/AvatarPickerDialog";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VerifiedBadge from "@/components/VerifiedBadge";
-import ProfilePreview from "@/components/ProfilePreview";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { uploadAndModerate } from "@/lib/moderateImage";
@@ -55,7 +54,7 @@ const USER_PROMPTS = [
   "One travel tip I always give is...",
 ];
 
-const MyPostsTab = ({ userId }: { userId?: string }) => {
+const MyPostsSection = ({ userId }: { userId?: string }) => {
   const { data: myPosts = [], refetch } = useQuery({
     queryKey: ["myPosts", userId],
     queryFn: async () => {
@@ -83,7 +82,8 @@ const MyPostsTab = ({ userId }: { userId?: string }) => {
   });
 
   return (
-    <TabsContent value="posts" className="mt-6 space-y-4">
+    <div className="space-y-4">
+      <h2 className="text-lg font-display font-semibold">Posts</h2>
       {myPosts.length === 0 ? (
         <p className="text-center text-muted-foreground py-8 text-sm">
           You haven't posted anything yet.
@@ -99,7 +99,7 @@ const MyPostsTab = ({ userId }: { userId?: string }) => {
           />
         ))
       )}
-    </TabsContent>
+    </div>
   );
 };
 
@@ -130,6 +130,7 @@ const Profile = () => {
   const [languages, setLanguages] = useState<string[]>([]);
   const [languageInput, setLanguageInput] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [activeTab, setActiveTab] = useState<"profile" | "edit">("profile");
 
   // Fetch profile photos
   const { data: profilePhotos = [], refetch: refetchPhotos } = useQuery({
@@ -476,6 +477,48 @@ const Profile = () => {
     window.location.href = "/";
   };
 
+  // Follower/following counts
+  const { data: followerCount = 0 } = useQuery({
+    queryKey: ["followerCount", user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("following_id", user!.id);
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
+  const { data: followingCount = 0 } = useQuery({
+    queryKey: ["followingCount", user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("follower_id", user!.id);
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
+  const { data: totalLikes = 0 } = useQuery({
+    queryKey: ["totalLikes", user?.id],
+    queryFn: async () => {
+      const { data: userPosts } = await supabase
+        .from("posts")
+        .select("id")
+        .eq("user_id", user!.id);
+      if (!userPosts || userPosts.length === 0) return 0;
+      const { count } = await supabase
+        .from("post_likes")
+        .select("*", { count: "exact", head: true })
+        .in("post_id", userPosts.map(p => p.id));
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -486,64 +529,97 @@ const Profile = () => {
     );
   }
 
+
+
   return (
     <AppLayout>
       <div className="space-y-6 max-w-lg mx-auto">
-        <h1 className="text-2xl font-display font-bold text-center">
-          Your Profile
-        </h1>
 
-        {/* Edit / Preview Tabs */}
-        <Tabs defaultValue="edit" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-secondary">
-            <TabsTrigger 
-              value="edit"
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Edit className="w-4 h-4" />
-              Edit
-            </TabsTrigger>
-            <TabsTrigger 
-              value="preview"
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Eye className="w-4 h-4" />
-              Preview
-            </TabsTrigger>
-            <TabsTrigger 
-              value="posts"
-              className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <MessageSquare className="w-4 h-4" />
-              My Posts
-            </TabsTrigger>
-          </TabsList>
+        {activeTab === "profile" ? (
+          <>
+            {/* Profile Header Card */}
+            <Card className="p-6 cutesy-border">
+              <div className="flex items-start gap-4">
+                <Avatar className="w-20 h-20 ring-[3px] ring-primary">
+                  <AvatarImage src={avatarUrl || ""} />
+                  <AvatarFallback className="bg-secondary text-primary text-2xl font-bold">
+                    {(displayName || "T")[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-display font-bold truncate">{displayName || "Traveler"}</h1>
+                    {isVerified && <VerifiedBadge />}
+                  </div>
+                  {location && (
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                      <MapPin className="w-3.5 h-3.5" /> {location}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-4 mt-2 text-sm">
+                    <span><strong>{followerCount}</strong> followers</span>
+                    <span><strong>{followingCount}</strong> following</span>
+                    <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5 text-pink-500" /><strong>{totalLikes}</strong></span>
+                  </div>
+                </div>
+              </div>
 
-          {/* Preview Tab Content */}
-          <TabsContent value="preview" className="mt-6">
-            <div className="space-y-4">
-              <p className="text-center text-sm text-muted-foreground">
-                This is how others see your profile
-              </p>
-              <ProfilePreview
-                displayName={displayName}
-                bio={bio}
-                location={location}
-                avatarUrl={avatarUrl}
-                isLocal={isLocal}
-                isVerified={isVerified}
-                interests={interests}
-                languages={languages}
-                dateOfBirth={dateOfBirth}
-                destination={destination}
-                travelStartDate={travelStartDate}
-                travelEndDate={travelEndDate}
-              />
+              {bio && (
+                <p className="mt-4 text-sm text-muted-foreground">{bio}</p>
+              )}
+
+              {interests && interests.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {interests.map((interest: string) => (
+                    <Badge key={interest} variant="secondary" className="text-xs">
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {languages && languages.length > 0 && (
+                <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                  <Globe className="w-3.5 h-3.5" />
+                  {languages.join(", ")}
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-4">
+                <Button
+                  onClick={() => setActiveTab("edit")}
+                  variant="outline"
+                  className="flex-1 gap-2"
+                >
+                  <Edit className="w-4 h-4" /> Edit Profile
+                </Button>
+              </div>
+            </Card>
+
+            {/* User's Posts */}
+            <MyPostsSection userId={user?.id} />
+
+            {/* Sign Out */}
+            <div className="pt-4 pb-20">
+              <Button
+                variant="ghost"
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleSignOut}
+              >
+                Sign Out
+              </Button>
             </div>
-          </TabsContent>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab("profile")} className="gap-1">
+                ← Back
+              </Button>
+              <h1 className="text-2xl font-display font-bold">Edit Profile</h1>
+            </div>
 
-          {/* Edit Tab Content */}
-          <TabsContent value="edit" className="mt-6 space-y-6">
+            <div className="space-y-6">
 
         {/* Avatar / Profile Picture */}
         <Card className="border-primary/30">
@@ -1020,12 +1096,9 @@ const Profile = () => {
             Sign Out
           </Button>
         </div>
-          </TabsContent>
-
-          {/* My Posts Tab Content */}
-          <MyPostsTab userId={user?.id} />
-
-        </Tabs>
+            </div>
+          </>
+        )}
       </div>
     </AppLayout>
   );
