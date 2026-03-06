@@ -131,9 +131,9 @@ const OnboardingTutorial = ({ forceShow = false, onComplete }: OnboardingTutoria
       const isMobile = window.innerWidth < 768;
 
       if (isMobile) {
-        // Fixed center position on mobile
+        // Position tooltip near the top on mobile so it doesn't block action buttons
         setTooltipPos({
-          top: Math.max(60, window.innerHeight / 2 - 120),
+          top: Math.max(60, Math.min(window.innerHeight * 0.15, 120)),
           left: Math.max(16, (window.innerWidth - 300) / 2),
           arrowSide: "bottom",
         });
