@@ -39,6 +39,7 @@ const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPasswordRules, setShowPasswordRules] = useState(false);
   const [pendingVerification, setPendingVerification] = useState(false);
@@ -87,6 +88,15 @@ const Auth = () => {
       toast({
         title: "Password too weak",
         description: "Please meet all password requirements.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
         variant: "destructive",
       });
       return;
@@ -364,7 +374,34 @@ const Auth = () => {
                           </div>
                         )}
                       </div>
-                      <Button type="submit" className="w-full" disabled={loading || !isPasswordValid}>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                        <Input
+                          id="signup-confirm-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          minLength={8}
+                        />
+                        {confirmPassword && (
+                          <div className="flex items-center gap-2 text-sm">
+                            {password === confirmPassword ? (
+                              <>
+                                <Check className="w-4 h-4 text-green-500" />
+                                <span className="text-green-600">Passwords match</span>
+                              </>
+                            ) : (
+                              <>
+                                <X className="w-4 h-4 text-destructive" />
+                                <span className="text-destructive">Passwords don't match</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading || !isPasswordValid || password !== confirmPassword}>
                         {loading ? "Creating account..." : "Create Account"}
                       </Button>
                     </form>
