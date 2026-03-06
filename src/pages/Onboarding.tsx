@@ -472,7 +472,7 @@ const Onboarding = () => {
               </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="rounded-lg border bg-card p-4 space-y-2">
               <Label>Bio</Label>
               <Textarea
                 placeholder="Tell travelers about yourself, your hobbies, and what you'd love to share..."
@@ -486,7 +486,7 @@ const Onboarding = () => {
               </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="rounded-lg border bg-card p-4 space-y-2">
               <Label className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 Languages I Speak
