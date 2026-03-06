@@ -9,62 +9,62 @@ const tutorialSteps = [
   {
     selector: '[data-tour="home"]',
     title: "Home 🏠",
-    message: "Welcome to Travela! This is your Home feed~ See posts from other travelers and locals, share your adventures, and stay connected! ✨",
+    message: "Your main feed — see posts from travelers and locals! ✨",
   },
   {
     selector: '[data-tour="ask-local"]',
     title: "Ask a Local 🌍",
-    message: "Want to connect with local guides? Browse verified locals in your destination and send them a connection request! 🤝",
+    message: "Browse and connect with verified local guides! 🤝",
   },
   {
     selector: '[data-tour="plan"]',
     title: "Trip Planner 📅",
-    message: "Plan your dream trips here! Create itineraries, add activities day by day, and even get AI-powered suggestions~ 🗺️",
+    message: "Create day-by-day itineraries for your trips! 🗺️",
   },
   {
     selector: '[data-tour="phrases"]',
     title: "Common Phrases 📖",
-    message: "Learn essential local phrases for your destination! Super handy when you need quick translations on the go~ 🗣️",
+    message: "Quick local phrases for on-the-go translation! 🗣️",
   },
   {
     selector: '[data-tour="ai-trip"]',
     title: "AI Trip ✨",
-    message: "Let AI plan your perfect itinerary! Just tell me where you're going and I'll create a custom day-by-day plan~ 🤖",
+    message: "Let AI build a custom itinerary for you! 🤖",
   },
   {
     selector: '[data-tour="map"]',
     title: "Map View 🗺️",
-    message: "See everything on a live map! Find nearby spots, experiences, and other travelers around you~ 📍",
+    message: "Find nearby spots and travelers on a live map! 📍",
   },
   {
     selector: '[data-tour="explore"]',
     title: "Explore 🧭",
-    message: "Discover amazing local experiences here! From food tours to city walks, find unique activities hosted by real locals~ 🌸",
+    message: "Discover local experiences — food tours, walks & more! 🌸",
   },
   {
     selector: '[data-tour="for-you"]',
     title: "For You ✨",
-    message: "This is your personalized feed! I'll recommend circles and experiences based on your interests and travel plans~ Super smart, right? 🧠",
+    message: "Personalized recommendations based on your interests! 🧠",
   },
   {
     selector: '[data-tour="chat"]',
     title: "Messages 💬",
-    message: "Chat with your matches, local guides, and travel buddies! All your conversations live here~ 📨",
+    message: "Chat with matches, guides, and travel buddies! 📨",
   },
   {
     selector: '[data-tour="circles"]',
     title: "Circles 🔵",
-    message: "Join interest-based groups! Find circles for foodies, hikers, photographers and more. You can even organize meetups! 🎉",
+    message: "Join interest-based groups and organize meetups! 🎉",
   },
   {
     selector: '[data-tour="toilet"]',
     title: "Toilet Finder 🚻",
-    message: "A traveler's best friend! Find nearby public restrooms wherever you are~ Trust me, you'll thank me later! 😄",
+    message: "Find nearby public restrooms wherever you are! 😄",
   },
   {
     selector: '[data-tour="profile"]',
     title: "Your Profile 👤",
-    message: "This is YOU! Edit your profile, add photos, set your interests, and manage your travel preferences here~ Make it cute! 💖",
+    message: "Edit your photos, interests, and travel preferences! 💖",
   },
 ];
 
