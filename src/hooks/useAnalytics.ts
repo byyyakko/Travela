@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Stable session ID for the duration of the browser tab
@@ -13,24 +12,26 @@ function getSessionId() {
 
 type EventData = Record<string, unknown>;
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "";
+
 export function useAnalytics(page: string) {
   const { user } = useAuth();
   const hasFiredPageView = useRef(false);
 
   const track = useCallback(
     (eventType: string, eventData?: EventData) => {
-      supabase
-        .from("analytics_events")
-        .insert([{
+      if (!BACKEND_URL) return;
+      fetch(`${BACKEND_URL}/analytics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           user_id: user?.id ?? null,
           event_type: eventType,
           event_data: eventData ?? {},
           page,
           session_id: getSessionId(),
-        }] as any)
-        .then(({ error }) => {
-          if (error) console.warn("[analytics]", error.message);
-        });
+        }),
+      }).catch((err) => console.warn("[analytics]", err));
     },
     [user?.id, page],
   );
