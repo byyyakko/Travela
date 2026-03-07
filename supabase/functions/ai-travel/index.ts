@@ -121,49 +121,12 @@ Include 4-6 phrases per category. Only return valid JSON, no markdown.`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      systemPrompt = `You are a local travel expert who creates authentic, off-the-beaten-path itineraries. Focus on local experiences, hidden gems, and cultural immersion rather than tourist traps.
+      systemPrompt = `You are a local travel expert. Create authentic itineraries with hidden gems and cultural immersion.
 
-CRITICAL RULES FOR MULTI-DAY TRIPS:
-- You MUST generate an entry for EVERY SINGLE DAY the user requests. If they ask for 30 days, return exactly 30 day objects.
-- Each day MUST have 3-5 activities minimum. Never skip days or combine multiple days into one.
-- For multi-week or multi-country road trips, plan the route logically day by day with driving/travel segments as activities.
-- Include border crossings, rest stops, and scenic drives as activities when relevant.
-- For week-by-week requests, still break it down into individual days (Day 1, Day 2, ... Day 30).
+Return JSON:
+{"title":"string","description":"Brief overview","days":[{"day":1,"theme":"string","activities":[{"time":"9:00 AM","title":"string","description":"1-2 sentences","tip":"string","category":"food|culture|adventure|shopping|sightseeing|transport","latitude":0.0,"longitude":0.0,"location":"string","summary":"2-3 sentences about the place","source_url":"https://www.tripadvisor.com/Search?q=Place+Name+City"}]}],"accommodations":[{"name":"string","type":"hotel|hostel|guesthouse|resort","area":"string","price_range":"budget|mid-range|luxury","description":"1 sentence","tip":"string","booking_url":"https://www.booking.com/search.html?ss=Name+City","latitude":0.0,"longitude":0.0}],"transport":{"from_airport":"string","getting_around":"string","modes":[{"mode":"string","description":"string","estimated_cost":"string","tip":"string"}],"day_travel_times":[{"from":"string","to":"string","duration":"string","recommended_mode":"string"}]}}
 
-Return a JSON object with this structure:
-{
-  "title": "Itinerary title",
-  "description": "Brief overview",
-  "days": [
-    {
-      "day": 1,
-      "theme": "Day theme",
-      "activities": [
-        { "time": "9:00 AM", "title": "Activity name", "description": "Details", "tip": "Local insider tip", "category": "food|culture|adventure|shopping|sightseeing|transport", "latitude": 0.0, "longitude": 0.0, "location": "Neighborhood/area name", "summary": "A detailed 3-5 sentence AI summary about this place — what makes it special, best time to visit, and insider tips", "source_url": "https://www.tripadvisor.com/Search?q=Place+Name+City or https://www.lonelyplanet.com/search?q=Place+Name" }
-      ]
-    }
-  ],
-  "accommodations": [
-    { "name": "Hotel/hostel name", "type": "hotel|hostel|guesthouse|resort", "area": "Neighborhood/area", "price_range": "budget|mid-range|luxury", "description": "Brief description and why it's recommended", "tip": "Booking tip", "booking_url": "https://www.booking.com/search.html?ss=Hotel+Name+City or relevant official booking website URL for this specific hotel", "latitude": 0.0, "longitude": 0.0 }
-  ],
-  "transport": {
-    "from_airport": "How to get from the airport to the city center, including options and estimated costs",
-    "getting_around": "Best ways to get around the city/area day-to-day",
-    "modes": [
-      { "mode": "Metro/Bus/Taxi/Grab/Walk/Train/Drive", "description": "When and how to use this mode", "estimated_cost": "Cost range", "tip": "Insider tip" }
-    ],
-    "day_travel_times": [
-      { "from": "Activity/Area A", "to": "Activity/Area B", "duration": "~15 min", "recommended_mode": "Walk/Metro/Taxi/Drive" }
-    ]
-  }
-}
-IMPORTANT: 
-- Generate ALL days requested (if user says 30 days, you MUST return 30 day objects — no exceptions).
-- For each activity, include accurate real-world latitude and longitude coordinates.
-- NEVER use Wikipedia. For source_url, ONLY use search URLs like "https://www.tripadvisor.com/Search?q=Place+Name+City".
-- For driving/road trips, include driving segments with estimated drive times as activities with category "transport".
-- Include 3-5 accommodation suggestions per region/city visited.
-- Only return valid JSON, no markdown.`;
+RULES: Generate ALL days requested. 3-5 activities per day. Keep text concise. Real coordinates. No Wikipedia. Only valid JSON, no markdown.`;
       userPrompt = prompt;
     } else if (type === "cultural-translation") {
       const message = sanitizeInput(body.message || "", MAX_INPUT_LENGTH);
