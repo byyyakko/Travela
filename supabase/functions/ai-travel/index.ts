@@ -188,12 +188,12 @@ Return 6-10 attractions. Ensure coordinates are accurate real-world values. NEVE
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: useProModel ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        ...(useProModel ? { max_tokens: 16000 } : {}),
+        max_tokens: estimatedDays > 7 ? 16000 : 8000,
       }),
     });
 
