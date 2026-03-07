@@ -149,3 +149,27 @@ def test_rank_handles_missing_optional_fields():
     minimal_cand = [{"user_id": "c1"}]
     r = client.post("/rank", json={"user": minimal_user, "candidates": minimal_cand})
     assert r.status_code == 200
+
+
+def test_analytics_returns_200_without_supabase(monkeypatch):
+    """When Supabase is not configured, /analytics returns 200 but logs a warning."""
+    monkeypatch.delenv("SUPABASE_OWN_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_OWN_SERVICE_KEY", raising=False)
+
+    r = client.post("/analytics", json={
+        "event_type": "page_view",
+        "page": "/match",
+        "session_id": "test-session",
+        "user_id": None,
+        "event_data": {}
+    })
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+
+
+def test_analytics_rejects_missing_event_type():
+    r = client.post("/analytics", json={
+        "page": "/match",
+        "session_id": "test-session",
+    })
+    assert r.status_code == 422

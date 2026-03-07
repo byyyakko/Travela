@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from model_service import rank_candidates, recommend_by_category
+from supabase_client import get_supabase_own
 
 app = FastAPI(title="Travela Match API", version="2.0.0")
 
@@ -47,6 +48,14 @@ class RecommendRequest(BaseModel):
     limit: int = 50
 
 
+class AnalyticsEvent(BaseModel):
+    event_type: str
+    page: Optional[str] = None
+    session_id: Optional[str] = None
+    user_id: Optional[str] = None
+    event_data: Optional[dict] = None
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -76,3 +85,23 @@ def recommend(req: RecommendRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Recommendation failed: {e}")
     return {"ranked": ranked[: req.limit]}
+
+
+@app.post("/analytics")
+def track_analytics(event: AnalyticsEvent):
+    """Write an analytics event to the new Supabase project via service role key."""
+    sb = get_supabase_own()
+    if sb is None:
+        return {"status": "ok", "note": "supabase not configured"}
+    try:
+        sb.table("analytics_events").insert({
+            "user_id": event.user_id,
+            "event_type": event.event_type,
+            "event_data": event.event_data or {},
+            "page": event.page,
+            "session_id": event.session_id,
+        }).execute()
+    except Exception as e:
+        # Non-fatal — analytics failures should never break the app
+        print(f"[analytics] write failed: {e}")
+    return {"status": "ok"}
