@@ -100,6 +100,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path="/merchant-auth" element={<PublicRoute><MerchantAuth /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/email-verified" element={<EmailVerified />} />
       <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
