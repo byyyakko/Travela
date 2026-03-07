@@ -78,18 +78,16 @@ serve(async (req) => {
     let systemPrompt = "";
     let userPrompt = "";
 
-    // Detect trip length from prompt for model selection
-    let useProModel = false;
+    // Detect trip length for token budget
+    let estimatedDays = 0;
     if (type === "itinerary") {
       const prompt = (body.prompt || "").toLowerCase();
-      // Use pro model for trips longer than 7 days
       const dayMatch = prompt.match(/(\d+)\s*days?/);
       const weekMatch = prompt.match(/(\d+)\s*weeks?/);
       const monthMatch = prompt.match(/(\d+)\s*months?/);
-      const estimatedDays = (dayMatch ? parseInt(dayMatch[1]) : 0)
+      estimatedDays = (dayMatch ? parseInt(dayMatch[1]) : 0)
         + (weekMatch ? parseInt(weekMatch[1]) * 7 : 0)
         + (monthMatch ? parseInt(monthMatch[1]) * 30 : 0);
-      if (estimatedDays > 7) useProModel = true;
     }
 
     if (type === "phrases") {
