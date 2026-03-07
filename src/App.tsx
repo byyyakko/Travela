@@ -40,6 +40,7 @@ import ExperienceDetail from "./pages/ExperienceDetail";
 import CreateExperience from "./pages/CreateExperience";
 import ExperienceRequests from "./pages/ExperienceRequests";
 import NotFound from "./pages/NotFound";
+import EmailVerified from "./pages/EmailVerified";
 import UserProfile from "./pages/UserProfile";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
 import { useKeepAlive } from "@/hooks/useKeepAlive";
@@ -99,6 +100,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path="/merchant-auth" element={<PublicRoute><MerchantAuth /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/email-verified" element={<EmailVerified />} />
       <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
