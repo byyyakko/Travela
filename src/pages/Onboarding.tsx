@@ -9,13 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Camera, MapPin, Plane, ChevronRight, ChevronLeft, 
-  User, Sparkles, Check, Globe, LogOut
+import {
+  Camera, MapPin, User, Sparkles, Check, Globe, LogOut
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -25,16 +23,8 @@ import { containsProfanity, containsProfanityWithAI } from "@/lib/profanity";
 import { COMMON_LANGUAGES } from "@/lib/languages";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const STEPS = [
-  { id: 1, title: "Welcome", icon: Sparkles },
-  { id: 2, title: "Photo", icon: Camera },
-  { id: 3, title: "About You", icon: User },
-  { id: 4, title: "Interests", icon: Sparkles },
-  { id: 5, title: "Location", icon: MapPin },
-];
-
 const SUGGESTED_INTERESTS = [
-  "Food & Cuisine", "History", "Art & Museums", "Nightlife", 
+  "Food & Cuisine", "History", "Art & Museums", "Nightlife",
   "Nature", "Photography", "Architecture", "Shopping",
   "Music", "Sports", "Beach", "Mountains", "Culture", "Adventure"
 ];
@@ -45,10 +35,9 @@ const Onboarding = () => {
   const queryClient = useQueryClient();
   const { track } = useAnalytics("onboarding");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [currentStep, setCurrentStep] = useState(1);
+
   const [loading, setLoading] = useState(false);
-  
+
   // Form state
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -60,42 +49,30 @@ const Onboarding = () => {
   const [isLocal, setIsLocal] = useState(false);
   const [languages, setLanguages] = useState<string[]>([]);
   const [languageInput, setLanguageInput] = useState("");
-
-  const progress = (currentStep / STEPS.length) * 100;
-
   const [avatarChecking, setAvatarChecking] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [showOtherLanguage, setShowOtherLanguage] = useState(false);
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    // Show preview immediately
+
     const previewUrl = URL.createObjectURL(file);
     setAvatarUrl(previewUrl);
     setAvatarFile(file);
-    
-    // Moderate the image right away
+
     setAvatarChecking(true);
     try {
       const fileExt = file.name.split(".").pop();
       const tempFileName = `${user?.id}/temp_check_${Date.now()}.${fileExt}`;
-      
       await uploadAndModerate("avatars", tempFileName, file, { upsert: true });
-      
-      // Moderation passed — clean up temp file, keep the local file for final upload
       await supabase.storage.from("avatars").remove([tempFileName]);
-      
       toast({ title: "Photo accepted ✓", description: "Your photo passed our content check." });
     } catch (err: any) {
-      // Moderation failed — clear the photo
       setAvatarFile(null);
       setAvatarUrl(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      toast({
-        title: "Photo rejected",
-        description: err.message || "This image was flagged as inappropriate and cannot be used.",
-        variant: "destructive",
-      });
+      toast({ title: "Photo rejected", description: err.message || "This image was flagged as inappropriate.", variant: "destructive" });
     } finally {
       setAvatarChecking(false);
     }
@@ -119,9 +96,6 @@ const Onboarding = () => {
       setCustomInterest("");
     }
   };
-
-  const [selectedLanguage, setSelectedLanguage] = useState("");
-  const [showOtherLanguage, setShowOtherLanguage] = useState(false);
 
   const addLanguageFromDropdown = (lang: string) => {
     if (lang === "__other__") {
@@ -151,132 +125,77 @@ const Onboarding = () => {
     setLanguages(languages.filter(l => l !== lang));
   };
 
-  const [aiChecking, setAiChecking] = useState(false);
-
-  const canProceedFromStep = (step: number): boolean => {
-    switch (step) {
-      case 2:
-        if (avatarChecking) {
-          toast({ title: "Please wait", description: "Your photo is being checked...", variant: "destructive" });
-          return false;
-        }
-        if (!displayName.trim()) {
-          toast({ title: "Display name is required", variant: "destructive" });
-          return false;
-        }
-        if (containsProfanity(displayName)) {
-          toast({ title: "Inappropriate content", description: "Your display name contains inappropriate language.", variant: "destructive" });
-          return false;
-        }
-        return true;
-      case 3:
-        if (containsProfanity(bio)) {
-          toast({ title: "Inappropriate content", description: "Your bio contains inappropriate language.", variant: "destructive" });
-          return false;
-        }
-        return true;
-      case 4:
-        if (interests.length === 0) {
-          toast({ title: "Please select at least 1 interest", variant: "destructive" });
-          return false;
-        }
-        if (interests.some(i => containsProfanity(i))) {
-          toast({ title: "Inappropriate content", description: "One of your interests contains inappropriate language.", variant: "destructive" });
-          return false;
-        }
-        return true;
-      case 5:
-        if (!location.trim()) {
-          toast({ title: "Location is required", variant: "destructive" });
-          return false;
-        }
-        if (containsProfanity(location)) {
-          toast({ title: "Inappropriate content", description: "Your location contains inappropriate language.", variant: "destructive" });
-          return false;
-        }
-        return true;
-      default:
-        return true;
-    }
-  };
-
-  const handleNext = async () => {
-    if (currentStep >= STEPS.length || !canProceedFromStep(currentStep)) return;
-
-    // AI profanity check on text fields for the current step
-    const textsToCheck: string[] = [];
-    if (currentStep === 2) textsToCheck.push(displayName);
-    if (currentStep === 3) textsToCheck.push(bio, ...languages);
-    if (currentStep === 4) textsToCheck.push(...interests.filter(i => !SUGGESTED_INTERESTS.includes(i)));
-    if (currentStep === 5) textsToCheck.push(location);
-
-    const nonEmpty = textsToCheck.filter(t => t && t.trim().length > 0);
-    if (nonEmpty.length > 0) {
-      setAiChecking(true);
-      try {
-        const results = await Promise.all(nonEmpty.map(t => containsProfanityWithAI(t)));
-        if (results.some(r => r)) {
-          toast({ title: "Inappropriate content detected", description: "Please remove any inappropriate language before proceeding.", variant: "destructive" });
-          setAiChecking(false);
-          return;
-        }
-      } catch { /* fail open */ }
-    }
-
-    // Validate location is a real place on step 5
-    if (currentStep === 5 && location.trim()) {
-      setAiChecking(true);
-      const locationResult = await validateRealLocation(location);
-      if (!locationResult.valid) {
-        toast({ title: "Invalid location", description: "Please enter a real city or place name (e.g., 'Barcelona, Spain').", variant: "destructive" });
-        setAiChecking(false);
-        return;
-      }
-    }
-
-    setAiChecking(false);
-    setCurrentStep(currentStep + 1);
-  };
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
   const handleComplete = async () => {
     if (!user) return;
-    if (!canProceedFromStep(5)) return;
 
-    // Validate location is real
-    if (location.trim()) {
-      setLoading(true);
-      const locationResult = await validateRealLocation(location);
-      if (!locationResult.valid) {
-        toast({ title: "Invalid location", description: "Please enter a real city or place name.", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
+    // Validation
+    if (avatarChecking) {
+      toast({ title: "Please wait", description: "Your photo is being checked...", variant: "destructive" });
+      return;
+    }
+    if (!displayName.trim()) {
+      toast({ title: "Display name is required", variant: "destructive" });
+      return;
+    }
+    if (containsProfanity(displayName)) {
+      toast({ title: "Inappropriate content", description: "Your display name contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+    if (containsProfanity(bio)) {
+      toast({ title: "Inappropriate content", description: "Your bio contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+    if (interests.length === 0) {
+      toast({ title: "Please select at least 1 interest", variant: "destructive" });
+      return;
+    }
+    if (interests.some(i => containsProfanity(i))) {
+      toast({ title: "Inappropriate content", description: "One of your interests contains inappropriate language.", variant: "destructive" });
+      return;
+    }
+    if (!location.trim()) {
+      toast({ title: "Location is required", variant: "destructive" });
+      return;
+    }
+    if (containsProfanity(location)) {
+      toast({ title: "Inappropriate content", description: "Your location contains inappropriate language.", variant: "destructive" });
+      return;
     }
 
     setLoading(true);
 
     try {
+      // AI profanity check
+      const textsToCheck = [displayName, bio, location, ...interests.filter(i => !SUGGESTED_INTERESTS.includes(i)), ...languages].filter(t => t && t.trim().length > 0);
+      if (textsToCheck.length > 0) {
+        const results = await Promise.all(textsToCheck.map(t => containsProfanityWithAI(t)));
+        if (results.some(r => r)) {
+          toast({ title: "Inappropriate content detected", description: "Please remove any inappropriate language before proceeding.", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Validate location
+      const locationResult = await validateRealLocation(location);
+      if (!locationResult.valid) {
+        toast({ title: "Invalid location", description: "Please enter a real city or place name (e.g., 'Barcelona, Spain').", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
       let finalAvatarUrl = null;
       const safeDisplayName = displayName.trim() || (user.email ? user.email.split("@")[0] : "Traveler");
 
-      // Upload avatar if a file was selected, or use preset URL directly
       if (avatarFile) {
         const fileExt = avatarFile.name.split(".").pop();
         const fileName = `${user.id}/avatar.${fileExt}`;
         const { publicUrl } = await uploadAndModerate("avatars", fileName, avatarFile, { upsert: true });
         finalAvatarUrl = publicUrl;
       } else if (avatarUrl) {
-        // Preset avatar URL selected (no file to upload)
         finalAvatarUrl = avatarUrl;
       }
 
-      // Update profile
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -292,9 +211,7 @@ const Onboarding = () => {
 
       if (error) throw error;
 
-      // Mark onboarding as complete in cache — do NOT invalidate to avoid race condition
       queryClient.setQueryData(["onboarding-check", user.id], false);
-      // Refresh profile data
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["userProfile", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["profile", user.id] }),
@@ -306,149 +223,100 @@ const Onboarding = () => {
         is_local: isLocal,
       });
 
-      toast({
-        title: "Welcome to Travela! 🎉",
-        description: "Your profile is all set up.",
-      });
-
+      toast({ title: "Welcome to Travela! 🎉", description: "Your profile is all set up." });
       navigate("/home", { replace: true });
     } catch (error: any) {
-      toast({
-        title: "Error saving profile",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error saving profile", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSkip = () => {
-    navigate("/home");
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div className="text-center space-y-6 py-8">
-            <div className="w-20 h-20 mx-auto rounded-2xl bg-primary flex items-center justify-center shadow-lg">
-              <Plane className="w-10 h-10 text-primary-foreground" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-display font-bold">Welcome to Travela!</h2>
-              <p className="text-muted-foreground mt-2">
-                Let's set up your profile so you can start connecting with locals and travelers.
-              </p>
-            </div>
-            <div className="space-y-3 text-left max-w-xs mx-auto">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Camera className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-sm">Add a profile photo</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-sm">Tell us about yourself</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-sm">Select your interests</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <MapPin className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-sm">Set your location</span>
-              </div>
-            </div>
-          </div>
-        );
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-background p-4 pb-24">
+      {/* Sign out */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleSignOut}
+        className="fixed top-4 left-4 z-10 text-muted-foreground hover:text-foreground"
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        Sign Out
+      </Button>
 
-      case 2:
-        return (
-          <div className="space-y-6 py-4">
-            <div className="text-center">
-              <h2 className="text-xl font-display font-semibold">Add a Profile Photo</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Upload your own photo or pick a preset avatar
-              </p>
-            </div>
-            
-            <div className="flex justify-center">
+      <div className="w-full max-w-md mx-auto pt-14 space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-display font-bold text-foreground">Create Your Profile</h1>
+          <p className="text-muted-foreground text-sm">Fill in your details to get started</p>
+        </div>
+
+        <Card className="border-border/50 shadow-card">
+          <CardContent className="pt-6 space-y-6">
+
+            {/* Avatar */}
+            <div className="flex flex-col items-center gap-4">
               <div className="relative">
-                <Avatar className={cn("w-32 h-32 ring-4 ring-primary/20", avatarChecking && "opacity-50")}>
+                <Avatar className={cn("w-24 h-24 ring-4 ring-primary/20", avatarChecking && "opacity-50")}>
                   <AvatarImage src={avatarUrl || ""} />
-                  <AvatarFallback className="text-4xl bg-muted">
-                    {displayName ? displayName[0].toUpperCase() : <User className="w-12 h-12" />}
+                  <AvatarFallback className="text-3xl bg-muted">
+                    {displayName ? displayName[0].toUpperCase() : <User className="w-10 h-10" />}
                   </AvatarFallback>
                 </Avatar>
                 {avatarChecking && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-3 border-primary border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleAvatarSelect}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <Button
-                  size="icon"
-                  className="absolute -bottom-2 -right-2 rounded-full h-10 w-10"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={avatarChecking}
-                >
-                  <Camera className="w-5 h-5" />
+                <input type="file" ref={fileInputRef} onChange={handleAvatarSelect} accept="image/*" className="hidden" />
+                <Button size="icon" className="absolute -bottom-1 -right-1 rounded-full h-8 w-8" onClick={() => fileInputRef.current?.click()} disabled={avatarChecking}>
+                  <Camera className="w-4 h-4" />
                 </Button>
               </div>
-            </div>
 
-            {/* Preset Avatars */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground">or pick an avatar</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-              <div className="grid grid-cols-6 gap-2 justify-items-center">
-                {PRESET_AVATARS.map((url) => {
-                  const isSelected = avatarUrl === url;
-                  return (
-                    <button
-                      key={url}
-                      type="button"
-                      onClick={() => {
-                        setAvatarUrl(url);
-                        setAvatarFile(null); // clear any uploaded file
-                      }}
-                      className={cn(
-                        "relative rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary",
-                        isSelected && "ring-2 ring-primary scale-110"
-                      )}
-                    >
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={url} alt="Preset avatar" />
-                        <AvatarFallback>?</AvatarFallback>
-                      </Avatar>
-                      {isSelected && (
-                        <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
-                          <Check className="w-3 h-3" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+              {/* Preset avatars */}
+              <div className="w-full space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or pick an avatar</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+                <div className="grid grid-cols-6 gap-2 justify-items-center">
+                  {PRESET_AVATARS.map((url) => {
+                    const isSelected = avatarUrl === url;
+                    return (
+                      <button
+                        key={url}
+                        type="button"
+                        onClick={() => { setAvatarUrl(url); setAvatarFile(null); }}
+                        className={cn(
+                          "relative rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary",
+                          isSelected && "ring-2 ring-primary scale-110"
+                        )}
+                      >
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={url} alt="Preset avatar" />
+                          <AvatarFallback>?</AvatarFallback>
+                        </Avatar>
+                        {isSelected && (
+                          <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
+            {/* Display Name */}
             <div className="space-y-2">
               <Label>Display Name <span className="text-destructive">*</span></Label>
               <Input
@@ -459,34 +327,22 @@ const Onboarding = () => {
                 required
               />
             </div>
-          </div>
-        );
 
-      case 3:
-        return (
-          <div className="space-y-6 py-4">
-            <div className="text-center">
-              <h2 className="text-xl font-display font-semibold">About You</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Share a bit about yourself and the languages you speak
-              </p>
-            </div>
-
-            <div className="rounded-lg border bg-card p-4 space-y-2">
+            {/* Bio */}
+            <div className="space-y-2">
               <Label>Bio</Label>
               <Textarea
-                placeholder="Tell travelers about yourself, your hobbies, and what you'd love to share..."
+                placeholder="Tell travelers about yourself..."
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                className="min-h-[120px] resize-none"
+                className="min-h-[80px] resize-none"
                 maxLength={500}
               />
-              <p className="text-xs text-muted-foreground text-right">
-                {bio.length}/500
-              </p>
+              <p className="text-xs text-muted-foreground text-right">{bio.length}/500</p>
             </div>
 
-            <div className="rounded-lg border bg-card p-4 space-y-2">
+            {/* Languages */}
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 Languages I Speak
@@ -513,78 +369,53 @@ const Onboarding = () => {
                   <Button onClick={addCustomLanguage} variant="outline">Add</Button>
                 </div>
               )}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {languages.map((lang) => (
-                  <span
-                    key={lang}
-                    onClick={() => removeLanguage(lang)}
-                    className="px-3 py-1 rounded-full text-sm bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+              {languages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {languages.map((lang) => (
+                    <span key={lang} onClick={() => removeLanguage(lang)} className="px-3 py-1 rounded-full text-sm bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-colors">
+                      {lang} ×
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Interests */}
+            <div className="space-y-3">
+              <Label>Interests <span className="text-destructive">*</span></Label>
+              <p className="text-xs text-muted-foreground">Select at least 1 (up to 10)</p>
+              <div className="flex flex-wrap gap-2">
+                {SUGGESTED_INTERESTS.map((interest) => (
+                  <button
+                    key={interest}
+                    onClick={() => toggleInterest(interest)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-sm transition-all",
+                      interests.includes(interest)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted hover:bg-muted/80 text-foreground"
+                    )}
                   >
-                    {lang} ×
-                  </span>
+                    {interests.includes(interest) && <Check className="w-3 h-3 inline mr-1" />}
+                    {interest}
+                  </button>
                 ))}
               </div>
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6 py-4">
-            <div className="text-center">
-              <h2 className="text-xl font-display font-semibold">Your Interests <span className="text-destructive">*</span></h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Select at least 1 interest (up to 10) to help find the perfect matches
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTED_INTERESTS.map((interest) => (
-                <button
-                  key={interest}
-                  onClick={() => toggleInterest(interest)}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-sm transition-all",
-                    interests.includes(interest)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted hover:bg-muted/80 text-foreground"
-                  )}
-                >
-                  {interests.includes(interest) && <Check className="w-3 h-3 inline mr-1" />}
-                  {interest}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Add Custom Interest</Label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Type your own interest..."
+                  placeholder="Add custom interest..."
                   value={customInterest}
                   onChange={(e) => setCustomInterest(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addCustomInterest())}
                 />
-                <Button onClick={addCustomInterest} variant="outline">Add</Button>
+                <Button onClick={addCustomInterest} variant="outline" size="sm">Add</Button>
               </div>
+              {interests.length > 0 && (
+                <p className="text-xs text-muted-foreground">{interests.length} selected</p>
+              )}
             </div>
 
-            <p className="text-center text-sm text-muted-foreground">
-              {interests.length} selected
-            </p>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-6 py-4">
-            <div className="text-center">
-              <h2 className="text-xl font-display font-semibold">Your Location</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Let us know where you're based
-              </p>
-            </div>
-
+            {/* Location */}
             <div className="space-y-2">
               <Label>City / Location <span className="text-destructive">*</span></Label>
               <div className="relative">
@@ -598,120 +429,35 @@ const Onboarding = () => {
               </div>
             </div>
 
+            {/* Local Guide Toggle */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
               <div>
                 <Label className="text-base">I'm a Local Guide</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable to help travelers explore your area
-                </p>
+                <p className="text-sm text-muted-foreground">Help travelers explore your area</p>
               </div>
-              <Switch
-                checked={isLocal}
-                onCheckedChange={setIsLocal}
-              />
+              <Switch checked={isLocal} onCheckedChange={setIsLocal} />
             </div>
 
             {isLocal && (
-              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                 <p className="text-sm">
                   <Sparkles className="w-4 h-4 inline mr-1 text-primary" />
-                  As a local guide, you'll appear in search results for travelers visiting {location || "your area"}.
+                  You'll appear in search results for travelers visiting {location || "your area"}.
                 </p>
               </div>
             )}
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
-      {/* Back / Sign out button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleSignOut}
-        className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
-      >
-        <LogOut className="w-4 h-4 mr-2" />
-        Sign Out
-      </Button>
-
-      <div className="w-full max-w-md">
-        {/* Progress */}
-        <div className="mb-6">
-          <div className="flex justify-between mb-2">
-            {STEPS.map((step) => (
-              <div
-                key={step.id}
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
-                  step.id < currentStep && "bg-primary text-primary-foreground",
-                  step.id === currentStep && "bg-primary text-primary-foreground ring-4 ring-primary/20",
-                  step.id > currentStep && "bg-muted text-muted-foreground"
-                )}
-              >
-                {step.id < currentStep ? <Check className="w-4 h-4" /> : step.id}
-              </div>
-            ))}
-          </div>
-          <Progress value={progress} className="h-1" />
-        </div>
-
-        <Card className="border-border/50 shadow-card">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-sm text-muted-foreground">
-                Step {currentStep} of {STEPS.length}
-              </CardTitle>
-              {currentStep > 1 && (
-                <Button variant="ghost" size="sm" onClick={handleSkip}>
-                  Skip for now
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {renderStep()}
-
-            <div className="flex gap-3 mt-6">
-              {currentStep > 1 && (
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  className="flex-1"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Back
-                </Button>
-              )}
-              
-              {currentStep < STEPS.length ? (
-                <Button onClick={handleNext} className="flex-1" disabled={aiChecking}>
-                  {aiChecking ? "Checking..." : "Continue"}
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleComplete} 
-                  className="flex-1"
-                  disabled={loading}
-                >
-                  {loading ? "Saving..." : "Complete Setup"}
-                  <Check className="w-4 h-4 ml-1" />
-                </Button>
-              )}
-            </div>
           </CardContent>
         </Card>
+
+        {/* Submit button - fixed at bottom */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t border-border">
+          <div className="max-w-md mx-auto">
+            <Button onClick={handleComplete} className="w-full" size="lg" disabled={loading || avatarChecking}>
+              {loading ? "Saving..." : "Complete Setup"}
+              <Check className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
