@@ -4,6 +4,7 @@ import Categories from "@/components/Categories";
 import HowItWorks from "@/components/HowItWorks";
 import LocalsGrid from "@/components/LocalsGrid";
 import CTA from "@/components/CTA";
+import EmailCapture from "@/components/EmailCapture";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -15,6 +16,7 @@ const Index = () => {
       <HowItWorks />
       <LocalsGrid />
       <CTA />
+      <EmailCapture />
       <Footer />
     </div>
   );
