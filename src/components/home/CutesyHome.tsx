@@ -21,9 +21,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock, Globe, MessageSquareHeart, Instagram } from "lucide-react";
+import { MapPin, Users, ChevronRight, Crown, Map as MapIcon, BookOpen, Sparkles, Lock, Globe, MessageSquareHeart, Instagram, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import mascotCutesy from "@/assets/mascot-cutesy.png";
 
 // Floating animation for mascot
@@ -77,6 +78,7 @@ const quickActions = [
   { icon: Crown, label: "Subscribe", path: "/subscription", paid: false, tour: "subscribe", external: false },
   { icon: MessageSquareHeart, label: "Feedback", path: "https://docs.google.com/forms/d/e/1FAIpQLSdSJzpsXHeVMqX0aJoi4bRbwT-k0Xjj2bzM2YaoySeZLmi_jw/viewform?usp=publish-editor", paid: false, tour: "feedback", external: true },
   { icon: Instagram, label: "Instagram", path: "https://www.instagram.com/travelayourway?igsh=MzIweG5jaTByMWE2&utm_source=qr", paid: false, tour: "instagram", external: true },
+  { icon: Share2, label: "Invite", path: "invite", paid: false, tour: "invite", external: false },
 ];
 
 // Map category labels to their pill CSS class for flair badges
@@ -91,6 +93,7 @@ interface CutesyHomeProps {
 const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [showFlairsSheet, setShowFlairsSheet] = useState(false);
   const [showPaidDialog, setShowPaidDialog] = useState(false);
@@ -150,6 +153,17 @@ const CutesyHome = ({ displayName }: CutesyHomeProps) => {
   });
 
   const handleQuickAction = (action: typeof quickActions[0]) => {
+    // Invite: copy referral link to clipboard
+    if (action.path === "invite") {
+      const link = `${window.location.origin}/auth?ref=${user?.id ?? ""}`;
+      navigator.clipboard.writeText(link).then(() => {
+        toast({ title: "Link copied!", description: "Share it with friends to invite them to Travela." });
+      }).catch(() => {
+        toast({ title: "Couldn't copy", description: "Please copy manually: " + link, variant: "destructive" });
+      });
+      return;
+    }
+
     if (action.paid && subscriptionTier !== "tier_1" && subscriptionTier !== "tier_2") {
       setShowPaidDialog(true);
       return;
