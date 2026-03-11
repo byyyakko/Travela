@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, MapPin, Users, Clock, Shield, Globe, CheckCircle, XCircle, Package } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, Shield, Globe, CheckCircle, XCircle, Package, Share2 } from "lucide-react";
 import { format } from "date-fns";
 
 const ExperienceDetail = () => {
@@ -75,6 +75,22 @@ const ExperienceDetail = () => {
   const spotsLeft = experience?.max_people ? experience.max_people - approvedCount : null;
   const isFull = spotsLeft !== null && spotsLeft <= 0;
 
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/experiences/${experienceId}`;
+    const shareText = `Check out "${experience?.title}" on Travela! 🌍`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: experience?.title, text: shareText, url: shareUrl });
+      } catch {
+        // User cancelled — do nothing
+      }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied!", description: "Paste it on Instagram or anywhere else." });
+    }
+  };
+
   // Submit join request
   const joinMutation = useMutation({
     mutationFn: async () => {
@@ -132,7 +148,16 @@ const ExperienceDetail = () => {
       <div className="space-y-5">
         {/* Main info */}
         <div className="space-y-3">
-          <h1 className="text-2xl font-bold">{experience.title}</h1>
+          <div className="flex items-start justify-between gap-2">
+            <h1 className="text-2xl font-bold">{experience.title}</h1>
+            <button
+              onClick={handleShare}
+              className="flex-shrink-0 w-9 h-9 rounded-full bg-secondary border-2 border-primary/30 flex items-center justify-center hover:bg-secondary/80 transition-colors"
+              aria-label="Share experience"
+            >
+              <Share2 className="w-4 h-4 text-primary" />
+            </button>
+          </div>
 
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10 cursor-pointer" onClick={() => navigate(`/user/${experience.host_id}`)}>
