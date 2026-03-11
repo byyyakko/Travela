@@ -42,6 +42,7 @@ import ExperienceRequests from "./pages/ExperienceRequests";
 import NotFound from "./pages/NotFound";
 import EmailVerified from "./pages/EmailVerified";
 import UserProfile from "./pages/UserProfile";
+import Contact from "./pages/Contact";
 import MerchantSetupHandler from "./components/MerchantSetupHandler";
 import { useKeepAlive } from "@/hooks/useKeepAlive";
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
@@ -101,6 +102,7 @@ const AppRoutes = () => {
       <Route path="/merchant-auth" element={<PublicRoute><MerchantAuth /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/email-verified" element={<EmailVerified />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
