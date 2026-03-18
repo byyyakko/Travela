@@ -63,7 +63,7 @@ const ProtectedRoute = ({ children, skipOnboardingCheck = false }: { children: R
   }
 
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Redirect to onboarding if needed (unless we're skipping the check)
