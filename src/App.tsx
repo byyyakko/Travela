@@ -136,6 +136,10 @@ const AppRoutes = () => {
       </Route>
       {/* Redirect old theme route to home */}
       <Route path="/theme" element={<Navigate to="/home" replace />} />
+      {/* Redirect legacy/expected paths to their real equivalents */}
+      <Route path="/chat" element={<Navigate to="/messages" replace />} />
+      <Route path="/trips" element={<Navigate to="/planner" replace />} />
+      <Route path="/discover" element={<Navigate to="/match" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
