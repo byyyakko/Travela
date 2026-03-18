@@ -96,6 +96,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => {
   useKeepAlive();
   return (
+    <>
     <Routes>
       <Route path="/" element={<PublicRoute><RoleSelect /></PublicRoute>} />
       <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
@@ -142,6 +143,8 @@ const AppRoutes = () => {
       <Route path="/discover" element={<Navigate to="/match" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+      <PWAInstallPrompt />
+    </>
   );
 };
 
@@ -161,7 +164,6 @@ const App = () => (
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>
-      <PWAInstallPrompt />
     </TooltipProvider>
   </QueryClientProvider>
 );

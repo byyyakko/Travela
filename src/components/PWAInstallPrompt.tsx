@@ -6,6 +6,7 @@ declare global {
 }
 
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { X, Plus, MoreHorizontal, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -27,12 +28,16 @@ function isStandalone(): boolean {
 }
 
 export function PWAInstallPrompt() {
+  const { pathname } = useLocation()
+  const PUBLIC_ROUTES = ['/', '/auth', '/merchant-auth', '/reset-password', '/email-verified', '/contact']
+
   const [show, setShow] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
+    if (PUBLIC_ROUTES.includes(pathname)) return
     if (isStandalone() || localStorage.getItem(DISMISSED_KEY)) return
 
     if (isIOSSafari()) {
@@ -49,7 +54,7 @@ export function PWAInstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
+  }, [pathname])
 
   const handleInstall = async () => {
     if (!deferredPrompt) return
@@ -68,6 +73,7 @@ export function PWAInstallPrompt() {
 
   const handleCloseGuide = () => setShowGuide(false)
 
+  if (PUBLIC_ROUTES.includes(pathname)) return null
   if (!show) return null
 
   return (
