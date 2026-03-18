@@ -24,9 +24,9 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Explore</h4>
             <ul className="space-y-2 text-background/70 text-sm">
-              <li><a href="/auth" className="hover:text-background transition-colors">Browse Locals</a></li>
-              <li><a href="/auth" className="hover:text-background transition-colors">Experiences</a></li>
-              <li><a href="/auth" className="hover:text-background transition-colors">Become a Guide</a></li>
+              <li><a href="/auth" className="block py-2 hover:text-background transition-colors">Browse Locals</a></li>
+              <li><a href="/auth" className="block py-2 hover:text-background transition-colors">Experiences</a></li>
+              <li><a href="/auth" className="block py-2 hover:text-background transition-colors">Become a Guide</a></li>
             </ul>
           </div>
 
@@ -35,7 +35,7 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Contact</h4>
             <ul className="space-y-2 text-background/70 text-sm">
               <li>
-                <a href="/contact" className="hover:text-background transition-colors">
+                <a href="/contact" className="block py-2 hover:text-background transition-colors">
                   Get in Touch
                 </a>
               </li>
@@ -44,7 +44,7 @@ const Footer = () => {
                   href="https://www.instagram.com/travelayourway"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-background transition-colors flex items-center gap-1"
+                  className="flex items-center gap-1 py-2 hover:text-background transition-colors"
                 >
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                   @travelayourway
@@ -53,7 +53,7 @@ const Footer = () => {
               <li>
                 <a
                   href="mailto:travelatheworld1123@gmail.com"
-                  className="hover:text-background transition-colors flex items-center gap-1"
+                  className="flex items-center gap-1 py-2 hover:text-background transition-colors"
                 >
                   <Mail className="w-3 h-3" />
                   Email Us
@@ -66,8 +66,8 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-background/70 text-sm">
-              <li><a href="/auth" className="hover:text-background transition-colors">Terms of Service</a></li>
-              <li><a href="/auth" className="hover:text-background transition-colors">Privacy Policy</a></li>
+              <li><a href="/auth" className="block py-2 hover:text-background transition-colors">Terms of Service</a></li>
+              <li><a href="/auth" className="block py-2 hover:text-background transition-colors">Privacy Policy</a></li>
             </ul>
           </div>
         </div>

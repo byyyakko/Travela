@@ -49,7 +49,7 @@ const EmailCapture = () => {
               required
               className="flex-1"
             />
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="h-11 px-5">
               {loading ? "..." : "Join"}
             </Button>
           </form>
