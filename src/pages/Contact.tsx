@@ -20,7 +20,7 @@ const Contact = () => {
     if (!name.trim() || !email.trim() || !message.trim()) return;
 
     setLoading(true);
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("contact_submissions")
       .insert({ name: name.trim(), email: email.trim(), message: message.trim() });
     setLoading(false);

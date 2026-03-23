@@ -16,7 +16,7 @@ const EmailCapture = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("waitlist_emails")
         .upsert({ email: trimmed }, { onConflict: "email" });
       if (error) {
