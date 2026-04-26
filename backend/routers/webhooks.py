@@ -27,8 +27,15 @@ async def handle_auth_webhook(request: Request):
     new_user_id = user.get("id")
     email = user.get("email", "")
 
-    neon_url = os.environ["NEON_DATABASE_URL"]
-    conn = psycopg2.connect(neon_url)
+    neon_url = os.environ.get("NEON_DATABASE_URL")
+    if not neon_url:
+        raise HTTPException(status_code=500, detail="NEON_DATABASE_URL not configured")
+
+    try:
+        conn = psycopg2.connect(neon_url)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB connect failed: {e}")
+
     try:
         cur = conn.cursor()
         cur.execute(
@@ -53,6 +60,9 @@ async def handle_auth_webhook(request: Request):
             )
         conn.commit()
         cur.close()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"DB query failed: {e}")
     finally:
         conn.close()
 
