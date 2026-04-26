@@ -10,10 +10,9 @@ _client = None
 def _get_supabase():
     global _client
     if _client is None:
-        _client = create_client(
-            os.environ["SUPABASE_URL"],
-            os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_ANON_KEY"],
-        )
+        url = os.environ["SUPABASE_URL"]
+        key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_ANON_KEY"]
+        _client = create_client(url, key)
     return _client
 
 
@@ -24,14 +23,14 @@ async def require_auth(request: Request) -> str:
         raise HTTPException(status_code=401, detail="Missing authorization header")
 
     token = auth_header.removeprefix("Bearer ")
-    sb = _get_supabase()
 
     try:
+        sb = _get_supabase()
         result = sb.auth.get_user(token)
-        if not result.user:
+        if not result or not result.user:
             raise HTTPException(status_code=401, detail="Invalid token")
         return result.user.id
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
         raise HTTPException(status_code=401, detail="Token validation failed")
