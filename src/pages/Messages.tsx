@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { aiTranslate } from "@/lib/aiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
@@ -73,22 +74,12 @@ const Messages = () => {
     setIsCulturalLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("ai-travel", {
-        body: {
-          type: "cultural-translation",
-          message: messageContent,
-          destination_country: selectedConversation?.otherUser?.display_name
-            ? "the country the sender is from"
-            : "unknown",
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) {
-        toast({ title: "Error", description: data.error, variant: "destructive" });
-        setCulturalDialogOpen(false);
-        return;
-      }
+      const data = await aiTranslate(
+        messageContent,
+        selectedConversation?.otherUser?.display_name
+          ? "the country the sender is from"
+          : "unknown"
+      );
       setCulturalResult(data);
     } catch {
       toast({ title: "Error", description: "Failed to analyze cultural context", variant: "destructive" });

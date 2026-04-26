@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { aiPhrases } from "@/lib/aiClient";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,11 +62,8 @@ const CommonPhrases = () => {
     setActiveCategory(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("ai-travel", {
-        body: { type: "phrases", country },
-      });
-
-      if (error) throw error;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await aiPhrases(country);
 
       if (data?.error) {
         toast({ title: "Error", description: data.error, variant: "destructive" });

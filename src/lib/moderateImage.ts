@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseLovable } from "@/integrations/supabase/client";
 
 interface ModerationResult {
   is_safe: boolean;
@@ -34,7 +34,7 @@ export const uploadAndModerate = async (
 
   // 3. Moderate the image
   try {
-    const { data: modResult, error: modError } = await supabase.functions.invoke(
+    const { data: modResult, error: modError } = await supabaseLovable.functions.invoke(
       "moderate-image",
       { body: { image_url: publicUrl } }
     );

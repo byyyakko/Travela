@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { aiItinerary } from "@/lib/aiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
@@ -217,11 +218,9 @@ const SmartItinerary = () => {
     setItinerary(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("ai-travel", {
-        body: { type: "itinerary", prompt: prompt.trim() },
-      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await aiItinerary(prompt.trim());
 
-      if (error) throw error;
       if (data?.error) {
         toast({ title: "Error", description: data.error, variant: "destructive" });
         return;

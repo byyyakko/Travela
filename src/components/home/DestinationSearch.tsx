@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { aiAttractions } from "@/lib/aiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -131,16 +132,8 @@ const DestinationSearch = () => {
     queryKey: ["ai-attractions", activeSearch, activeCategoryFilter],
     queryFn: async () => {
       if (!activeSearch.trim()) return null;
-      const { data, error } = await supabase.functions.invoke("ai-travel", {
-        body: { 
-          type: "explore-attractions", 
-          country: activeSearch,
-          category: activeCategoryFilter || "",
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data?.attractions as AIAttraction[] || [];
+      const data = await aiAttractions(activeSearch, activeCategoryFilter || undefined);
+      return (data?.attractions as AIAttraction[]) || [];
     },
     enabled: !!activeSearch.trim() && activeTab === "explore",
     staleTime: 1000 * 60 * 5,

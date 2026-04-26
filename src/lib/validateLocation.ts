@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseLovable as supabase } from "@/integrations/supabase/client";
 
 /**
  * Validate that a location string refers to a real place using geocoding.

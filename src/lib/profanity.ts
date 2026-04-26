@@ -1,7 +1,7 @@
 // Profanity filter utility
 // Uses a comprehensive word list, pattern matching, and AI fallback
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseLovable } from "@/integrations/supabase/client";
 
 const PROFANITY_LIST = [
   // English profanity (common)
@@ -107,7 +107,7 @@ export const containsProfanity = (text: string): boolean => {
 export const aiCheckProfanity = async (text: string): Promise<boolean> => {
   if (!text || text.trim().length === 0) return false;
   try {
-    const { data, error } = await supabase.functions.invoke("check-profanity", {
+    const { data, error } = await supabaseLovable.functions.invoke("check-profanity", {
       body: { text },
     });
     if (error) {

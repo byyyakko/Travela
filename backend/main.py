@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 from model_service import rank_candidates, recommend_by_category
-from supabase_client import get_supabase_own
+from routers.ai import router as ai_router
+from routers.webhooks import router as webhooks_router
 
 app = FastAPI(title="Travela Match API", version="2.0.0")
 
@@ -19,6 +20,9 @@ app.add_middleware(
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
+
+app.include_router(ai_router)
+app.include_router(webhooks_router)
 
 
 # ── Schemas ─────────────────────────────────────────────────────────────────
@@ -89,19 +93,32 @@ def recommend(req: RecommendRequest):
 
 @app.post("/analytics")
 def track_analytics(event: AnalyticsEvent):
-    """Write an analytics event to the new Supabase project via service role key."""
-    sb = get_supabase_own()
-    if sb is None:
-        return {"status": "ok", "note": "supabase not configured"}
+    """Write an analytics event to Neon."""
+    neon_url = os.getenv("NEON_DATABASE_URL")
+    if not neon_url:
+        return {"status": "ok", "note": "neon not configured"}
     try:
-        sb.table("analytics_events").insert({
-            "user_id": event.user_id,
-            "event_type": event.event_type,
-            "event_data": event.event_data or {},
-            "page": event.page,
-            "session_id": event.session_id,
-        }).execute()
+        import psycopg2
+        from psycopg2.extras import Json
+        conn = psycopg2.connect(neon_url)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO public.analytics_events
+                (user_id, event_type, event_data, page, session_id)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (
+                event.user_id,
+                event.event_type,
+                Json(event.event_data or {}),
+                event.page,
+                event.session_id,
+            ),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
     except Exception as e:
-        # Non-fatal — analytics failures should never break the app
         print(f"[analytics] write failed: {e}")
     return {"status": "ok"}
