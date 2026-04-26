@@ -25,8 +25,7 @@ def test_webhook_user_created_returns_ok():
     mock_cur = MagicMock()
     mock_conn.cursor.return_value = mock_cur
     mock_cur.fetchone.return_value = None
-    with patch("routers.webhooks.get_conn", return_value=mock_conn), \
-         patch("routers.webhooks.put_conn"):
+    with patch("psycopg2.connect", return_value=mock_conn):
         r = client.post("/webhooks/auth", json=NEW_USER_PAYLOAD)
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
@@ -37,8 +36,7 @@ def test_webhook_relinks_existing_profile_by_email():
     mock_cur = MagicMock()
     mock_conn.cursor.return_value = mock_cur
     mock_cur.fetchone.return_value = ("old-uuid-1234",)
-    with patch("routers.webhooks.get_conn", return_value=mock_conn), \
-         patch("routers.webhooks.put_conn"):
+    with patch("psycopg2.connect", return_value=mock_conn):
         r = client.post("/webhooks/auth", json=NEW_USER_PAYLOAD)
     assert r.status_code == 200
     calls = [str(call) for call in mock_cur.execute.call_args_list]
@@ -50,8 +48,7 @@ def test_webhook_inserts_new_profile_when_no_match():
     mock_cur = MagicMock()
     mock_conn.cursor.return_value = mock_cur
     mock_cur.fetchone.return_value = None
-    with patch("routers.webhooks.get_conn", return_value=mock_conn), \
-         patch("routers.webhooks.put_conn"):
+    with patch("psycopg2.connect", return_value=mock_conn):
         r = client.post("/webhooks/auth", json=NEW_USER_PAYLOAD)
     assert r.status_code == 200
     calls = [str(call) for call in mock_cur.execute.call_args_list]

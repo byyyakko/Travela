@@ -1,7 +1,7 @@
 """Handles Supabase Auth webhooks to sync new users into Neon."""
-import os, hmac, hashlib
+import os, hmac, hashlib, json
+import psycopg2
 from fastapi import APIRouter, Request, HTTPException
-from db import get_conn, put_conn
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 WEBHOOK_SECRET = os.getenv("SUPABASE_WEBHOOK_SECRET", "")
@@ -19,7 +19,7 @@ async def handle_auth_webhook(request: Request):
     if WEBHOOK_SECRET and not _verify_signature(body, sig):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
-    payload = await request.json()
+    payload = json.loads(body)
     if payload.get("type") != "user.created":
         return {"status": "ok"}
 
@@ -27,7 +27,8 @@ async def handle_auth_webhook(request: Request):
     new_user_id = user.get("id")
     email = user.get("email", "")
 
-    conn = get_conn()
+    neon_url = os.environ["NEON_DATABASE_URL"]
+    conn = psycopg2.connect(neon_url)
     try:
         cur = conn.cursor()
         cur.execute(
@@ -53,6 +54,6 @@ async def handle_auth_webhook(request: Request):
         conn.commit()
         cur.close()
     finally:
-        put_conn(conn)
+        conn.close()
 
     return {"status": "ok"}
