@@ -42,3 +42,33 @@ export const aiTranslate = (message: string, destination_country?: string) =>
 
 export const aiChat = (messages: { role: string; content: string }[]) =>
   post<{ role: string; content: string }>("/ai/chat", { messages });
+
+// ── Utility endpoints (replaces Lovable edge functions) ───────────────────────
+
+export const utilGeocode = (address: string): Promise<{
+  latitude: number | null;
+  longitude: number | null;
+  formattedAddress: string | null;
+  error?: string;
+}> =>
+  fetch(`${BACKEND_URL}/utils/geocode`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ address }),
+  }).then(r => r.json());
+
+export const utilProfanity = (text: string) =>
+  post<{ is_profane: boolean }>("/utils/profanity", { text });
+
+export const utilToilets = (latitude: number, longitude: number) =>
+  post<{ toilets: unknown[] }>("/utils/toilets", { latitude, longitude });
+
+export const utilModerateImage = (image_url: string) =>
+  post<{
+    is_safe: boolean;
+    is_nsfw: boolean;
+    is_vulgar: boolean;
+    is_ai_generated: boolean;
+    confidence: number;
+    reason: string;
+  }>("/utils/moderate-image", { image_url });

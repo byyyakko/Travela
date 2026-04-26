@@ -1,4 +1,5 @@
-import { supabase, supabaseLovable } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+import { utilModerateImage } from "@/lib/aiClient";
 
 interface ModerationResult {
   is_safe: boolean;
@@ -34,18 +35,7 @@ export const uploadAndModerate = async (
 
   // 3. Moderate the image
   try {
-    const { data: modResult, error: modError } = await supabaseLovable.functions.invoke(
-      "moderate-image",
-      { body: { image_url: publicUrl } }
-    );
-
-    if (modError) {
-      console.error("Moderation invocation failed:", modError);
-      await supabase.storage.from(bucket).remove([fileName]);
-      throw new Error("Image moderation is currently unavailable. Please try again.");
-    }
-
-    const result = modResult as ModerationResult;
+    const result = await utilModerateImage(publicUrl);
 
     // Block NSFW or vulgar content
     if (result.is_nsfw || result.is_vulgar || !result.is_safe) {

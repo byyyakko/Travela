@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { supabaseLovable as supabase } from "@/integrations/supabase/client";
+import { utilToilets, utilGeocode } from "@/lib/aiClient";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,11 +173,8 @@ const ToiletFinder = () => {
 
   const findMutation = useMutation({
     mutationFn: async (coords: { lat: number; lng: number }) => {
-      const { data, error } = await supabase.functions.invoke("find-toilets", {
-        body: { latitude: coords.lat, longitude: coords.lng },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await utilToilets(coords.lat, coords.lng);
+      if (!data?.toilets) throw new Error("No toilet data returned.");
       return data.toilets as Toilet[];
     },
     onSuccess: (data) => {
@@ -222,10 +219,7 @@ const ToiletFinder = () => {
 
   const searchMutation = useMutation({
     mutationFn: async (query: string) => {
-      const { data, error } = await supabase.functions.invoke("geocode-address", {
-        body: { address: query.trim() },
-      });
-      if (error) throw error;
+      const data = await utilGeocode(query.trim());
       if (!data?.latitude || !data?.longitude) {
         throw new Error("Could not find that location. Try a more specific name.");
       }

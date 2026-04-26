@@ -9,6 +9,7 @@ from typing import Optional
 from model_service import rank_candidates, recommend_by_category
 from routers.ai import router as ai_router
 from routers.webhooks import router as webhooks_router
+from routers.utils import router as utils_router
 
 app = FastAPI(title="Travela Match API", version="2.0.0")
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 app.include_router(ai_router)
 app.include_router(webhooks_router)
+app.include_router(utils_router)
 
 
 # ── Schemas ─────────────────────────────────────────────────────────────────

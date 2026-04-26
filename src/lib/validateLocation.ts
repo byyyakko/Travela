@@ -1,4 +1,4 @@
-import { supabaseLovable as supabase } from "@/integrations/supabase/client";
+import { utilGeocode } from "@/lib/aiClient";
 
 /**
  * Validate that a location string refers to a real place using geocoding.
@@ -12,18 +12,15 @@ export const validateRealLocation = async (
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke("geocode-address", {
-      body: { address: location.trim() },
-    });
+    const data = await utilGeocode(location.trim());
 
-    if (error) {
-      console.error("Location validation error:", error);
-      // Fail open if the service is down
+    if (data.error) {
+      console.error("Location validation error:", data.error);
       return { valid: true };
     }
 
     if (data?.latitude && data?.longitude) {
-      return { valid: true, formattedAddress: data.formattedAddress };
+      return { valid: true, formattedAddress: data.formattedAddress ?? undefined };
     }
 
     return { valid: false };

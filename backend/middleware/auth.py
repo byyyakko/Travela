@@ -12,7 +12,7 @@ def _get_supabase():
     if _client is None:
         _client = create_client(
             os.environ["SUPABASE_URL"],
-            os.environ["SUPABASE_ANON_KEY"],
+            os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_ANON_KEY"],
         )
     return _client
 

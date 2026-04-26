@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { supabase, supabaseLovable } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+import { utilGeocode } from "@/lib/aiClient";
 import { uploadAndModerate } from "@/lib/moderateImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,8 +87,7 @@ const MerchantSettings = () => {
     if (!formData.address.trim()) { toast({ title: "Address required", description: "Please enter an address to preview on the map.", variant: "destructive" }); return; }
     setPreviewLoading(true);
     try {
-      const { data: geocodeData, error: geocodeError } = await supabaseLovable.functions.invoke('geocode-address', { body: { address: formData.address } });
-      if (geocodeError) throw new Error(geocodeError.message);
+      const geocodeData = await utilGeocode(formData.address);
       if (geocodeData?.latitude && geocodeData?.longitude) {
         setCoordinates({ lat: geocodeData.latitude, lng: geocodeData.longitude });
         toast({ title: "📍 Location Found", description: geocodeData.formattedAddress || "Location displayed on map" });
@@ -145,9 +145,8 @@ const MerchantSettings = () => {
     if (formData.address && formData.address !== originalAddress && !coordinates) {
       setGeocoding(true);
       try {
-        const { data: geocodeData, error: geocodeError } = await supabaseLovable.functions.invoke('geocode-address', { body: { address: formData.address } });
-        if (geocodeError) {
-          console.error('Geocoding error:', geocodeError);
+        const geocodeData = await utilGeocode(formData.address).catch(e => { console.error('Geocoding error:', e); return null; });
+        if (!geocodeData) {
           toast({ title: "Warning", description: "Could not geocode address. Store will be saved without map coordinates.", variant: "destructive" });
         } else if (geocodeData?.latitude && geocodeData?.longitude) {
           latitude = geocodeData.latitude;
