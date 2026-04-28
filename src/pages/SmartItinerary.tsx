@@ -551,18 +551,19 @@ const SmartItinerary = () => {
                                        <p className="text-sm text-foreground leading-relaxed">{activity.summary}</p>
                                      </div>
                                    )}
-                                   {activity.source_url && (
+                                   {(activity.title || activity.location) && (
                                      <Button
                                        variant="outline"
                                        size="sm"
                                        className="gap-1.5 text-xs h-7 px-3"
                                        onClick={(e) => {
                                          e.stopPropagation();
-                                         window.open(activity.source_url, "_blank", "noopener,noreferrer");
+                                         const q = encodeURIComponent(`${activity.title} ${activity.location ?? ""}`.trim());
+                                         window.open(`https://www.google.com/maps/search/${q}`, "_blank", "noopener,noreferrer");
                                        }}
                                      >
                                        <Globe className="w-3 h-3" />
-                                       View Source
+                                       View on Maps
                                      </Button>
                                    )}
                                  </motion.div>

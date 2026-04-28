@@ -132,8 +132,8 @@ async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(requi
 
     system = f"""You are a local travel expert. Create an authentic, detailed itinerary.
 {f'Use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
-Return ONLY a raw JSON object — no markdown, no code fences, no explanation:
-{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","category":"food|culture|adventure|sightseeing","location":"..."}}]}}]}}"""
+Return ONLY a raw JSON object — no markdown, no code fences, no explanation, no URLs of any kind:
+{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing","location":"..."}}]}}]}}"""
 
     response = claude.messages.create(
         model="claude-sonnet-4-6",
