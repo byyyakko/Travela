@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -14,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { containsProfanity } from "@/lib/profanity";
+import { sendResetEmail, resendVerification } from "@/lib/authEmail";
 
 // Password validation rules
 const validatePassword = (password: string) => {
@@ -46,12 +46,23 @@ const Auth = () => {
   const [pendingVerification, setPendingVerification] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { track } = useAnalytics("auth");
 
   const passwordValidation = validatePassword(password);
   const isPasswordValid = Object.values(passwordValidation).every(Boolean);
+
+  useEffect(() => {
+    if (resetCooldown <= 0 && resendCooldown <= 0) return;
+    const t = setInterval(() => {
+      setResetCooldown(c => Math.max(0, c - 1));
+      setResendCooldown(c => Math.max(0, c - 1));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [resetCooldown, resendCooldown]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,22 +150,15 @@ const Auth = () => {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const { error, retryAfter } = await sendResetEmail(email);
 
     if (error) {
-      toast({
-        title: "Error sending reset email",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error, variant: "destructive" });
+      if (retryAfter) setResetCooldown(retryAfter);
     } else {
       setResetEmailSent(true);
-      toast({
-        title: "Check your email!",
-        description: "We've sent you a password reset link.",
-      });
+      setResetCooldown(60);
+      toast({ title: "Check your email!", description: "We've sent you a password reset link." });
     }
 
     setLoading(false);
@@ -221,8 +225,8 @@ const Auth = () => {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Sending..." : "Send Reset Link"}
+          <Button type="submit" className="w-full" disabled={loading || resetCooldown > 0}>
+            {loading ? "Sending..." : resetCooldown > 0 ? `Resend in ${resetCooldown}s` : "Send Reset Link"}
           </Button>
         </form>
       </div>
@@ -330,11 +334,25 @@ const Auth = () => {
                       <p className="text-sm text-muted-foreground">
                         Click the link in your email to complete registration. Check your spam folder if you don't see it.
                       </p>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setPendingVerification(false)}
-                        className="mt-4"
+                      <Button
+                        variant="outline"
+                        disabled={resendCooldown > 0 || loading}
+                        onClick={async () => {
+                          setLoading(true);
+                          const { error, retryAfter } = await resendVerification(email);
+                          if (error) {
+                            toast({ title: "Error", description: error, variant: "destructive" });
+                            if (retryAfter) setResendCooldown(retryAfter);
+                          } else {
+                            setResendCooldown(60);
+                            toast({ title: "Email resent!", description: "Check your inbox again." });
+                          }
+                          setLoading(false);
+                        }}
                       >
+                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : loading ? "Sending..." : "Resend verification email"}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setPendingVerification(false)} className="text-sm text-muted-foreground">
                         Use a different email
                       </Button>
                     </div>
