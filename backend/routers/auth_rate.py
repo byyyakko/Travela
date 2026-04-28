@@ -54,16 +54,18 @@ def check_email_rate_limit(req: EmailRateLimitRequest):
             )
         else:
             cur.execute(
-                """INSERT INTO public.rate_limits (key, action, last_attempt, attempt_count)
-                   VALUES (%s, %s, %s, 1)
+                """INSERT INTO public.rate_limits (key, action, action_type, last_attempt, attempt_count)
+                   VALUES (%s, %s, %s, %s, 1)
                    ON CONFLICT (key, action) DO UPDATE
                    SET last_attempt = EXCLUDED.last_attempt,
                        attempt_count = public.rate_limits.attempt_count + 1""",
-                (key, action, now),
+                (key, action, action, now),
             )
 
         conn.commit()
         cur.close()
+    except Exception:
+        return {"allowed": True}
     finally:
         conn.close()
 
