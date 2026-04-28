@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -189,7 +190,7 @@ const MerchantAuth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signin-password">Password</Label>
-                    <Input id="signin-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                    <PasswordInput id="signin-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Signing in..." : "Sign In"}
@@ -290,7 +291,7 @@ const MerchantAuth = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">Password</Label>
-                      <Input id="signup-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setShowPasswordRules(true)} required minLength={8} />
+                      <PasswordInput id="signup-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setShowPasswordRules(true)} required minLength={8} />
                       {showPasswordRules && (
                         <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-1 border border-border">
                           <p className="text-xs font-medium mb-2">Password must have:</p>
@@ -305,7 +306,7 @@ const MerchantAuth = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                      <Input id="signup-confirm-password" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
+                      <PasswordInput id="signup-confirm-password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
                       {confirmPassword && (
                         <div className="flex items-center gap-2 text-sm">
                           {password === confirmPassword ? (
