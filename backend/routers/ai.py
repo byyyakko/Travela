@@ -4,6 +4,8 @@ All endpoints require a valid Supabase JWT.
 """
 
 import os
+import re
+import json
 import time
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -72,6 +74,22 @@ def log_query(user_id: str, query: str, query_embedding: list[float], response: 
         put_conn(conn)
 
 
+def extract_json(text: str):
+    """Parse JSON from Claude response, stripping markdown code fences if present."""
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+    cleaned = re.sub(r"^[\s\S]*?```(?:json)?\s*\n?", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\n?\s*```[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
+    cleaned = cleaned.strip()
+    if not cleaned.startswith("{"):
+        idx = cleaned.find("{")
+        if idx != -1:
+            cleaned = cleaned[idx:]
+    return json.loads(cleaned)
+
+
 def embed_query(text: str) -> list[float] | None:
     """Generate a Voyage-3 query embedding. Returns None if VOYAGE_API_KEY not set."""
     key = os.environ.get("VOYAGE_API_KEY")
@@ -114,7 +132,7 @@ async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(requi
 
     system = f"""You are a local travel expert. Create an authentic, detailed itinerary.
 {f'Use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
-Return valid JSON only:
+Return ONLY a raw JSON object — no markdown, no code fences, no explanation:
 {{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","category":"food|culture|adventure|sightseeing","location":"..."}}]}}]}}"""
 
     response = claude.messages.create(
@@ -129,10 +147,8 @@ Return valid JSON only:
     if query_vec:
         log_query(user_id, req.prompt, query_vec, result, latency)
 
-    # Return in same shape as legacy ai-travel edge function
     try:
-        import json
-        return json.loads(result)
+        return extract_json(result)
     except Exception:
         return {"raw": result}
 
@@ -140,7 +156,7 @@ Return valid JSON only:
 @router.post("/phrases")
 async def get_phrases(req: PhrasesRequest, user_id: str = Depends(require_auth)):
     claude = get_claude()
-    system = """Return common travel phrases as valid JSON:
+    system = """Return ONLY a raw JSON object — no markdown, no code fences, no explanation:
 {"country":"...","language":"...","phrases":[{"category":"Greetings","phrases":[{"local":"...","english":"...","pronunciation":"..."}]}]}"""
     response = claude.messages.create(
         model="claude-sonnet-4-6",
@@ -148,9 +164,8 @@ async def get_phrases(req: PhrasesRequest, user_id: str = Depends(require_auth))
         system=system,
         messages=[{"role": "user", "content": f"Travel phrases for {req.country}"}],
     )
-    import json
     try:
-        return json.loads(response.content[0].text)
+        return extract_json(response.content[0].text)
     except Exception:
         return {"raw": response.content[0].text}
 
@@ -190,7 +205,7 @@ async def get_attractions(req: AttractionsRequest, user_id: str = Depends(requir
     claude = get_claude()
     category_note = f"Focus on {req.category} attractions." if req.category else "Cover all attraction categories."
     system = f"""You are a world travel expert. {category_note}
-Return valid JSON:
+Return ONLY a raw JSON object — no markdown, no code fences, no explanation:
 {{"country":"...","attractions":[{{"name":"...","category":"...","description":"...","location":"...","latitude":0.0,"longitude":0.0,"rating":4.5,"price_level":"free|budget|moderate|expensive"}}]}}"""
     response = claude.messages.create(
         model="claude-sonnet-4-6",
@@ -198,9 +213,8 @@ Return valid JSON:
         system=system,
         messages=[{"role": "user", "content": f"Best places to visit in {req.country}"}],
     )
-    import json
     try:
-        return json.loads(response.content[0].text)
+        return extract_json(response.content[0].text)
     except Exception:
         return {"raw": response.content[0].text}
 
