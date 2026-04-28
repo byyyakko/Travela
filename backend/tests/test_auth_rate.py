@@ -71,3 +71,17 @@ def test_resend_action_blocked_within_cooldown():
     with patch("psycopg2.connect", return_value=conn):
         r = client.post("/auth/email-rate-limit", json={"email": "test@example.com", "action": "resend_verification"})
     assert r.status_code == 429
+
+
+def test_fail_open_when_no_db_url(monkeypatch):
+    monkeypatch.delenv("NEON_DATABASE_URL", raising=False)
+    r = client.post("/auth/email-rate-limit", json=PAYLOAD)
+    assert r.status_code == 200
+    assert r.json()["allowed"] is True
+
+
+def test_fail_open_when_db_unreachable():
+    with patch("psycopg2.connect", side_effect=Exception("connection refused")):
+        r = client.post("/auth/email-rate-limit", json=PAYLOAD)
+    assert r.status_code == 200
+    assert r.json()["allowed"] is True
