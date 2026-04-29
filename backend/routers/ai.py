@@ -130,10 +130,18 @@ async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(requi
     chunks = retrieve_chunks(query_vec) if query_vec else []
     context = "\n\n---\n\n".join(chunks)
 
-    system = f"""You are a local travel expert. Before building the itinerary, search the web for real, currently operating places for each activity. Only recommend places you have verified exist via search.
-{f'Also use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
-Return ONLY a raw JSON object — no markdown, no code fences, no explanation, no URLs of any kind:
-{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing","location":"..."}}]}}]}}"""
+    system = f"""You are a local travel expert. For each activity, perform an intent-aware web search to find real, currently operating places:
+- food / dining → search "best [specific dish or cuisine] restaurants in [neighbourhood, city]"
+- culture / museum / temple → search "[place name] [city] opening hours admission fee"
+- adventure / outdoor → search "[activity type] tours [city] booking"
+- sightseeing / landmark → search "[attraction name] [city] visitor guide tips"
+- shopping → search "[market or area name] [city] what to buy"
+
+From each search result extract a 1-2 sentence summary and the source URL. Include both in the activity JSON.
+Also include latitude and longitude for every activity so it can be pinned on a map.
+{f'Additionally use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
+Return ONLY a raw JSON object — no markdown, no code fences, no explanation. URLs belong only in source_url fields:
+{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing|shopping","location":"...","latitude":0.0,"longitude":0.0,"summary":"...","source_url":"..."}}]}}]}}"""
 
     response = claude.messages.create(
         model="claude-sonnet-4-6",

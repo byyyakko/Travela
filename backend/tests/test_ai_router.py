@@ -39,7 +39,23 @@ ITINERARY_JSON = json.dumps({
                     "tip": "Arrive early to avoid crowds",
                     "category": "culture",
                     "location": "Asakusa, Tokyo",
-                }
+                    "latitude": 35.7148,
+                    "longitude": 139.7967,
+                    "summary": "One of Tokyo's oldest and most significant Buddhist temples, dating to 628 AD.",
+                    "source_url": "https://www.senso-ji.jp/",
+                },
+                {
+                    "time": "1:00 PM",
+                    "title": "Late Lunch in Asakusa",
+                    "description": "Savor traditional tempura or monjayaki at a local restaurant.",
+                    "tip": "Look for smaller, family-run establishments for a more authentic experience.",
+                    "category": "food",
+                    "location": "Asakusa, Tokyo",
+                    "latitude": 35.7114,
+                    "longitude": 139.7960,
+                    "summary": "Asakusa offers a wide array of dining options, from historic tempura restaurants to lively monjayaki shops where you can cook your own savory pancake.",
+                    "source_url": "https://www.timeout.com/tokyo/restaurants/best-restaurants-in-asakusa",
+                },
             ],
         }
     ],
@@ -180,7 +196,8 @@ class TestItinerary:
             r = self._post()
         for day in r.json()["days"]:
             for act in day["activities"]:
-                for field in ("time", "title", "description", "category", "location"):
+                for field in ("time", "title", "description", "category", "location",
+                              "latitude", "longitude", "summary", "source_url"):
                     assert field in act, f"Activity missing field: {field}"
 
     # ── Web search integration ───────────────────────────────────────────────
@@ -319,6 +336,127 @@ class TestItinerary:
             r = self._post()
         assert r.status_code == 200
         assert "title" in r.json()
+
+    # ── Intent-aware search schema ────────────────────────────────────────────
+
+    def test_activities_include_summary_and_source_url(self):
+        """Claude must populate summary and source_url for each activity."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
+            r = self._post()
+        for day in r.json()["days"]:
+            for act in day["activities"]:
+                assert "summary" in act, f"Activity '{act['title']}' missing 'summary'"
+                assert "source_url" in act, f"Activity '{act['title']}' missing 'source_url'"
+
+    def test_activities_include_coordinates(self):
+        """Each activity must have latitude and longitude for map pinning."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
+            r = self._post()
+        for day in r.json()["days"]:
+            for act in day["activities"]:
+                assert "latitude" in act, f"Activity '{act['title']}' missing 'latitude'"
+                assert "longitude" in act, f"Activity '{act['title']}' missing 'longitude'"
+
+    def test_system_prompt_has_food_intent_search_strategy(self):
+        """System prompt must instruct category-specific search for food activities."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post()
+        system = create_mock.call_args.kwargs["system"]
+        assert "food" in system.lower() or "dining" in system.lower(), \
+            "System prompt must include food/dining search strategy"
+        assert "restaurant" in system.lower(), \
+            "System prompt must mention restaurants for food search"
+
+    def test_system_prompt_has_culture_intent_search_strategy(self):
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post()
+        system = create_mock.call_args.kwargs["system"]
+        assert "culture" in system.lower() or "museum" in system.lower() or "temple" in system.lower()
+
+    def test_system_prompt_instructs_summary_extraction(self):
+        """System prompt must tell Claude to extract a summary from search results."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post()
+        system = create_mock.call_args.kwargs["system"]
+        assert "summary" in system.lower(), "System prompt must mention summary extraction"
+        assert "source_url" in system or "source url" in system.lower()
+
+    def test_system_prompt_has_latitude_longitude_schema(self):
+        """Schema in system prompt must include latitude and longitude."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post()
+        system = create_mock.call_args.kwargs["system"]
+        assert "latitude" in system and "longitude" in system
+
+    def test_food_activity_summary_is_populated(self):
+        """Food activities (category=food) must have non-empty summary from search."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
+            r = self._post()
+        food_acts = [
+            act
+            for day in r.json()["days"]
+            for act in day["activities"]
+            if act.get("category") == "food"
+        ]
+        assert len(food_acts) > 0, "Fixture should have at least one food activity"
+        for act in food_acts:
+            assert act.get("summary"), f"Food activity '{act['title']}' has empty summary"
+
+    def test_food_activity_has_source_url(self):
+        """Food activities must have a source_url pointing to a food-related resource."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
+            r = self._post()
+        food_acts = [
+            act
+            for day in r.json()["days"]
+            for act in day["activities"]
+            if act.get("category") == "food"
+        ]
+        for act in food_acts:
+            url = act.get("source_url", "")
+            assert url, f"Food activity '{act['title']}' missing source_url"
+            assert url.startswith("http"), f"source_url must be a valid URL, got: {url!r}"
+
+    def test_shopping_category_in_schema(self):
+        """'shopping' is a valid category in the new schema (was missing before)."""
+        shopping_json = json.dumps({
+            "title": "Bangkok Day",
+            "description": "Markets and more",
+            "days": [{"day": 1, "theme": "Shop", "activities": [{
+                "time": "10:00 AM", "title": "Chatuchak Weekend Market",
+                "description": "Massive outdoor market", "tip": "Go early",
+                "category": "shopping", "location": "Bangkok",
+                "latitude": 13.7999, "longitude": 100.5500,
+                "summary": "One of the world's largest weekend markets with 15,000 stalls.",
+                "source_url": "https://www.chatuchakmarket.org/",
+            }]}],
+        })
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(shopping_json)
+            r = self._post()
+        acts = r.json()["days"][0]["activities"]
+        assert acts[0]["category"] == "shopping"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
