@@ -130,18 +130,19 @@ async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(requi
     chunks = retrieve_chunks(query_vec) if query_vec else []
     context = "\n\n---\n\n".join(chunks)
 
-    system = f"""You are a local travel expert. Create an authentic, detailed itinerary.
-{f'Use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
+    system = f"""You are a local travel expert. Before building the itinerary, search the web for real, currently operating places for each activity. Only recommend places you have verified exist via search.
+{f'Also use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
 Return ONLY a raw JSON object — no markdown, no code fences, no explanation, no URLs of any kind:
 {{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing","location":"..."}}]}}]}}"""
 
     response = claude.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=8000,
+        tools=[{"type": "web_search_20260209", "name": "web_search"}],
         system=system,
         messages=[{"role": "user", "content": req.prompt}],
     )
-    result = response.content[0].text
+    result = next((b.text for b in reversed(response.content) if hasattr(b, "text")), "")
     latency = int((time.time() - start) * 1000)
 
     if query_vec:
@@ -204,19 +205,21 @@ async def tori_tan_chat(req: ChatRequest, user_id: str = Depends(require_auth)):
 async def get_attractions(req: AttractionsRequest, user_id: str = Depends(require_auth)):
     claude = get_claude()
     category_note = f"Focus on {req.category} attractions." if req.category else "Cover all attraction categories."
-    system = f"""You are a world travel expert. {category_note}
+    system = f"""You are a world travel expert. {category_note} Search the web to verify that each attraction you recommend is real and currently operating.
 Return ONLY a raw JSON object — no markdown, no code fences, no explanation:
 {{"country":"...","attractions":[{{"name":"...","category":"...","description":"...","location":"...","latitude":0.0,"longitude":0.0,"rating":4.5,"price_level":"free|budget|moderate|expensive"}}]}}"""
     response = claude.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=4000,
+        tools=[{"type": "web_search_20260209", "name": "web_search"}],
         system=system,
         messages=[{"role": "user", "content": f"Best places to visit in {req.country}"}],
     )
+    result = next((b.text for b in reversed(response.content) if hasattr(b, "text")), "")
     try:
-        return extract_json(response.content[0].text)
+        return extract_json(result)
     except Exception:
-        return {"raw": response.content[0].text}
+        return {"raw": result}
 
 
 @router.post("/translate")
