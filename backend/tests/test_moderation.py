@@ -146,11 +146,21 @@ class TestSubmitReport:
     def test_cannot_report_self(self):
         """Reporter cannot report themselves — returns 400."""
         payload = {**self.BASE_PAYLOAD, "reported_user_id": REPORTER_ID}
-        get_p, put_p = _neon_mocks()
-        with get_p, put_p, \
-             patch("routers.moderation._has_profanity", return_value=False), \
-             patch("routers.moderation._analyse_conversation", return_value=_make_verdict()):
-            resp = client.post("/moderation/report", json=payload)
+        # Explicitly set the override so this test is isolated from other test files
+        # that may override the same dependency with a different user id.
+        prev = app.dependency_overrides.get(require_auth)
+        app.dependency_overrides[require_auth] = lambda: REPORTER_ID
+        try:
+            get_p, put_p = _neon_mocks()
+            with get_p, put_p, \
+                 patch("routers.moderation._has_profanity", return_value=False), \
+                 patch("routers.moderation._analyse_conversation", return_value=_make_verdict()):
+                resp = client.post("/moderation/report", json=payload)
+        finally:
+            if prev is not None:
+                app.dependency_overrides[require_auth] = prev
+            else:
+                app.dependency_overrides[require_auth] = lambda: REPORTER_ID
         assert resp.status_code == 400
 
     def test_missing_reason_returns_error(self):
