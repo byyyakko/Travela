@@ -884,32 +884,6 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Gender</Label>
-              <RadioGroup value={gender} onValueChange={setGender} className="grid grid-cols-2 gap-2">
-                {[
-                  { value: "male",              label: "Man" },
-                  { value: "female",            label: "Woman" },
-                  { value: "non_binary",        label: "Non-binary" },
-                  { value: "prefer_not_to_say", label: "Prefer not to say" },
-                ].map((opt) => (
-                  <div
-                    key={opt.value}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
-                      gender === opt.value
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:bg-secondary/50"
-                    }`}
-                  >
-                    <RadioGroupItem value={opt.value} id={`gender-${opt.value}`} />
-                    <Label htmlFor={`gender-${opt.value}`} className="cursor-pointer font-normal text-sm">
-                      {opt.label}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
               <Label>Bio</Label>
               <Textarea
                 placeholder="Tell travelers about yourself..."
@@ -1091,6 +1065,32 @@ const Profile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label>Gender</Label>
+              <RadioGroup value={gender} onValueChange={setGender} className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "male",              label: "Man" },
+                  { value: "female",            label: "Woman" },
+                  { value: "non_binary",        label: "Non-binary" },
+                  { value: "prefer_not_to_say", label: "Prefer not to say" },
+                ].map((opt) => (
+                  <div
+                    key={opt.value}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                      gender === opt.value
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:bg-secondary/50"
+                    }`}
+                  >
+                    <RadioGroupItem value={opt.value} id={`gender-${opt.value}`} />
+                    <Label htmlFor={`gender-${opt.value}`} className="cursor-pointer font-normal text-sm">
+                      {opt.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
             <div className="space-y-4">
               <Label>
                 Age Range: {minAgePreference} - {maxAgePreference}
@@ -1147,7 +1147,7 @@ const Profile = () => {
                 </p>
                 {(!gender || gender === "prefer_not_to_say") && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Set your gender above to enable this option.
+                    Select a gender above to enable this option.
                   </p>
                 )}
               </div>
