@@ -58,8 +58,8 @@ const Match = () => {
   const [selectedLocal, setSelectedLocal] = useState<LocalProfile | null>(null);
   const [connectMessage, setConnectMessage] = useState("");
 
-  // Current user profile for recommendations
-  const { data: userProfile } = useQuery({
+  // Current user profile (base fields from Supabase, gender from Neon)
+  const { data: rawUserProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -73,13 +73,30 @@ const Match = () => {
     enabled: !!user,
   });
 
-  // Fetch local guides
-  const { data: locals, isLoading } = useQuery({
+  const { data: myNeonGender } = useQuery({
+    queryKey: ["neonGender", user?.id],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/profiles/me/gender`, {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+      });
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ gender: string | null; same_gender_only: boolean }>;
+    },
+    enabled: !!user,
+  });
+
+  const userProfile = rawUserProfile
+    ? { ...rawUserProfile, gender: myNeonGender?.gender ?? null, same_gender_only: myNeonGender?.same_gender_only ?? false }
+    : null;
+
+  // Fetch local guides (display fields only — gender comes from Neon)
+  const { data: rawLocals, isLoading } = useQuery({
     queryKey: ["localGuides", search, activeTag],
     queryFn: async () => {
       let q = supabase
         .from("profiles")
-        .select("user_id, display_name, avatar_url, bio, location, interests, languages, is_verified, gender")
+        .select("user_id, display_name, avatar_url, bio, location, interests, languages, is_verified")
         .eq("is_local", true)
         .eq("is_restricted", false);
 
@@ -89,10 +106,38 @@ const Match = () => {
 
       const { data, error } = await q.order("updated_at", { ascending: false }).limit(50);
       if (error) throw error;
-      return (data || []) as LocalProfile[];
+      return (data || []).map(p => ({ ...p, gender: null as string | null })) as LocalProfile[];
     },
     enabled: !!user,
   });
+
+  // Batch-fetch gender for all locals from Neon
+  const localUserIds = rawLocals?.map(l => l.user_id) ?? [];
+  const { data: localGenders } = useQuery({
+    queryKey: ["localGenders", localUserIds.join(",")],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/profiles/locals/gender`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ user_ids: localUserIds }),
+      });
+      if (!resp.ok) return [] as { user_id: string; gender: string | null }[];
+      return resp.json() as Promise<{ user_id: string; gender: string | null }[]>;
+    },
+    enabled: localUserIds.length > 0,
+  });
+
+  // Merge Neon gender into locals
+  const locals: LocalProfile[] | undefined = (() => {
+    if (!rawLocals) return undefined;
+    if (!localGenders) return rawLocals;
+    const genderMap = Object.fromEntries(localGenders.map(g => [g.user_id, g.gender]));
+    return rawLocals.map(l => ({ ...l, gender: genderMap[l.user_id] ?? null }));
+  })();
 
   // Check existing conversations to know who we already connected with
   const { data: existingConvos } = useQuery({

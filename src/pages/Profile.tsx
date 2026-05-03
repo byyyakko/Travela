@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -134,6 +134,29 @@ const Profile = () => {
   const [languageInput, setLanguageInput] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "edit">("profile");
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
+
+  // Load gender preference from Neon via backend
+  const { data: neonGender } = useQuery({
+    queryKey: ["neonGender", user?.id],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/profiles/me/gender`, {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+      });
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ gender: string | null; same_gender_only: boolean }>;
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (neonGender) {
+      setGender(neonGender.gender || "");
+      setSameGenderOnly(neonGender.same_gender_only ?? false);
+    }
+  }, [neonGender]);
 
   // Fetch profile photos
   const { data: profilePhotos = [], refetch: refetchPhotos } = useQuery({
@@ -306,8 +329,6 @@ const Profile = () => {
         setInterests(data.interests || []);
         setAvatarUrl(data.avatar_url);
         setDateOfBirth(data.date_of_birth || "");
-        setGender(data.gender || "");
-        setSameGenderOnly(data.same_gender_only ?? false);
         setMinAgePreference(data.min_age_preference || 18);
         setMaxAgePreference(data.max_age_preference || 99);
         setDestination(data.destination || "");
@@ -454,8 +475,6 @@ const Profile = () => {
           is_local: isLocal,
           interests: interests.length > 0 ? interests : null,
           date_of_birth: dateOfBirth || null,
-          gender: gender || null,
-          same_gender_only: (!gender || gender === "prefer_not_to_say") ? false : sameGenderOnly,
           min_age_preference: minAgePreference,
           max_age_preference: maxAgePreference,
           destination: destination.trim() || null,
@@ -466,6 +485,17 @@ const Profile = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      // Save gender preference to Neon
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${backendUrl}/profiles/me/gender`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ gender: gender || null, same_gender_only: sameGenderOnly }),
+      });
 
       toast({ title: "Profile saved!" });
     } catch (error: any) {
