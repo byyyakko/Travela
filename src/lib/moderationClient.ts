@@ -25,7 +25,7 @@ export interface ReportPayload {
 }
 
 export interface ReportResult {
-  status: "auto_banned" | "pending" | "dismissed";
+  status: "flagged_for_review" | "auto_banned" | "pending" | "dismissed";
   action_taken: boolean;
   confidence: number;
   profanity_flagged: boolean;

@@ -148,7 +148,7 @@ const ReportBlockDialog = ({
             {mode === "menu"   && "Report or Block"}
             {mode === "report" && "Report User"}
             {mode === "block"  && "Block User"}
-            {mode === "result" && (result?.action_taken ? "Account Suspended" : "Report Submitted")}
+            {mode === "result" && (result?.status === "flagged_for_review" ? "Escalated for Review" : "Report Submitted")}
           </DialogTitle>
           <DialogDescription>
             {mode === "menu"   && "What would you like to do?"}
@@ -261,23 +261,21 @@ const ReportBlockDialog = ({
         {/* ── AI result screen ── */}
         {mode === "result" && result && (
           <div className="space-y-4 pt-4 text-center">
-            {result.action_taken ? (
+            {result.status === "flagged_for_review" ? (
               <>
-                <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
-                  <ShieldAlert className="w-8 h-8 text-destructive" />
+                <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <ShieldAlert className="w-8 h-8 text-amber-500" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Account Suspended</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Our AI confirmed a violation and has suspended this account immediately.
-                  </p>
+                  <p className="font-semibold text-foreground">Escalated for Review</p>
+                  <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
                 </div>
                 {result.categories.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 justify-center">
                     {result.categories.map((c) => (
                       <span
                         key={c}
-                        className="px-2 py-0.5 rounded-full text-xs bg-destructive/10 text-destructive border border-destructive/20 capitalize"
+                        className="px-2 py-0.5 rounded-full text-xs bg-amber-500/10 text-amber-700 border border-amber-500/20 capitalize"
                       >
                         {c.replace(/_/g, " ")}
                       </span>
