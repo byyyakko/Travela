@@ -12,6 +12,7 @@ from routers.webhooks import router as webhooks_router
 from routers.utils import router as utils_router
 from routers.auth_rate import router as auth_rate_router
 from routers.moderation import router as moderation_router
+from routers.profiles import router as profiles_router
 
 app = FastAPI(title="Travela Match API", version="2.0.0")
 
@@ -29,6 +30,7 @@ app.include_router(webhooks_router)
 app.include_router(utils_router)
 app.include_router(auth_rate_router)
 app.include_router(moderation_router)
+app.include_router(profiles_router)
 
 
 # ── Schemas ─────────────────────────────────────────────────────────────────
@@ -44,11 +46,13 @@ class Profile(BaseModel):
     is_local: Optional[bool] = None
     is_verified: Optional[bool] = None
     avatar_url: Optional[str] = None
+    gender: Optional[str] = None
 
 
 class RankRequest(BaseModel):
     user: Profile
     candidates: list[Profile]
+    same_gender_only: bool = False
 
 
 class RecommendRequest(BaseModel):
@@ -56,6 +60,7 @@ class RecommendRequest(BaseModel):
     candidates: list[Profile]
     category_filter: Optional[str] = None
     limit: int = 50
+    same_gender_only: bool = False
 
 
 class AnalyticsEvent(BaseModel):
@@ -64,6 +69,20 @@ class AnalyticsEvent(BaseModel):
     session_id: Optional[str] = None
     user_id: Optional[str] = None
     event_data: Optional[dict] = None
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+_FILTERABLE_GENDERS = {"male", "female", "non_binary"}
+
+def _apply_gender_filter(user: Profile, candidates: list[Profile]) -> list[Profile]:
+    """Remove candidates whose gender differs from the user's.
+    Candidates with no gender set or 'prefer_not_to_say' are always included.
+    Filter is a no-op when user gender is unset or 'prefer_not_to_say'."""
+    user_gender = user.gender
+    if not user_gender or user_gender not in _FILTERABLE_GENDERS:
+        return candidates
+    return [c for c in candidates if not c.gender or c.gender not in _FILTERABLE_GENDERS or c.gender == user_gender]
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
@@ -76,8 +95,11 @@ def health():
 @app.post("/rank")
 def rank(req: RankRequest):
     """Rank candidates by compatibility with the user. Returns match_score and matched_interests."""
+    candidates = req.candidates
+    if req.same_gender_only:
+        candidates = _apply_gender_filter(req.user, candidates)
     user_dict = req.user.model_dump()
-    candidate_dicts = [c.model_dump() for c in req.candidates]
+    candidate_dicts = [c.model_dump() for c in candidates]
     try:
         ranked = rank_candidates(user_dict, candidate_dicts)
     except Exception as e:
@@ -87,9 +109,12 @@ def rank(req: RankRequest):
 
 @app.post("/recommend")
 def recommend(req: RecommendRequest):
-    """Filter candidates by interest category then rank. Supports category_filter and limit."""
+    """Filter candidates by gender and/or interest category, then rank."""
+    candidates = req.candidates
+    if req.same_gender_only:
+        candidates = _apply_gender_filter(req.user, candidates)
     user_dict = req.user.model_dump()
-    candidate_dicts = [c.model_dump() for c in req.candidates]
+    candidate_dicts = [c.model_dump() for c in candidates]
     try:
         ranked = recommend_by_category(user_dict, candidate_dicts, req.category_filter)
     except Exception as e:

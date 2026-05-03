@@ -18,8 +18,14 @@ from middleware.auth import require_auth
 
 # ── Auth bypass ───────────────────────────────────────────────────────────────
 
-app.dependency_overrides[require_auth] = lambda: "test-user-id"
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _auth_override():
+    app.dependency_overrides[require_auth] = lambda: "test-user-id"
+    yield
+    app.dependency_overrides.pop(require_auth, None)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

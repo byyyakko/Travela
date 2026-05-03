@@ -173,3 +173,198 @@ def test_analytics_rejects_missing_event_type():
         "session_id": "test-session",
     })
     assert r.status_code == 422
+
+
+# ── Gender filter fixtures ────────────────────────────────────────────────────
+
+FEMALE_USER = {
+    "user_id": "female-user",
+    "date_of_birth": "1995-01-01",
+    "interests": ["museums", "history"],
+    "bio": "Traveler",
+    "languages": ["English"],
+    "location": "Tokyo, Japan",
+    "gender": "female",
+}
+
+FEMALE_CANDIDATE = {
+    "user_id": "female-cand",
+    "date_of_birth": "1993-03-15",
+    "interests": ["museums", "culture"],
+    "bio": "Local guide",
+    "languages": ["English", "Japanese"],
+    "location": "Tokyo, Japan",
+    "gender": "female",
+}
+
+MALE_CANDIDATE = {
+    "user_id": "male-cand",
+    "date_of_birth": "1990-07-20",
+    "interests": ["museums", "culture"],
+    "bio": "Adventure guide",
+    "languages": ["English"],
+    "location": "Tokyo, Japan",
+    "gender": "male",
+}
+
+UNSET_GENDER_CANDIDATE = {
+    "user_id": "unset-cand",
+    "date_of_birth": "1992-05-10",
+    "interests": ["museums"],
+    "bio": "Guide",
+    "languages": ["English"],
+    "location": "Tokyo, Japan",
+    # no gender field
+}
+
+
+class TestGenderFilter:
+    """POST /rank and /recommend with same_gender_only flag."""
+
+    def test_rank_without_flag_returns_all_candidates(self):
+        """same_gender_only defaults False — all candidates returned."""
+        r = client.post("/rank", json={
+            "user": FEMALE_USER,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE],
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "female-cand" in ids
+        assert "male-cand" in ids
+
+    def test_rank_same_gender_only_excludes_other_gender(self):
+        """same_gender_only=True filters out candidates of a different gender."""
+        r = client.post("/rank", json={
+            "user": FEMALE_USER,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "female-cand" in ids
+        assert "male-cand" not in ids
+
+    def test_rank_same_gender_only_includes_unset_gender_candidates(self):
+        """Candidates with no gender set are included even when same_gender_only=True."""
+        r = client.post("/rank", json={
+            "user": FEMALE_USER,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE, UNSET_GENDER_CANDIDATE],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "unset-cand" in ids
+        assert "male-cand" not in ids
+
+    def test_rank_user_with_no_gender_skips_filter(self):
+        """If the user has no gender set, same_gender_only is a no-op."""
+        user_no_gender = {**FEMALE_USER, "gender": None}
+        r = client.post("/rank", json={
+            "user": user_no_gender,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "female-cand" in ids
+        assert "male-cand" in ids
+
+    def test_rank_prefer_not_to_say_skips_filter(self):
+        """User gender='prefer_not_to_say' means same_gender_only is a no-op."""
+        user_pnts = {**FEMALE_USER, "gender": "prefer_not_to_say"}
+        r = client.post("/rank", json={
+            "user": user_pnts,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "female-cand" in ids
+        assert "male-cand" in ids
+
+    def test_recommend_same_gender_only_filters_candidates(self):
+        """same_gender_only works identically on /recommend."""
+        r = client.post("/recommend", json={
+            "user": FEMALE_USER,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "female-cand" in ids
+        assert "male-cand" not in ids
+
+    def test_recommend_gender_filter_and_category_filter_combine(self):
+        """Both filters apply independently — AND logic."""
+        cand_wrong_gender_right_category = {
+            **MALE_CANDIDATE,
+            "user_id": "male-culture",
+            "interests": ["museums", "heritage", "culture"],
+        }
+        cand_right_gender_wrong_category = {
+            **FEMALE_CANDIDATE,
+            "user_id": "female-adventure",
+            "interests": ["rock climbing", "bungee jumping"],
+        }
+        cand_right_both = {
+            **FEMALE_CANDIDATE,
+            "user_id": "female-culture",
+            "interests": ["museums", "heritage", "culture"],
+        }
+        r = client.post("/recommend", json={
+            "user": FEMALE_USER,
+            "candidates": [
+                cand_wrong_gender_right_category,
+                cand_right_gender_wrong_category,
+                cand_right_both,
+            ],
+            "same_gender_only": True,
+            "category_filter": "cultural_heritage",
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "female-culture" in ids
+        assert "male-culture" not in ids
+
+    def test_rank_candidate_prefer_not_to_say_is_included(self):
+        """Candidates with prefer_not_to_say gender are included even when same_gender_only=True."""
+        pnts_candidate = {
+            **MALE_CANDIDATE,
+            "user_id": "pnts-cand",
+            "gender": "prefer_not_to_say",
+        }
+        r = client.post("/rank", json={
+            "user": FEMALE_USER,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE, pnts_candidate],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "pnts-cand" in ids
+        assert "male-cand" not in ids
+
+    def test_rank_non_binary_user_sees_only_non_binary(self):
+        """A non_binary user with same_gender_only=True sees non_binary candidates (and unset ones)."""
+        non_binary_user = {**FEMALE_USER, "gender": "non_binary"}
+        non_binary_cand = {**FEMALE_CANDIDATE, "user_id": "nb-cand", "gender": "non_binary"}
+        r = client.post("/rank", json={
+            "user": non_binary_user,
+            "candidates": [non_binary_cand, FEMALE_CANDIDATE, MALE_CANDIDATE, UNSET_GENDER_CANDIDATE],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "nb-cand" in ids
+        assert "unset-cand" in ids
+        assert "female-cand" not in ids
+        assert "male-cand" not in ids
+
+    def test_rank_same_gender_only_with_empty_candidates(self):
+        """same_gender_only=True with an empty candidate list returns empty ranked."""
+        r = client.post("/rank", json={
+            "user": FEMALE_USER,
+            "candidates": [],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        assert r.json()["ranked"] == []

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +46,7 @@ interface LocalProfile {
   interests: string[] | null;
   languages: string[] | null;
   is_verified: boolean | null;
+  gender: string | null;
 }
 
 const Match = () => {
@@ -57,8 +58,8 @@ const Match = () => {
   const [selectedLocal, setSelectedLocal] = useState<LocalProfile | null>(null);
   const [connectMessage, setConnectMessage] = useState("");
 
-  // Current user profile for recommendations
-  const { data: userProfile } = useQuery({
+  // Current user profile (base fields from Supabase, gender from Neon)
+  const { data: rawUserProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -72,8 +73,25 @@ const Match = () => {
     enabled: !!user,
   });
 
-  // Fetch local guides
-  const { data: locals, isLoading } = useQuery({
+  const { data: myNeonGender } = useQuery({
+    queryKey: ["neonGender", user?.id],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/profiles/me/gender`, {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+      });
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ gender: string | null; same_gender_only: boolean }>;
+    },
+    enabled: !!user,
+  });
+
+  const userProfile = rawUserProfile
+    ? { ...rawUserProfile, gender: myNeonGender?.gender ?? null, same_gender_only: myNeonGender?.same_gender_only ?? false }
+    : null;
+
+  // Fetch local guides (display fields only — gender comes from Neon)
+  const { data: rawLocals, isLoading } = useQuery({
     queryKey: ["localGuides", search, activeTag],
     queryFn: async () => {
       let q = supabase
@@ -88,10 +106,38 @@ const Match = () => {
 
       const { data, error } = await q.order("updated_at", { ascending: false }).limit(50);
       if (error) throw error;
-      return (data || []) as LocalProfile[];
+      return (data || []).map(p => ({ ...p, gender: null as string | null })) as LocalProfile[];
     },
     enabled: !!user,
   });
+
+  // Batch-fetch gender for all locals from Neon
+  const localUserIds = rawLocals?.map(l => l.user_id) ?? [];
+  const { data: localGenders } = useQuery({
+    queryKey: ["localGenders", localUserIds.join(",")],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/profiles/locals/gender`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ user_ids: localUserIds }),
+      });
+      if (!resp.ok) return [] as { user_id: string; gender: string | null }[];
+      return resp.json() as Promise<{ user_id: string; gender: string | null }[]>;
+    },
+    enabled: localUserIds.length > 0,
+  });
+
+  // Merge Neon gender into locals
+  const locals: LocalProfile[] | undefined = (() => {
+    if (!rawLocals) return undefined;
+    if (!localGenders) return rawLocals;
+    const genderMap = Object.fromEntries(localGenders.map(g => [g.user_id, g.gender]));
+    return rawLocals.map(l => ({ ...l, gender: genderMap[l.user_id] ?? null }));
+  })();
 
   // Check existing conversations to know who we already connected with
   const { data: existingConvos } = useQuery({
@@ -107,44 +153,72 @@ const Match = () => {
     enabled: !!user,
   });
 
-  // Score locals for "Suggested" section
-  const scoredLocals = useMemo(() => {
-    if (!locals || !userProfile) return [];
-    const userInterests = new Set((userProfile.interests || []).map((i: string) => i.toLowerCase()));
-    const userLangs = new Set((userProfile.languages || []).map((l: string) => l.toLowerCase()));
-    const userDest = userProfile.destination?.toLowerCase();
-    const userLoc = userProfile.location?.toLowerCase();
+  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
+  const sameGenderOnly = !!(userProfile?.same_gender_only) &&
+    !!userProfile?.gender && userProfile.gender !== "prefer_not_to_say";
 
-    return locals
-      .map((local) => {
-        let score = 0;
-        const reasons: string[] = [];
-        const localInterests = (local.interests || []).map((i) => i.toLowerCase());
-        const matched = localInterests.filter((i) => userInterests.has(i));
-        if (matched.length > 0) {
-          score += matched.length * 3;
-          reasons.push(`You both chose: ${matched.join(" + ")}`);
-        }
-        const localCity = local.location?.toLowerCase();
-        if (localCity && (userDest?.includes(localCity) || localCity.includes(userDest || ""))) {
-          score += 2;
-          reasons.push(`Based in ${local.location}`);
-        }
-        if (localCity && userLoc?.includes(localCity)) {
-          score += 1;
-        }
-        const localLangs = (local.languages || []).map((l) => l.toLowerCase());
-        const sharedLang = localLangs.filter((l) => userLangs.has(l));
-        if (sharedLang.length > 0) {
-          score += 1;
-          reasons.push(`Speaks ${sharedLang.join(", ")}`);
-        }
-        return { local, score, reasons };
-      })
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-  }, [locals, userProfile]);
+  // ML-ranked suggestions from the backend /rank endpoint
+  const { data: mlSuggestions } = useQuery({
+    queryKey: ["mlRankedLocals", userProfile?.user_id, locals?.map(l => l.user_id).join(","), sameGenderOnly],
+    queryFn: async () => {
+      if (!userProfile || !locals || locals.length === 0) return [];
+      const body = {
+        user: {
+          user_id: userProfile.user_id,
+          interests: userProfile.interests || [],
+          languages: userProfile.languages || [],
+          location: userProfile.location || null,
+          is_local: userProfile.is_local ?? false,
+          gender: userProfile.gender || null,
+        },
+        candidates: locals.map((l) => ({
+          user_id: l.user_id,
+          interests: l.interests || [],
+          languages: l.languages || [],
+          location: l.location || null,
+          is_local: true,
+          gender: l.gender || null,
+        })),
+        same_gender_only: sameGenderOnly,
+      };
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/rank`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) return [];
+      const result = await resp.json();
+      return (result.ranked as Array<{ user_id: string; match_score: number; matched_interests: string[] }>).slice(0, 5);
+    },
+    enabled: !!userProfile && !!locals && locals.length > 0,
+  });
+
+  // Map ranked results back to full LocalProfile objects for display
+  const scoredLocals = (() => {
+    if (!mlSuggestions || !locals) return [];
+    const localMap = Object.fromEntries(locals.map(l => [l.user_id, l]));
+    return mlSuggestions
+      .filter(r => localMap[r.user_id])
+      .map(r => ({
+        local: localMap[r.user_id],
+        reasons: r.matched_interests.length > 0
+          ? [`You both chose: ${r.matched_interests.slice(0, 2).join(" + ")}`]
+          : [],
+      }));
+  })();
+
+  // Apply gender filter to the full locals grid when same_gender_only is set
+  const _filterable = new Set(["male", "female", "non_binary"]);
+  const visibleLocals = (() => {
+    if (!locals) return [];
+    if (!sameGenderOnly || !userProfile?.gender) return locals;
+    const ug = userProfile.gender;
+    return locals.filter(l => !l.gender || !_filterable.has(l.gender) || l.gender === ug);
+  })();
 
   // Get conversation status with a local
   const getConvoStatus = (localId: string) => {
@@ -275,7 +349,7 @@ const Match = () => {
               <Skeleton key={i} className="h-36 rounded-xl" />
             ))}
           </div>
-        ) : !locals?.length ? (
+        ) : !visibleLocals.length ? (
           <div className="text-center py-16 text-muted-foreground">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
             <p className="font-medium">No local guides found</p>
@@ -287,7 +361,7 @@ const Match = () => {
               {hasFilters ? "Results" : "All Local Guides"}
             </h2>
             <div className="grid sm:grid-cols-2 gap-3">
-              {locals.map((local, i) => (
+              {visibleLocals.map((local, i) => (
                 <motion.div
                   key={local.user_id}
                   initial={{ opacity: 0, y: 12 }}

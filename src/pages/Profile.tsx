@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon, Quote, MessageSquare, Check, UserPlus, Heart } from "lucide-react";
 import AvatarPickerDialog from "@/components/AvatarPickerDialog";
@@ -120,6 +121,8 @@ const Profile = () => {
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState<string>("");
+  const [sameGenderOnly, setSameGenderOnly] = useState(false);
   const [minAgePreference, setMinAgePreference] = useState(18);
   const [maxAgePreference, setMaxAgePreference] = useState(99);
   
@@ -131,6 +134,29 @@ const Profile = () => {
   const [languageInput, setLanguageInput] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "edit">("profile");
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
+
+  // Load gender preference from Neon via backend
+  const { data: neonGender } = useQuery({
+    queryKey: ["neonGender", user?.id],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/profiles/me/gender`, {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+      });
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ gender: string | null; same_gender_only: boolean }>;
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (neonGender) {
+      setGender(neonGender.gender || "");
+      setSameGenderOnly(neonGender.same_gender_only ?? false);
+    }
+  }, [neonGender]);
 
   // Fetch profile photos
   const { data: profilePhotos = [], refetch: refetchPhotos } = useQuery({
@@ -459,6 +485,17 @@ const Profile = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      // Save gender preference to Neon
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${backendUrl}/profiles/me/gender`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ gender: gender || null, same_gender_only: sameGenderOnly }),
+      });
 
       toast({ title: "Profile saved!" });
     } catch (error: any) {
@@ -847,6 +884,32 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
+              <Label>Gender</Label>
+              <RadioGroup value={gender} onValueChange={setGender} className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "male",              label: "Man" },
+                  { value: "female",            label: "Woman" },
+                  { value: "non_binary",        label: "Non-binary" },
+                  { value: "prefer_not_to_say", label: "Prefer not to say" },
+                ].map((opt) => (
+                  <div
+                    key={opt.value}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                      gender === opt.value
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:bg-secondary/50"
+                    }`}
+                  >
+                    <RadioGroupItem value={opt.value} id={`gender-${opt.value}`} />
+                    <Label htmlFor={`gender-${opt.value}`} className="cursor-pointer font-normal text-sm">
+                      {opt.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2">
               <Label>Bio</Label>
               <Textarea
                 placeholder="Tell travelers about yourself..."
@@ -1074,6 +1137,25 @@ const Profile = () => {
               <p className="text-sm text-muted-foreground">
                 You'll only see locals within this age range
               </p>
+            </div>
+
+            <div className="flex items-start justify-between rounded-lg border border-border p-4">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Match same gender only</Label>
+                <p className="text-xs text-muted-foreground">
+                  Only show me locals who share my gender
+                </p>
+                {(!gender || gender === "prefer_not_to_say") && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Set your gender above to enable this option.
+                  </p>
+                )}
+              </div>
+              <Switch
+                checked={sameGenderOnly}
+                onCheckedChange={setSameGenderOnly}
+                disabled={!gender || gender === "prefer_not_to_say"}
+              />
             </div>
           </CardContent>
         </Card>
