@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { checkEmailBanned } from "@/lib/moderationClient";
 
 interface AuthContextType {
   session: Session | null;
@@ -58,6 +59,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const signUp = async (email: string, password: string) => {
+    const banned = await checkEmailBanned(email);
+    if (banned) {
+      return { error: new Error("This account has been suspended. You cannot register with this email.") };
+    }
     const { error } = await supabase.auth.signUp({
       email,
       password,

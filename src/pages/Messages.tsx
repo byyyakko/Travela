@@ -22,6 +22,8 @@ import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { containsProfanity } from "@/lib/profanity";
+import ReportBlockDialog from "@/components/ReportBlockDialog";
+import type { MessageItem } from "@/lib/moderationClient";
 
 interface Conversation {
   id: string;
@@ -261,9 +263,28 @@ const Messages = () => {
                 {(selectedConversation.otherUser?.display_name || "U")[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="font-medium">
+            <span className="font-medium flex-1">
               {selectedConversation.otherUser?.display_name || "User"}
             </span>
+            {(() => {
+              const otherUserId = selectedConversation.participant1_id === user?.id
+                ? selectedConversation.participant2_id
+                : selectedConversation.participant1_id;
+              const msgItems: MessageItem[] = messages.map((m) => ({
+                sender_id: m.sender_id,
+                content: m.content,
+                created_at: m.created_at,
+              }));
+              return (
+                <ReportBlockDialog
+                  targetUserId={otherUserId}
+                  targetUserName={selectedConversation.otherUser?.display_name || "User"}
+                  messages={msgItems}
+                  conversationId={selectedConversation.id}
+                  variant="header"
+                />
+              );
+            })()}
           </div>
 
           {/* Messages area */}
