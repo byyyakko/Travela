@@ -75,12 +75,12 @@ _FILTERABLE_GENDERS = {"male", "female", "non_binary"}
 
 def _apply_gender_filter(user: Profile, candidates: list[Profile]) -> list[Profile]:
     """Remove candidates whose gender differs from the user's.
-    Candidates with no gender set are always included.
+    Candidates with no gender set or 'prefer_not_to_say' are always included.
     Filter is a no-op when user gender is unset or 'prefer_not_to_say'."""
     user_gender = user.gender
     if not user_gender or user_gender not in _FILTERABLE_GENDERS:
         return candidates
-    return [c for c in candidates if c.gender is None or c.gender == user_gender]
+    return [c for c in candidates if not c.gender or c.gender not in _FILTERABLE_GENDERS or c.gender == user_gender]
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────

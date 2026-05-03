@@ -325,3 +325,46 @@ class TestGenderFilter:
         ids = [c["user_id"] for c in r.json()["ranked"]]
         assert "female-culture" in ids
         assert "male-culture" not in ids
+
+    def test_rank_candidate_prefer_not_to_say_is_included(self):
+        """Candidates with prefer_not_to_say gender are included even when same_gender_only=True."""
+        pnts_candidate = {
+            **MALE_CANDIDATE,
+            "user_id": "pnts-cand",
+            "gender": "prefer_not_to_say",
+        }
+        r = client.post("/rank", json={
+            "user": FEMALE_USER,
+            "candidates": [FEMALE_CANDIDATE, MALE_CANDIDATE, pnts_candidate],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "pnts-cand" in ids
+        assert "male-cand" not in ids
+
+    def test_rank_non_binary_user_sees_only_non_binary(self):
+        """A non_binary user with same_gender_only=True sees non_binary candidates (and unset ones)."""
+        non_binary_user = {**FEMALE_USER, "gender": "non_binary"}
+        non_binary_cand = {**FEMALE_CANDIDATE, "user_id": "nb-cand", "gender": "non_binary"}
+        r = client.post("/rank", json={
+            "user": non_binary_user,
+            "candidates": [non_binary_cand, FEMALE_CANDIDATE, MALE_CANDIDATE, UNSET_GENDER_CANDIDATE],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        ids = [c["user_id"] for c in r.json()["ranked"]]
+        assert "nb-cand" in ids
+        assert "unset-cand" in ids
+        assert "female-cand" not in ids
+        assert "male-cand" not in ids
+
+    def test_rank_same_gender_only_with_empty_candidates(self):
+        """same_gender_only=True with an empty candidate list returns empty ranked."""
+        r = client.post("/rank", json={
+            "user": FEMALE_USER,
+            "candidates": [],
+            "same_gender_only": True,
+        })
+        assert r.status_code == 200
+        assert r.json()["ranked"] == []
