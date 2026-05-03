@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, MapPin, Calendar, Users, Plane, Globe, Eye, Edit, Plus, X, ImageIcon, Quote, MessageSquare, Check, UserPlus, Heart } from "lucide-react";
 import AvatarPickerDialog from "@/components/AvatarPickerDialog";
@@ -120,6 +121,8 @@ const Profile = () => {
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState<string>("");
+  const [sameGenderOnly, setSameGenderOnly] = useState(false);
   const [minAgePreference, setMinAgePreference] = useState(18);
   const [maxAgePreference, setMaxAgePreference] = useState(99);
   
@@ -303,6 +306,8 @@ const Profile = () => {
         setInterests(data.interests || []);
         setAvatarUrl(data.avatar_url);
         setDateOfBirth(data.date_of_birth || "");
+        setGender(data.gender || "");
+        setSameGenderOnly(data.same_gender_only ?? false);
         setMinAgePreference(data.min_age_preference || 18);
         setMaxAgePreference(data.max_age_preference || 99);
         setDestination(data.destination || "");
@@ -449,6 +454,8 @@ const Profile = () => {
           is_local: isLocal,
           interests: interests.length > 0 ? interests : null,
           date_of_birth: dateOfBirth || null,
+          gender: gender || null,
+          same_gender_only: sameGenderOnly,
           min_age_preference: minAgePreference,
           max_age_preference: maxAgePreference,
           destination: destination.trim() || null,
@@ -846,6 +853,33 @@ const Profile = () => {
               </p>
             </div>
 
+            <div className="space-y-3">
+              <Label>Gender</Label>
+              <RadioGroup value={gender} onValueChange={setGender} className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "male",              label: "Man" },
+                  { value: "female",            label: "Woman" },
+                  { value: "non_binary",        label: "Non-binary" },
+                  { value: "prefer_not_to_say", label: "Prefer not to say" },
+                ].map((opt) => (
+                  <div
+                    key={opt.value}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                      gender === opt.value
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:bg-secondary/50"
+                    }`}
+                    onClick={() => setGender(opt.value)}
+                  >
+                    <RadioGroupItem value={opt.value} id={`gender-${opt.value}`} />
+                    <Label htmlFor={`gender-${opt.value}`} className="cursor-pointer font-normal text-sm">
+                      {opt.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
             <div className="space-y-2">
               <Label>Bio</Label>
               <Textarea
@@ -1074,6 +1108,20 @@ const Profile = () => {
               <p className="text-sm text-muted-foreground">
                 You'll only see locals within this age range
               </p>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Match same gender only</Label>
+                <p className="text-xs text-muted-foreground">
+                  Only show me locals who share my gender
+                </p>
+              </div>
+              <Switch
+                checked={sameGenderOnly}
+                onCheckedChange={setSameGenderOnly}
+                disabled={!gender || gender === "prefer_not_to_say"}
+              />
             </div>
           </CardContent>
         </Card>
