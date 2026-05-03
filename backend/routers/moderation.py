@@ -1,28 +1,20 @@
 """
-Content moderation — report submission, AI verdict, and human-gated account banning.
+Content moderation — report submission, AI verdict, and automatic account banning.
 
 Flow:
   1. Frontend submits report with conversation messages snapshot
   2. Claude Haiku runs quick profanity pre-scan on each message
   3. Claude Sonnet analyses full conversation for harassment/violations
-  4. confidence >= 0.85 OR recommendation=="ban"
-       → status = "flagged_for_review"
-       → admin email sent to ADMIN_EMAIL with one-click confirm/dismiss links
+  4. confidence >= 0.85 OR recommendation=="ban" → "auto_banned" (immediate ban)
   5. confidence 0.50–0.84 → "pending" (logged for manual review)
   6. confidence < 0.50    → "dismissed"
-
-  Admin confirms via GET /moderation/admin/decide?report_id=…&action=ban&token=…
-  Only then is the Supabase account banned and email blocked.
 """
 import os
 import json
-import hmac
-import hashlib
 import httpx
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from middleware.auth import require_auth
@@ -33,7 +25,6 @@ router = APIRouter(prefix="/moderation", tags=["moderation"])
 
 AUTO_BAN_THRESHOLD = 0.85
 FLAG_THRESHOLD     = 0.50
-ADMIN_EMAIL        = "travelatheworld1123@gmail.com"
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -100,19 +91,6 @@ def _ensure_tables():
 
 
 _ensure_tables()
-
-
-# ── HMAC token helpers (sign/verify admin decision URLs) ─────────────────────
-
-def _sign_action_token(report_id: str, action: str) -> str:
-    secret = os.environ.get("ADMIN_REVIEW_SECRET", "travela-review-secret").encode()
-    msg = f"{report_id}:{action}".encode()
-    return hmac.new(secret, msg, hashlib.sha256).hexdigest()
-
-
-def _verify_action_token(report_id: str, action: str, token: str) -> bool:
-    expected = _sign_action_token(report_id, action)
-    return hmac.compare_digest(expected, token)
 
 
 # ── Profanity pre-scan (Claude Haiku) ────────────────────────────────────────
@@ -252,8 +230,7 @@ def _block_email(user_id: str, email: str, reason: str, confidence: float):
 
 # ── Neon report persistence ───────────────────────────────────────────────────
 
-def _save_report(reporter_id: str, req: ReportRequest, verdict: dict, status: str) -> Optional[str]:
-    """Persist the report and return its UUID, or None on failure."""
+def _save_report(reporter_id: str, req: ReportRequest, verdict: dict, status: str):
     conn = get_conn()
     try:
         cur = conn.cursor()
@@ -261,8 +238,7 @@ def _save_report(reporter_id: str, req: ReportRequest, verdict: dict, status: st
             """INSERT INTO public.reports
                (reporter_id, reported_user_id, conversation_id, messages_snapshot,
                 reason, description, ai_verdict, ai_confidence, ai_categories, ai_evidence, status)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-               RETURNING id""",
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 reporter_id,
                 req.reported_user_id,
@@ -277,163 +253,12 @@ def _save_report(reporter_id: str, req: ReportRequest, verdict: dict, status: st
                 status,
             ),
         )
-        row = cur.fetchone()
-        conn.commit()
-        cur.close()
-        return str(row[0]) if row else None
-    except Exception:
-        return None
-    finally:
-        put_conn(conn)
-
-
-def _update_report_status(report_id: str, status: str):
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE public.reports SET status = %s WHERE id = %s",
-            (status, report_id),
-        )
         conn.commit()
         cur.close()
     except Exception:
         pass
     finally:
         put_conn(conn)
-
-
-# ── Admin review email (Resend API) ──────────────────────────────────────────
-
-def _send_review_email(report_id: str, req: ReportRequest, verdict: dict, confidence: float):
-    """Send a human-review email to the admin via Resend. Fails silently."""
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    if not resend_key:
-        print(f"[moderation] RESEND_API_KEY not set — review email skipped (report {report_id})")
-        return
-
-    backend_url  = os.environ.get("BACKEND_URL", "https://travela-backend-p2zp.onrender.com")
-    from_email   = os.environ.get("RESEND_FROM_EMAIL", "moderation@travela.app")
-    ban_token     = _sign_action_token(report_id, "ban")
-    dismiss_token = _sign_action_token(report_id, "dismiss")
-    confirm_url   = f"{backend_url}/moderation/admin/decide?report_id={report_id}&action=ban&token={ban_token}"
-    dismiss_url   = f"{backend_url}/moderation/admin/decide?report_id={report_id}&action=dismiss&token={dismiss_token}"
-
-    categories_str = ", ".join(verdict.get("categories", [])) or "—"
-    evidence       = verdict.get("evidence_quotes", [])
-    evidence_html  = "".join(
-        f'<blockquote style="border-left:3px solid #dc2626;margin:8px 0;padding:8px 12px;'
-        f'background:#fff5f5;color:#7f1d1d;font-style:italic;">{q}</blockquote>'
-        for q in evidence[:3]
-    ) if evidence else '<p style="color:#9ca3af;font-style:italic;">No direct quotes captured.</p>'
-
-    description_section = (
-        f'<p><strong>Reporter note:</strong> {req.description}</p>'
-        if req.description else ""
-    )
-
-    html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;margin:0;padding:24px;">
-  <div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
-
-    <!-- Header -->
-    <div style="background:#dc2626;padding:24px 32px;">
-      <h1 style="color:white;margin:0;font-size:20px;font-weight:700;">🚨 Report Flagged for Review</h1>
-      <p style="color:#fca5a5;margin:4px 0 0;font-size:14px;">Travela Moderation · Action required</p>
-    </div>
-
-    <!-- Body -->
-    <div style="padding:32px;">
-
-      <!-- Metrics row -->
-      <div style="display:flex;gap:16px;margin-bottom:24px;">
-        <div style="flex:1;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;text-align:center;">
-          <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">AI Confidence</div>
-          <div style="font-size:28px;font-weight:800;color:#dc2626;">{confidence:.0%}</div>
-        </div>
-        <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;text-align:center;">
-          <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Reported For</div>
-          <div style="font-size:15px;font-weight:700;color:#111827;margin-top:4px;">{req.reason.replace("_", " ").title()}</div>
-        </div>
-      </div>
-
-      <!-- Categories -->
-      <div style="margin-bottom:20px;">
-        <div style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Violation Categories</div>
-        <div style="font-size:14px;color:#111827;">{categories_str}</div>
-      </div>
-
-      {description_section}
-
-      <!-- Evidence -->
-      <div style="margin-bottom:28px;">
-        <div style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;margin-bottom:8px;">AI Evidence Quotes</div>
-        {evidence_html}
-      </div>
-
-      <!-- Action buttons -->
-      <div style="display:flex;gap:12px;">
-        <a href="{confirm_url}"
-           style="flex:1;display:block;background:#dc2626;color:white;text-align:center;
-                  padding:14px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
-          ✅ Confirm Ban
-        </a>
-        <a href="{dismiss_url}"
-           style="flex:1;display:block;background:#6b7280;color:white;text-align:center;
-                  padding:14px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
-          ❌ Dismiss
-        </a>
-      </div>
-
-      <p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:20px;">
-        Report ID: {report_id}<br>
-        These links are unique to this report. Each can only be acted on once.
-      </p>
-    </div>
-  </div>
-</body>
-</html>"""
-
-    try:
-        httpx.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={
-                "from": from_email,
-                "to": [ADMIN_EMAIL],
-                "subject": f"[Travela] Report flagged — {confidence:.0%} AI confidence · {req.reason.replace('_', ' ').title()}",
-                "html": html,
-            },
-            timeout=15,
-        )
-        print(f"[moderation] Review email sent for report {report_id}")
-    except Exception as e:
-        print(f"[moderation] Failed to send review email: {e}")
-
-
-# ── HTML helpers for admin decision page ─────────────────────────────────────
-
-def _decision_page(title: str, body: str, color: str = "#16a34a") -> str:
-    return f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title}</title></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-             background:#f3f4f6;min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0;">
-  <div style="background:white;border-radius:12px;padding:48px 40px;max-width:480px;width:100%;
-              text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
-    <div style="width:64px;height:64px;border-radius:50%;background:{color}20;
-                display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;">
-      {'✅' if color == '#16a34a' else '✅' if color == '#dc2626' else '⚠️'}
-    </div>
-    <h2 style="margin:0 0 8px;color:#111827;">{title}</h2>
-    <p style="color:#6b7280;margin:0;">{body}</p>
-    <p style="color:#9ca3af;font-size:12px;margin-top:24px;">Travela Moderation</p>
-  </div>
-</body>
-</html>"""
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -459,99 +284,37 @@ async def submit_report(req: ReportRequest, reporter_id: str = Depends(require_a
     confidence     = verdict.get("confidence", 0.0)
     recommendation = verdict.get("recommendation", "dismiss")
 
-    # Step 3: Route by confidence — high-confidence cases go to human review
+    # Step 3: Route by confidence
     if confidence >= AUTO_BAN_THRESHOLD or recommendation == "ban":
-        status = "flagged_for_review"
+        status = "auto_banned"
+        reported_email = _get_user_email(req.reported_user_id)
+        _ban_supabase_user(req.reported_user_id)
+        _block_email(req.reported_user_id, reported_email, req.reason, confidence)
+        action_taken = True
     elif confidence >= FLAG_THRESHOLD:
         status = "pending"
+        action_taken = False
     else:
         status = "dismissed"
+        action_taken = False
 
-    # Step 4: Persist to Neon (get report_id for email links)
-    report_id = _save_report(reporter_id, req, verdict, status)
-
-    # Step 5: Send admin review email for high-confidence cases
-    if status == "flagged_for_review" and report_id:
-        _send_review_email(report_id, req, verdict, confidence)
+    # Step 4: Persist to Neon
+    _save_report(reporter_id, req, verdict, status)
 
     return {
         "status": status,
-        "action_taken": False,  # no account is ever banned without admin confirmation
+        "action_taken": action_taken,
         "confidence": round(confidence, 3),
         "profanity_flagged": profanity_flagged,
         "categories": verdict.get("categories", []),
         "message": (
-            "Our AI has flagged this account for serious violations. "
-            "Our team will review the evidence and take action shortly."
-            if status == "flagged_for_review"
+            "This account has been banned for violating Travela's community guidelines."
+            if status == "auto_banned"
             else "Your report is under review. We'll take action if a violation is confirmed."
             if status == "pending"
             else "Your report has been logged. Thank you for helping keep Travela safe."
         ),
     }
-
-
-@router.get("/admin/decide", response_class=HTMLResponse)
-def admin_decide(report_id: str, action: str, token: str):
-    """One-click admin decision link sent in review emails."""
-    if action not in ("ban", "dismiss"):
-        return HTMLResponse(_decision_page("Invalid Action", "Unknown action requested."), status_code=400)
-
-    if not _verify_action_token(report_id, action, token):
-        return HTMLResponse(
-            _decision_page("Invalid Link", "This link is invalid or has been tampered with.", color="#dc2626"),
-            status_code=403,
-        )
-
-    # Look up the report
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT reported_user_id, reason, ai_confidence, status FROM public.reports WHERE id = %s",
-            (report_id,),
-        )
-        row = cur.fetchone()
-        cur.close()
-    except Exception:
-        put_conn(conn)
-        return HTMLResponse(
-            _decision_page("Database Error", "Could not look up the report. Please try again.", color="#f59e0b"),
-            status_code=500,
-        )
-    finally:
-        put_conn(conn)
-
-    if not row:
-        return HTMLResponse(
-            _decision_page("Not Found", "This report could not be found."), status_code=404
-        )
-
-    reported_user_id, reason, ai_confidence, current_status = row
-
-    # Idempotency — already actioned
-    if current_status == "auto_banned":
-        return HTMLResponse(_decision_page("Already Banned", "This account was already banned."))
-    if current_status == "dismissed" and action == "dismiss":
-        return HTMLResponse(_decision_page("Already Dismissed", "This report was already dismissed."))
-
-    if action == "ban":
-        reported_email = _get_user_email(reported_user_id)
-        _ban_supabase_user(reported_user_id)
-        _block_email(reported_user_id, reported_email, reason, ai_confidence or 0.0)
-        _update_report_status(report_id, "auto_banned")
-        return HTMLResponse(_decision_page(
-            "Account Banned",
-            f"The account has been suspended and the email blocked from re-registration.",
-            color="#dc2626",
-        ))
-    else:
-        _update_report_status(report_id, "dismissed")
-        return HTMLResponse(_decision_page(
-            "Report Dismissed",
-            "The report has been dismissed. No action will be taken.",
-            color="#6b7280",
-        ))
 
 
 @router.post("/check-banned")
