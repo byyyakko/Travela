@@ -455,7 +455,7 @@ const Profile = () => {
           interests: interests.length > 0 ? interests : null,
           date_of_birth: dateOfBirth || null,
           gender: gender || null,
-          same_gender_only: sameGenderOnly,
+          same_gender_only: (!gender || gender === "prefer_not_to_say") ? false : sameGenderOnly,
           min_age_preference: minAgePreference,
           max_age_preference: maxAgePreference,
           destination: destination.trim() || null,
@@ -853,7 +853,7 @@ const Profile = () => {
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label>Gender</Label>
               <RadioGroup value={gender} onValueChange={setGender} className="grid grid-cols-2 gap-2">
                 {[
@@ -869,7 +869,6 @@ const Profile = () => {
                         ? "border-primary bg-primary/10"
                         : "border-border hover:bg-secondary/50"
                     }`}
-                    onClick={() => setGender(opt.value)}
                   >
                     <RadioGroupItem value={opt.value} id={`gender-${opt.value}`} />
                     <Label htmlFor={`gender-${opt.value}`} className="cursor-pointer font-normal text-sm">
@@ -1110,12 +1109,17 @@ const Profile = () => {
               </p>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <div className="flex items-start justify-between rounded-lg border border-border p-4">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Match same gender only</Label>
                 <p className="text-xs text-muted-foreground">
                   Only show me locals who share my gender
                 </p>
+                {(!gender || gender === "prefer_not_to_say") && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Set your gender above to enable this option.
+                  </p>
+                )}
               </div>
               <Switch
                 checked={sameGenderOnly}
