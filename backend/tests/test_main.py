@@ -2,10 +2,19 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import pytest
 from fastapi.testclient import TestClient
 from main import app
+from middleware.auth import require_auth
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _auth_override():
+    app.dependency_overrides[require_auth] = lambda: "test-user-123"
+    yield
+    app.dependency_overrides.pop(require_auth, None)
 
 USER = {
     "user_id": "test-user",

@@ -19,6 +19,14 @@ def _auth_override():
     app.dependency_overrides.pop(require_auth, None)
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limit():
+    from routers.moderation import _report_timestamps
+    _report_timestamps.clear()
+    yield
+    _report_timestamps.clear()
+
+
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def _make_verdict(violation=False, confidence=0.0, recommendation="dismiss", categories=None):
@@ -379,3 +387,54 @@ class TestAnalyseConversation:
         assert "msg 9\n" not in prompt_text
         assert "msg 10" in prompt_text
         assert "msg 59" in prompt_text
+
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+
+class TestReportRateLimit:
+
+    def test_allows_up_to_5_reports(self):
+        from routers.moderation import _check_report_rate
+        results = [_check_report_rate("user-rl") for _ in range(5)]
+        assert all(results)
+
+    def test_blocks_sixth_report(self):
+        from routers.moderation import _check_report_rate
+        for _ in range(5):
+            _check_report_rate("user-rl")
+        assert _check_report_rate("user-rl") is False
+
+    def test_different_users_have_independent_limits(self):
+        from routers.moderation import _check_report_rate
+        for _ in range(5):
+            _check_report_rate("user-a")
+        assert _check_report_rate("user-b") is True
+
+    def test_http_429_when_limit_reached(self):
+        from time import time
+        from routers.moderation import _report_timestamps
+        _report_timestamps[REPORTER_ID] = [time() for _ in range(5)]
+        get_p, put_p = _neon_mocks()
+        with get_p, put_p, \
+             patch("routers.moderation._has_profanity", return_value=False), \
+             patch("routers.moderation._analyse_conversation", return_value=_make_verdict()):
+            resp = client.post("/moderation/report", json={
+                "reported_user_id": REPORTED_ID,
+                "reason": "harassment",
+            })
+        assert resp.status_code == 429
+        assert "limit" in resp.json()["detail"].lower()
+
+    def test_http_200_on_fifth_report(self):
+        from routers.moderation import _check_report_rate
+        for _ in range(4):
+            _check_report_rate(REPORTER_ID)
+        get_p, put_p = _neon_mocks()
+        with get_p, put_p, \
+             patch("routers.moderation._has_profanity", return_value=False), \
+             patch("routers.moderation._analyse_conversation", return_value=_make_verdict()):
+            resp = client.post("/moderation/report", json={
+                "reported_user_id": REPORTED_ID,
+                "reason": "harassment",
+            })
+        assert resp.status_code == 200

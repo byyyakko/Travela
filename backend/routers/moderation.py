@@ -12,6 +12,9 @@ Flow:
 import os
 import json
 import httpx
+import threading
+from collections import defaultdict
+from time import time
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 
@@ -26,6 +29,23 @@ router = APIRouter(prefix="/moderation", tags=["moderation"])
 
 AUTO_BAN_THRESHOLD = 0.85
 FLAG_THRESHOLD     = 0.50
+
+_report_timestamps: dict[str, list[float]] = defaultdict(list)
+_rate_lock = threading.Lock()
+_REPORT_LIMIT  = 5
+_REPORT_WINDOW = 3600  # seconds
+
+
+def _check_report_rate(user_id: str) -> bool:
+    """Returns True if user is within the 5-reports-per-hour limit."""
+    now = time()
+    with _rate_lock:
+        ts = _report_timestamps[user_id]
+        _report_timestamps[user_id] = [t for t in ts if now - t < _REPORT_WINDOW]
+        if len(_report_timestamps[user_id]) >= _REPORT_LIMIT:
+            return False
+        _report_timestamps[user_id].append(now)
+        return True
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -271,6 +291,9 @@ def _save_report(reporter_id: str, req: ReportRequest, verdict: dict, status: st
 async def submit_report(req: ReportRequest, reporter_id: str = Depends(require_auth)):
     if not req.reported_user_id or not req.reason:
         raise HTTPException(status_code=422, detail="reported_user_id and reason are required")
+
+    if not _check_report_rate(reporter_id):
+        raise HTTPException(status_code=429, detail="Report limit reached. You may submit up to 5 reports per hour.")
 
     if req.reported_user_id == reporter_id:
         raise HTTPException(status_code=400, detail="Cannot report yourself")

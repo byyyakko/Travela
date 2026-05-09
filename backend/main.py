@@ -2,7 +2,7 @@
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -10,6 +10,7 @@ from psycopg2.extras import Json
 
 from model_service import rank_candidates, recommend_by_category
 from db import get_conn, put_conn
+from middleware.auth import require_auth
 from routers.ai import router as ai_router
 from routers.webhooks import router as webhooks_router
 from routers.utils import router as utils_router
@@ -103,7 +104,7 @@ def health():
 
 
 @app.post("/rank")
-def rank(req: RankRequest):
+def rank(req: RankRequest, _: str = Depends(require_auth)):
     """Rank candidates by compatibility with the user. Returns match_score and matched_interests."""
     if len(req.candidates) > MAX_CANDIDATES:
         raise HTTPException(status_code=422, detail=f"Too many candidates: max {MAX_CANDIDATES}")
@@ -120,7 +121,7 @@ def rank(req: RankRequest):
 
 
 @app.post("/recommend")
-def recommend(req: RecommendRequest):
+def recommend(req: RecommendRequest, _: str = Depends(require_auth)):
     """Filter candidates by gender and/or interest category, then rank."""
     if len(req.candidates) > MAX_CANDIDATES:
         raise HTTPException(status_code=422, detail=f"Too many candidates: max {MAX_CANDIDATES}")
