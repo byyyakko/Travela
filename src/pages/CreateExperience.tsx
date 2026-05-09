@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,13 +9,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Info } from "lucide-react";
-import { PLATFORM_FEE_RATE, FREE_FALLBACK_FEE } from "@/lib/pricing";
+import { ArrowLeft, Info, Sparkles } from "lucide-react";
+import { PLATFORM_FEE_RATE, FREE_FALLBACK_FEE, isPremiumTier } from "@/lib/pricing";
 
 const CreateExperience = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [hostTier, setHostTier] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setHostTier(data?.subscription_tier ?? null));
+  }, [user?.id]);
+
+  const hostIsPremium = isPremiumTier(hostTier);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -36,9 +49,12 @@ const CreateExperience = () => {
 
   const basePrice = parseFloat(form.price);
   const hasPrice = !isNaN(basePrice) && basePrice > 0;
-  const totalPrice = hasPrice
-    ? basePrice * (1 + PLATFORM_FEE_RATE)
+  const fee = hostIsPremium
+    ? 0
+    : hasPrice
+    ? basePrice * PLATFORM_FEE_RATE
     : FREE_FALLBACK_FEE;
+  const totalPrice = (hasPrice ? basePrice : 0) + fee;
   const fmt = (n: number) => n.toFixed(2).replace(/\.00$/, "");
 
   const handleSubmit = async () => {
@@ -48,8 +64,9 @@ const CreateExperience = () => {
       const tags = form.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
       const itinerary = form.itinerary.split("\n").map((l) => l.trim()).filter(Boolean);
 
-      // Always store a price: host's price + 10% fee, or flat $1 platform fee if free.
-      const priceStr = `$${fmt(totalPrice)}`;
+      // Store the host's raw base price. Platform fees and premium discounts
+      // are applied at display time based on host & viewer subscription tiers.
+      const priceStr = hasPrice ? `$${fmt(basePrice)}` : null;
 
       const payload: any = {
         host_id: user.id,
