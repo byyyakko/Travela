@@ -63,7 +63,6 @@ const tiers: TierInfo[] = [
       { text: "No platform fee on experiences you host", icon: BadgePercent },
       { text: "50% off last-minute experience deals", icon: PartyPopper },
       { text: "Cultural translation layer", icon: Languages },
-      { text: "Smart local itineraries", icon: MapPin },
       { text: "Offline mode access", icon: Wifi },
     ],
   },
