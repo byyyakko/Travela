@@ -151,15 +151,15 @@ const CreateExperience = () => {
                 <>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Your stated price</span>
-                    <span>{form.currency}{fmt(basePrice)}</span>
+                    <span>${fmt(basePrice)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Platform fee (10%)</span>
-                    <span>{form.currency}{fmt(basePrice * PLATFORM_FEE_RATE)}</span>
+                    <span>${fmt(basePrice * PLATFORM_FEE_RATE)}</span>
                   </div>
                   <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
                     <span>Bookers see</span>
-                    <span>{form.currency}{fmt(totalPrice)}</span>
+                    <span>${fmt(totalPrice)}</span>
                   </div>
                 </>
               ) : (
