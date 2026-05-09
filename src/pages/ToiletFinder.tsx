@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { utilToilets, utilGeocode } from "@/lib/aiClient";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -30,6 +33,7 @@ import {
   DollarSign,
   GraduationCap,
   Cross,
+  Trash2,
 } from "lucide-react";
 
 interface Toilet {
@@ -82,6 +86,192 @@ const cleanlinessColors: Record<number, string> = {
 
 const CLEANLINESS_MARKER_COLORS: Record<number, string> = {
   1: "#ef4444", 2: "#f97316", 3: "#eab308", 4: "#22c55e", 5: "#10b981",
+};
+
+// Stable identifier for a toilet across sessions
+const toiletKey = (t: { name: string; latitude: number; longitude: number }) =>
+  `${t.latitude.toFixed(4)},${t.longitude.toFixed(4)}|${t.name.toLowerCase().trim()}`;
+
+interface ToiletReview {
+  id: string;
+  user_id: string;
+  toilet_key: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  profiles?: { display_name: string | null; avatar_url: string | null } | null;
+}
+
+const ToiletReviews = ({ toilet }: { toilet: Toilet }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const key = toiletKey(toilet);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+
+  const { data: reviews = [], isLoading } = useQuery({
+    queryKey: ["toilet-reviews", key],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("toilet_reviews")
+        .select("id, user_id, toilet_key, rating, comment, created_at")
+        .eq("toilet_key", key)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const userIds = Array.from(new Set((data || []).map((r) => r.user_id)));
+      let profileMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, avatar_url")
+          .in("user_id", userIds);
+        profileMap = Object.fromEntries((profs || []).map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }]));
+      }
+      return (data || []).map((r) => ({ ...r, profiles: profileMap[r.user_id] || null })) as ToiletReview[];
+    },
+  });
+
+  const myReview = reviews.find((r) => r.user_id === user?.id);
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Sign in to leave a review.");
+      if (rating < 1 || rating > 5) throw new Error("Please select a rating.");
+      const trimmed = comment.trim().slice(0, 500);
+      const { error } = await supabase.from("toilet_reviews").upsert(
+        {
+          user_id: user.id,
+          toilet_key: key,
+          toilet_name: toilet.name,
+          latitude: toilet.latitude,
+          longitude: toilet.longitude,
+          rating,
+          comment: trimmed || null,
+        },
+        { onConflict: "user_id,toilet_key" }
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Review saved" });
+      setRating(0);
+      setComment("");
+      queryClient.invalidateQueries({ queryKey: ["toilet-reviews", key] });
+    },
+    onError: (err: Error) => toast({ title: "Could not save review", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("toilet_reviews").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Review deleted" });
+      queryClient.invalidateQueries({ queryKey: ["toilet-reviews", key] });
+    },
+  });
+
+  // Pre-fill if user already reviewed
+  useEffect(() => {
+    if (myReview && rating === 0 && !comment) {
+      setRating(myReview.rating);
+      setComment(myReview.comment || "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myReview?.id]);
+
+  const avg = reviews.length
+    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+    : 0;
+
+  return (
+    <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-muted-foreground">User Reviews</p>
+        {reviews.length > 0 && (
+          <div className="flex items-center gap-1 text-xs">
+            <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
+            <span className="font-bold">{avg.toFixed(1)}</span>
+            <span className="text-muted-foreground">({reviews.length})</span>
+          </div>
+        )}
+      </div>
+
+      {/* Form */}
+      {user ? (
+        <div className="rounded-lg border-2 border-border p-3 space-y-2 bg-background">
+          <p className="text-xs font-medium">{myReview ? "Update your review" : "Leave a review"}</p>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                className="p-0.5 hover:scale-110 transition-transform"
+              >
+                <Star className={`w-6 h-6 ${n <= rating ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/40"}`} />
+              </button>
+            ))}
+          </div>
+          <Textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Share your experience (optional)"
+            maxLength={500}
+            rows={2}
+            className="text-sm"
+          />
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => submitMutation.mutate()}
+              disabled={submitMutation.isPending || rating === 0}
+              className="flex-1"
+            >
+              {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : myReview ? "Update Review" : "Submit Review"}
+            </Button>
+            {myReview && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => deleteMutation.mutate(myReview.id)}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground italic">Sign in to leave a review.</p>
+      )}
+
+      {/* Existing reviews */}
+      {isLoading ? (
+        <div className="flex justify-center py-2"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+      ) : reviews.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">No reviews yet — be the first!</p>
+      ) : (
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {reviews.map((r) => (
+            <div key={r.id} className="rounded-lg border border-border p-2.5 bg-muted/30">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold truncate">{r.profiles?.display_name || "Traveller"}</span>
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className={`w-3 h-3 ${i < r.rating ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/30"}`} />
+                  ))}
+                </div>
+              </div>
+              {r.comment && <p className="text-xs text-foreground/80">{r.comment}</p>}
+              <p className="text-[10px] text-muted-foreground mt-1">{new Date(r.created_at).toLocaleDateString()}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const ToiletFinder = () => {
