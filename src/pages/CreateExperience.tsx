@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Info } from "lucide-react";
-import { PLATFORM_FEE_RATE } from "@/lib/pricing";
+import { PLATFORM_FEE_RATE, FREE_FALLBACK_FEE } from "@/lib/pricing";
 
 const CreateExperience = () => {
   const { user } = useAuth();
@@ -37,7 +37,9 @@ const CreateExperience = () => {
 
   const basePrice = parseFloat(form.price);
   const hasPrice = !isNaN(basePrice) && basePrice > 0;
-  const totalPrice = hasPrice ? basePrice * (1 + PLATFORM_FEE_RATE) : 0;
+  const totalPrice = hasPrice
+    ? basePrice * (1 + PLATFORM_FEE_RATE)
+    : FREE_FALLBACK_FEE;
   const fmt = (n: number) => n.toFixed(2).replace(/\.00$/, "");
 
   const handleSubmit = async () => {
@@ -47,10 +49,9 @@ const CreateExperience = () => {
       const tags = form.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
       const itinerary = form.itinerary.split("\n").map((l) => l.trim()).filter(Boolean);
 
-      let priceStr: string | null = null;
-      if (hasPrice) {
-        priceStr = `${form.currency}${fmt(totalPrice)}`;
-      }
+      // Always store a price: host's price + 10% fee, or flat $1 platform fee if free.
+      const currency = hasPrice ? form.currency : "$";
+      const priceStr = `${currency}${fmt(totalPrice)}`;
 
       const payload: any = {
         host_id: user.id,
@@ -148,25 +149,38 @@ const CreateExperience = () => {
                 </div>
               </div>
             </div>
-            {hasPrice && (
-              <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm space-y-1">
-                <div className="flex items-center gap-2 font-semibold">
-                  <Info className="w-4 h-4" /> Price breakdown
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Your stated price</span>
-                  <span>{form.currency}{fmt(basePrice)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Platform fee (10%)</span>
-                  <span>{form.currency}{fmt(basePrice * PLATFORM_FEE_RATE)}</span>
-                </div>
-                <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
-                  <span>Bookers see</span>
-                  <span>{form.currency}{fmt(totalPrice)}</span>
-                </div>
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm space-y-1">
+              <div className="flex items-center gap-2 font-semibold">
+                <Info className="w-4 h-4" /> Price breakdown
               </div>
-            )}
+              {hasPrice ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Your stated price</span>
+                    <span>{form.currency}{fmt(basePrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Platform fee (10%)</span>
+                    <span>{form.currency}{fmt(basePrice * PLATFORM_FEE_RATE)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
+                    <span>Bookers see</span>
+                    <span>{form.currency}{fmt(totalPrice)}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Free experience — flat platform fee</span>
+                    <span>${fmt(FREE_FALLBACK_FEE)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
+                    <span>Bookers see</span>
+                    <span>${fmt(FREE_FALLBACK_FEE)}</span>
+                  </div>
+                </>
+              )}
+            </div>
             <div>
               <Label>Meeting Point</Label>
               <Input value={form.meeting_point} onChange={(e) => update("meeting_point", e.target.value)} placeholder="e.g. Chinatown MRT Exit A" />
