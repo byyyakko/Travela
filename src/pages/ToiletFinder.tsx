@@ -595,12 +595,6 @@ const ToiletFinder = () => {
                               className="overflow-hidden"
                             >
                               <div className="mt-4 pt-3 border-t border-border space-y-3">
-                                {toilet.notes && (
-                                  <div>
-                                    <p className="text-xs font-semibold text-muted-foreground mb-1">Notes</p>
-                                    <p className="text-sm">{toilet.notes}</p>
-                                  </div>
-                                )}
                                 <div>
                                   <p className="text-xs font-semibold text-muted-foreground mb-1">
                                     <Navigation className="w-3 h-3 inline mr-1" />
@@ -620,6 +614,9 @@ const ToiletFinder = () => {
                                   <Navigation className="w-4 h-4" />
                                   Open in Google Maps
                                 </Button>
+                                <div className="pt-3 border-t border-border">
+                                  <ToiletReviews toilet={toilet} />
+                                </div>
                               </div>
                             </motion.div>
                           )}
