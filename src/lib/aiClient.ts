@@ -1,74 +1,55 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "";
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data: { session } } = await supabase.auth.getSession();
-  return {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${session?.access_token ?? ""}`,
-  };
-}
-
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const resp = await fetch(`${BACKEND_URL}${path}`, {
-    method: "POST",
-    headers: await authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.detail || `AI request failed (${resp.status})`);
-  }
-  return resp.json();
+async function invoke<T>(fn: string, body: unknown): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(fn, { body });
+  if (error) throw new Error(error.message || `Edge function ${fn} failed`);
+  return data as T;
 }
 
 export const aiItinerary = (prompt: string) =>
-  post<Record<string, unknown>>("/ai/itinerary", { prompt });
+  invoke<Record<string, unknown>>("ai-travel", { type: "itinerary", prompt });
 
 export const aiPhrases = (country: string) =>
-  post<Record<string, unknown>>("/ai/phrases", { country });
+  invoke<Record<string, unknown>>("ai-travel", { type: "phrases", country });
 
 export const aiAttractions = (country: string, category?: string) =>
-  post<{ country: string; attractions: unknown[] }>("/ai/attractions", { country, category });
+  invoke<{ country: string; attractions: unknown[] }>("ai-travel", {
+    type: "explore-attractions",
+    country,
+    category,
+  });
 
 export const aiTranslate = (message: string, destination_country?: string) =>
-  post<{
+  invoke<{
     cultural_context: string;
     suggested_response: string;
     tips: string[];
     politeness_level: string;
-  }>("/ai/translate", { message, destination_country });
+  }>("ai-travel", { type: "cultural-translation", message, destination_country });
 
 export const aiChat = (messages: { role: string; content: string }[]) =>
-  post<{ role: string; content: string }>("/ai/chat", { messages });
+  invoke<{ role: string; content: string }>("tori-tan-chat", { messages });
 
-// ── Utility endpoints (replaces Lovable edge functions) ───────────────────────
-
-export const utilGeocode = (address: string): Promise<{
-  latitude: number | null;
-  longitude: number | null;
-  formattedAddress: string | null;
-  error?: string;
-}> =>
-  fetch(`${BACKEND_URL}/utils/geocode`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ address }),
-  }).then(r => r.json());
+export const utilGeocode = (address: string) =>
+  invoke<{
+    latitude: number | null;
+    longitude: number | null;
+    formattedAddress: string | null;
+    error?: string;
+  }>("geocode-address", { address });
 
 export const utilProfanity = (text: string) =>
-  post<{ is_profane: boolean }>("/utils/profanity", { text });
+  invoke<{ is_profane: boolean }>("check-profanity", { text });
 
 export const utilToilets = (latitude: number, longitude: number) =>
-  post<{ toilets: unknown[] }>("/utils/toilets", { latitude, longitude });
+  invoke<{ toilets: unknown[] }>("find-toilets", { latitude, longitude });
 
 export const utilModerateImage = (image_url: string) =>
-  post<{
+  invoke<{
     is_safe: boolean;
     is_nsfw: boolean;
     is_vulgar: boolean;
     is_ai_generated: boolean;
     confidence: number;
     reason: string;
-  }>("/utils/moderate-image", { image_url });
+  }>("moderate-image", { image_url });
