@@ -383,11 +383,6 @@ const SmartItinerary = () => {
           </motion.div>
         )}
 
-        {/* Travela Plus badge */}
-        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-          <Star className="w-3 h-3 mr-1" /> Travela Plus Feature — Unlocked ✨
-        </Badge>
-
         {/* Prompt input */}
         <Card className="p-5 cutesy-border bg-card/95">
           <div className="flex items-start gap-3 mb-4">

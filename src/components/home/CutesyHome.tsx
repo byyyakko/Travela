@@ -73,7 +73,7 @@ const quickActions = [
   { icon: Globe, label: "Ask Local", path: "/ask-local", paid: false, tour: "ask-local", external: false },
   { icon: MapPin, label: "Plan", path: "/planner", paid: false, tour: "plan", external: false },
   { icon: BookOpen, label: "Phrases", path: "/common-phrases", paid: false, tour: "phrases", external: false },
-  { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: true, tour: "ai-trip", external: false },
+ { icon: Sparkles, label: "AI Trip", path: "/smart-itinerary", paid: false, tour: "ai-trip", external: false },
   { icon: MapIcon, label: "Map", path: "/map", paid: false, tour: "map", external: false },
   { icon: Crown, label: "Subscribe", path: "/subscription", paid: false, tour: "subscribe", external: false },
   { icon: MessageSquareHeart, label: "Feedback", path: "https://docs.google.com/forms/d/e/1FAIpQLSdSJzpsXHeVMqX0aJoi4bRbwT-k0Xjj2bzM2YaoySeZLmi_jw/viewform?usp=publish-editor", paid: false, tour: "feedback", external: true },
