@@ -32,7 +32,6 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { BACKEND_URL as backendUrl } from "@/lib/config";
 
 const INTEREST_CHIPS = [
   "Food", "Culture", "Outdoors", "Night", "Arts", "Tech", "History", "Music",
@@ -154,6 +153,7 @@ const Match = () => {
     enabled: !!user,
   });
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
   const sameGenderOnly = !!(userProfile?.same_gender_only) &&
     !!userProfile?.gender && userProfile.gender !== "prefer_not_to_say";
 
