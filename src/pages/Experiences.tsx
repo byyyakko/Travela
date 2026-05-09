@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { scoreExperiences, type UserPreferences } from "@/lib/recommendations";
+import { computeBookerPrice, isPremiumTier } from "@/lib/pricing";
 
 const TAG_CHIPS = ["Food", "Culture", "Outdoors", "Night", "Arts", "Tech", "Study", "Volunteering", "Photo", "Music"];
 
@@ -79,7 +80,7 @@ const Experiences = () => {
       const hostIds = [...new Set(data.map((e: any) => e.host_id))];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, display_name, avatar_url")
+        .select("user_id, display_name, avatar_url, subscription_tier")
         .in("user_id", hostIds);
       const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p]));
 
@@ -134,6 +135,27 @@ const Experiences = () => {
     if (!prefs || !experiences || hasFiltersOrSearch) return [];
     return scoreExperiences(prefs, experiences).slice(0, 3);
   }, [prefs, experiences, hasFiltersOrSearch]);
+
+  const viewerTier = (userProfile as any)?.subscription_tier;
+  const viewerIsPremium = isPremiumTier(viewerTier);
+
+  const lastMinuteDeals = useMemo(() => {
+    if (!viewerIsPremium || !experiences || hasFiltersOrSearch) return [];
+    return experiences
+      .map((e: any) => {
+        const spotsLeft = e.max_people ? e.max_people - e.approved_count : null;
+        const bp = computeBookerPrice({
+          price: e.price,
+          hostTier: e.host?.subscription_tier,
+          viewerTier,
+          schedule: e.schedule,
+          spotsLeft,
+        });
+        return { exp: e, bp, spotsLeft };
+      })
+      .filter((x) => x.bp.isLastMinuteDeal)
+      .slice(0, 5);
+  }, [experiences, viewerTier, viewerIsPremium, hasFiltersOrSearch]);
   return (
     <AppLayout>
       <div className="space-y-5">
