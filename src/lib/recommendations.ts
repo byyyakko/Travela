@@ -1,5 +1,5 @@
 /**
- * Client-side recommendation engine for Circles and Experiences.
+ * Client-side recommendation engine for Experiences.
  * Computes overlap scores and generates transparent explanation strings.
  */
 
