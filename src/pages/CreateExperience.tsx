@@ -164,16 +164,23 @@ const CreateExperience = () => {
               <div className="flex items-center gap-2 font-semibold">
                 <Info className="w-4 h-4" /> Price breakdown
               </div>
+              {hostIsPremium && (
+                <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
+                  <Sparkles className="w-3.5 h-3.5" /> Travela Plus — no platform fee
+                </div>
+              )}
               {hasPrice ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Your stated price</span>
                     <span>${fmt(basePrice)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Platform fee (10%)</span>
-                    <span>${fmt(basePrice * PLATFORM_FEE_RATE)}</span>
-                  </div>
+                  {!hostIsPremium && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Platform fee (10%)</span>
+                      <span>${fmt(basePrice * PLATFORM_FEE_RATE)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
                     <span>Bookers see</span>
                     <span>${fmt(totalPrice)}</span>
@@ -181,13 +188,20 @@ const CreateExperience = () => {
                 </>
               ) : (
                 <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Free experience — flat platform fee</span>
-                    <span>${fmt(FREE_FALLBACK_FEE)}</span>
-                  </div>
+                  {hostIsPremium ? (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Free experience</span>
+                      <span>$0</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Free experience — flat platform fee</span>
+                      <span>${fmt(FREE_FALLBACK_FEE)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
                     <span>Bookers see</span>
-                    <span>${fmt(FREE_FALLBACK_FEE)}</span>
+                    <span>{totalPrice === 0 ? "Free" : `$${fmt(totalPrice)}`}</span>
                   </div>
                 </>
               )}
