@@ -32,9 +32,6 @@ import CommonPhrases from "./pages/CommonPhrases";
 import SmartItinerary from "./pages/SmartItinerary";
 import Feedback from "./pages/Feedback";
 import ToiletFinder from "./pages/ToiletFinder";
-import Circles from "./pages/Circles";
-import CircleDetail from "./pages/CircleDetail";
-import MeetupDetail from "./pages/MeetupDetail";
 import Experiences from "./pages/Experiences";
 import ExperienceDetail from "./pages/ExperienceDetail";
 import CreateExperience from "./pages/CreateExperience";
@@ -120,9 +117,6 @@ const AppRoutes = () => {
       <Route path="/smart-itinerary" element={<ProtectedRoute><SmartItinerary /></ProtectedRoute>} />
       <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
       <Route path="/toilet-finder" element={<ProtectedRoute><ToiletFinder /></ProtectedRoute>} />
-      <Route path="/circles" element={<ProtectedRoute><Circles /></ProtectedRoute>} />
-      <Route path="/circles/:circleId" element={<ProtectedRoute><CircleDetail /></ProtectedRoute>} />
-      <Route path="/circles/:circleId/meetup/:meetupId" element={<ProtectedRoute><MeetupDetail /></ProtectedRoute>} />
       <Route path="/experiences" element={<ProtectedRoute><Experiences /></ProtectedRoute>} />
       <Route path="/experiences/create" element={<ProtectedRoute><CreateExperience /></ProtectedRoute>} />
       <Route path="/experiences/my-requests" element={<ProtectedRoute><ExperienceRequests /></ProtectedRoute>} />
