@@ -732,7 +732,6 @@ export type Database = {
           destination: string | null
           display_name: string | null
           email: string
-          gender: "female" | "male" | "non_binary" | "prefer_not_to_say" | null
           has_seen_tutorial: boolean
           id: string
           interests: string[] | null
@@ -744,7 +743,6 @@ export type Database = {
           max_age_preference: number | null
           min_age_preference: number | null
           restriction_reason: string | null
-          same_gender_only: boolean
           subscription_tier: Database["public"]["Enums"]["user_subscription_tier"]
           theme: Database["public"]["Enums"]["user_theme"]
           time_availability: string[] | null
@@ -762,7 +760,6 @@ export type Database = {
           destination?: string | null
           display_name?: string | null
           email: string
-          gender?: "female" | "male" | "non_binary" | "prefer_not_to_say" | null
           has_seen_tutorial?: boolean
           id?: string
           interests?: string[] | null
@@ -774,7 +771,6 @@ export type Database = {
           max_age_preference?: number | null
           min_age_preference?: number | null
           restriction_reason?: string | null
-          same_gender_only?: boolean
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
           time_availability?: string[] | null
@@ -792,7 +788,6 @@ export type Database = {
           destination?: string | null
           display_name?: string | null
           email?: string
-          gender?: "female" | "male" | "non_binary" | "prefer_not_to_say" | null
           has_seen_tutorial?: boolean
           id?: string
           interests?: string[] | null
@@ -804,7 +799,6 @@ export type Database = {
           max_age_preference?: number | null
           min_age_preference?: number | null
           restriction_reason?: string | null
-          same_gender_only?: boolean
           subscription_tier?: Database["public"]["Enums"]["user_subscription_tier"]
           theme?: Database["public"]["Enums"]["user_theme"]
           time_availability?: string[] | null
