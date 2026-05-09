@@ -153,7 +153,7 @@ const Match = () => {
     enabled: !!user,
   });
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL?.trim() || "https://travela-backend-p2zp.onrender.com";
   const sameGenderOnly = !!(userProfile?.same_gender_only) &&
     !!userProfile?.gender && userProfile.gender !== "prefer_not_to_say";
 

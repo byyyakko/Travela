@@ -12,7 +12,7 @@ function getSessionId() {
 
 type EventData = Record<string, unknown>;
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL?.trim() || "https://travela-backend-p2zp.onrender.com";
 
 export function useAnalytics(page: string) {
   const { user } = useAuth();
@@ -20,7 +20,6 @@ export function useAnalytics(page: string) {
 
   const track = useCallback(
     (eventType: string, eventData?: EventData) => {
-      if (!BACKEND_URL) return;
       fetch(`${BACKEND_URL}/analytics`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

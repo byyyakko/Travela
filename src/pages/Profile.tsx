@@ -135,7 +135,7 @@ const Profile = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "edit">("profile");
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL?.trim() || "https://travela-backend-p2zp.onrender.com";
 
   // Load gender preference from Neon via backend
   const { data: neonGender } = useQuery({
