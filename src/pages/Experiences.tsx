@@ -321,6 +321,43 @@ const Experiences = () => {
           </section>
         )}
 
+        {/* Premium last-minute deals */}
+        {lastMinuteDeals.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold flex items-center gap-1.5 text-primary">
+              <Sparkles className="w-4 h-4" /> Plus deals · 50% off last-minute
+            </h2>
+            <div className="grid gap-2">
+              {lastMinuteDeals.map(({ exp, bp, spotsLeft }) => (
+                <Card
+                  key={exp.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow border-primary border-2 bg-primary/5"
+                  onClick={() => navigate(`/experiences/${exp.id}`)}
+                >
+                  <CardContent className="p-3 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-bold text-sm">{exp.title}</h3>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {bp.originalDisplay && (
+                          <span className="text-[10px] text-muted-foreground line-through">{bp.originalDisplay}</span>
+                        )}
+                        <Badge className="bg-primary text-primary-foreground text-xs">{bp.display}</Badge>
+                      </div>
+                    </div>
+                    {exp.schedule && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <CalIcon className="w-3 h-3" />
+                        {format(new Date(exp.schedule), "MMM d, h:mm a")}
+                        {spotsLeft !== null && ` · ${spotsLeft} spot${spotsLeft !== 1 ? "s" : ""} left`}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Experience cards */}
         {isLoading ? (
           <div className="grid gap-3">
@@ -336,6 +373,13 @@ const Experiences = () => {
           <div className="grid gap-3">
             {experiences.map((exp: any, i: number) => {
               const spotsLeft = exp.max_people ? exp.max_people - exp.approved_count : null;
+              const bp = computeBookerPrice({
+                price: exp.price,
+                hostTier: exp.host?.subscription_tier,
+                viewerTier,
+                schedule: exp.schedule,
+                spotsLeft,
+              });
               return (
                 <motion.div
                   key={exp.id}
@@ -351,12 +395,21 @@ const Experiences = () => {
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="font-bold text-base leading-tight">{exp.title}</h3>
-                          {exp.price && (
-                            <Badge variant="secondary" className="shrink-0 text-xs">{exp.price}</Badge>
-                          )}
-                          {!exp.price && (
-                            <Badge className="bg-green-100 text-green-700 shrink-0 text-xs">Free</Badge>
-                          )}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {bp.isLastMinuteDeal && bp.originalDisplay && (
+                              <span className="text-[10px] text-muted-foreground line-through">{bp.originalDisplay}</span>
+                            )}
+                            {bp.total === 0 ? (
+                              <Badge className="bg-green-100 text-green-700 text-xs">Free</Badge>
+                            ) : (
+                              <Badge
+                                variant={bp.isLastMinuteDeal ? "default" : "secondary"}
+                                className={cn("text-xs", bp.isLastMinuteDeal && "bg-primary text-primary-foreground")}
+                              >
+                                {bp.display}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
 
                         {/* Tags */}
