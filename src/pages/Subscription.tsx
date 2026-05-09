@@ -61,9 +61,7 @@ const tiers: TierInfo[] = [
     features: [
       { text: "Everything in Free Explorer", icon: Check },
       { text: "No platform fee on experiences you host", icon: BadgePercent },
-      { text: "50% off last-minute experience deals", icon: PartyPopper },
-      { text: "Cultural translation layer", icon: Languages },
-      { text: "Offline mode access", icon: Wifi },
+      { text: "Exclusive last-minute experience deals", icon: PartyPopper },
     ],
   },
 ];
