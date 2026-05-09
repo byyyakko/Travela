@@ -12,7 +12,6 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { scoreExperiences, type UserPreferences } from "@/lib/recommendations";
-import { displayPrice } from "@/lib/pricing";
 
 const Match = () => {
   const { user } = useAuth();
@@ -144,7 +143,7 @@ const Match = () => {
                             <div className="flex items-start justify-between gap-2">
                               <h3 className="font-bold text-base leading-tight">{(exp as any).title}</h3>
                               {(exp as any).price ? (
-                                <Badge variant="secondary" className="shrink-0 text-xs">{displayPrice((exp as any).price)}</Badge>
+                                <Badge variant="secondary" className="shrink-0 text-xs">{(exp as any).price}</Badge>
                               ) : (
                                 <Badge className="bg-green-100 text-green-700 shrink-0 text-xs">Free</Badge>
                               )}
