@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,7 +28,16 @@ import {
   Users,
   Languages,
   Send,
+  SlidersHorizontal,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -57,6 +66,9 @@ const Match = () => {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [selectedLocal, setSelectedLocal] = useState<LocalProfile | null>(null);
   const [connectMessage, setConnectMessage] = useState("");
+  const [prefOpen, setPrefOpen] = useState(false);
+  const [prefGender, setPrefGender] = useState<string>("");
+  const [prefSameGender, setPrefSameGender] = useState(false);
 
   // Current user profile (base fields from Supabase, gender from Neon)
   const { data: rawUserProfile } = useQuery({
@@ -89,6 +101,35 @@ const Match = () => {
   const userProfile = rawUserProfile
     ? { ...rawUserProfile, gender: myNeonGender?.gender ?? null, same_gender_only: myNeonGender?.same_gender_only ?? false }
     : null;
+
+  useEffect(() => {
+    if (myNeonGender) {
+      setPrefGender(myNeonGender.gender ?? "");
+      setPrefSameGender(myNeonGender.same_gender_only ?? false);
+    }
+  }, [myNeonGender]);
+
+  const savePrefsMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${backendUrl}/profiles/me/gender`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ gender: prefGender || null, same_gender_only: prefSameGender }),
+      });
+      if (!resp.ok) throw new Error("Failed to save preferences");
+      return resp.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["neonGender", user?.id] });
+      setPrefOpen(false);
+      toast({ title: "Preferences saved" });
+    },
+    onError: () => toast({ title: "Could not save preferences", variant: "destructive" }),
+  });
 
   // Fetch local guides (display fields only — gender comes from Neon)
   const { data: rawLocals, isLoading } = useQuery({
@@ -319,6 +360,96 @@ const Match = () => {
             </button>
           ))}
         </div>
+
+        {/* Match preferences filter row */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setPrefOpen(true)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
+              (prefGender || prefSameGender)
+                ? "bg-primary/10 border-primary text-primary"
+                : "bg-secondary border-border text-muted-foreground hover:bg-secondary/80"
+            )}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            Match Preferences
+            {prefSameGender && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-primary inline-block" />}
+          </button>
+          {prefGender && (
+            <span className="text-xs text-muted-foreground">
+              {prefGender === "prefer_not_to_say" ? "Any gender" : prefGender.replace("_", " ")}
+              {prefSameGender ? " · Same only" : ""}
+            </span>
+          )}
+        </div>
+
+        {/* Match preferences sheet */}
+        <Sheet open={prefOpen} onOpenChange={setPrefOpen}>
+          <SheetContent side="bottom" className="rounded-t-2xl pb-8">
+            <SheetHeader className="mb-4">
+              <SheetTitle className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                Match Preferences
+              </SheetTitle>
+            </SheetHeader>
+
+            <div className="space-y-5">
+              {/* Gender selector */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Your gender</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                    { value: "non_binary", label: "Non-binary" },
+                    { value: "prefer_not_to_say", label: "Prefer not to say" },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        setPrefGender(prefGender === value ? "" : value);
+                        if (value === "prefer_not_to_say" || value === "") setPrefSameGender(false);
+                      }}
+                      className={cn(
+                        "px-3 py-2 rounded-lg text-sm font-medium border transition-all text-left",
+                        prefGender === value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Same gender toggle */}
+              <div className={cn(
+                "flex items-center justify-between p-3 rounded-lg border transition-opacity",
+                (!prefGender || prefGender === "prefer_not_to_say") ? "opacity-40 pointer-events-none" : ""
+              )}>
+                <div>
+                  <Label className="text-sm font-semibold">Show same gender only</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Only see guides who share your gender</p>
+                </div>
+                <Switch
+                  checked={prefSameGender}
+                  onCheckedChange={setPrefSameGender}
+                  disabled={!prefGender || prefGender === "prefer_not_to_say"}
+                />
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={() => savePrefsMutation.mutate()}
+                disabled={savePrefsMutation.isPending}
+              >
+                {savePrefsMutation.isPending ? "Saving…" : "Save preferences"}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* Suggested locals */}
         {!hasFilters && scoredLocals.length > 0 && (

@@ -173,7 +173,7 @@ const Experiences = () => {
             placeholder='Search "hawker", "photo walk", "hidden gems"...'
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 rounded-full"
+            className="pl-10 rounded-full border-2 border-border/50 focus-visible:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
           />
         </div>
 
