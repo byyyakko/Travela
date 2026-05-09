@@ -6,13 +6,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_pool: pool.SimpleConnectionPool | None = None
+_pool: pool.ThreadedConnectionPool | None = None
 
 
-def get_pool() -> pool.SimpleConnectionPool:
+def get_pool() -> pool.ThreadedConnectionPool:
     global _pool
     if _pool is None:
-        _pool = pool.SimpleConnectionPool(
+        _pool = pool.ThreadedConnectionPool(
             minconn=1,
             maxconn=10,
             dsn=os.environ["NEON_DATABASE_URL"],

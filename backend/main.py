@@ -1,20 +1,28 @@
 """FastAPI backend for Travela compatibility ranking — v2."""
 
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+from psycopg2.extras import Json
 
 from model_service import rank_candidates, recommend_by_category
+from db import get_conn, put_conn
 from routers.ai import router as ai_router
 from routers.webhooks import router as webhooks_router
 from routers.utils import router as utils_router
 from routers.auth_rate import router as auth_rate_router
-from routers.moderation import router as moderation_router
+from routers.moderation import router as moderation_router, ensure_moderation_tables
 from routers.profiles import router as profiles_router
 
-app = FastAPI(title="Travela Match API", version="2.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_moderation_tables()
+    yield
+
+app = FastAPI(title="Travela Match API", version="2.0.0", lifespan=lifespan)
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
@@ -31,6 +39,8 @@ app.include_router(utils_router)
 app.include_router(auth_rate_router)
 app.include_router(moderation_router)
 app.include_router(profiles_router)
+
+MAX_CANDIDATES = 200
 
 
 # ── Schemas ─────────────────────────────────────────────────────────────────
@@ -95,6 +105,8 @@ def health():
 @app.post("/rank")
 def rank(req: RankRequest):
     """Rank candidates by compatibility with the user. Returns match_score and matched_interests."""
+    if len(req.candidates) > MAX_CANDIDATES:
+        raise HTTPException(status_code=422, detail=f"Too many candidates: max {MAX_CANDIDATES}")
     candidates = req.candidates
     if req.same_gender_only:
         candidates = _apply_gender_filter(req.user, candidates)
@@ -110,6 +122,8 @@ def rank(req: RankRequest):
 @app.post("/recommend")
 def recommend(req: RecommendRequest):
     """Filter candidates by gender and/or interest category, then rank."""
+    if len(req.candidates) > MAX_CANDIDATES:
+        raise HTTPException(status_code=422, detail=f"Too many candidates: max {MAX_CANDIDATES}")
     candidates = req.candidates
     if req.same_gender_only:
         candidates = _apply_gender_filter(req.user, candidates)
@@ -125,13 +139,10 @@ def recommend(req: RecommendRequest):
 @app.post("/analytics")
 def track_analytics(event: AnalyticsEvent):
     """Write an analytics event to Neon."""
-    neon_url = os.getenv("NEON_DATABASE_URL")
-    if not neon_url:
+    if not os.getenv("NEON_DATABASE_URL"):
         return {"status": "ok", "note": "neon not configured"}
+    conn = get_conn()
     try:
-        import psycopg2
-        from psycopg2.extras import Json
-        conn = psycopg2.connect(neon_url)
         cur = conn.cursor()
         cur.execute(
             """
@@ -148,8 +159,8 @@ def track_analytics(event: AnalyticsEvent):
             ),
         )
         conn.commit()
-        cur.close()
-        conn.close()
     except Exception as e:
         print(f"[analytics] write failed: {e}")
+    finally:
+        put_conn(conn)
     return {"status": "ok"}

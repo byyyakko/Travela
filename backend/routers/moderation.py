@@ -13,6 +13,7 @@ import os
 import json
 import httpx
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -49,7 +50,7 @@ class CheckBannedRequest(BaseModel):
 
 # ── Table bootstrap ───────────────────────────────────────────────────────────
 
-def _ensure_tables():
+def ensure_moderation_tables():
     neon_url = os.environ.get("NEON_DATABASE_URL")
     if not neon_url:
         return
@@ -90,7 +91,6 @@ def _ensure_tables():
         put_conn(conn)
 
 
-_ensure_tables()
 
 
 # ── Profanity pre-scan (Claude Haiku) ────────────────────────────────────────
@@ -114,7 +114,11 @@ def _has_profanity(text: str) -> bool:
 
 def _profanity_scan_messages(messages: list[MessageItem], reporter_id: str) -> bool:
     reported_msgs = [m for m in messages if m.sender_id != reporter_id][:20]
-    return any(_has_profanity(m.content) for m in reported_msgs)
+    if not reported_msgs:
+        return False
+    with ThreadPoolExecutor(max_workers=min(len(reported_msgs), 5)) as executor:
+        results = list(executor.map(lambda m: _has_profanity(m.content), reported_msgs))
+    return any(results)
 
 
 # ── Deep Claude Sonnet analysis ───────────────────────────────────────────────

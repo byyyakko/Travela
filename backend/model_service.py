@@ -218,6 +218,23 @@ def _bio_similarity(bio_a: str | None, bio_b: str | None) -> float:
         return 0.0
 
 
+def _batch_bio_similarities(user_bio: str | None, candidate_bios: list[str | None]) -> list[float]:
+    """Compute TF-IDF cosine similarity between user bio and all candidate bios in one vectorizer pass."""
+    n = len(candidate_bios)
+    if not user_bio or len(user_bio) < 5 or not n:
+        return [0.0] * n
+    cleaned = [b if b and len(b) >= 5 else "" for b in candidate_bios]
+    if not any(cleaned):
+        return [0.0] * n
+    try:
+        vec = TfidfVectorizer(stop_words="english", max_features=200)
+        mat = vec.fit_transform([user_bio] + cleaned)
+        sims = cosine_similarity(mat[0:1], mat[1:])[0]
+        return [float(max(0.0, s)) for s in sims]
+    except Exception:
+        return [0.0] * n
+
+
 def _location_features(
     loc_a: str | None,
     loc_b: str | None,
@@ -273,7 +290,7 @@ def _category_overlaps(
 
 # ── Feature vector ──────────────────────────────────────────────────────────
 
-def build_feature_vector(user: dict, candidate: dict) -> np.ndarray:
+def build_feature_vector(user: dict, candidate: dict, bio_sim: float = -1.0) -> np.ndarray:
     """Build a 55-element feature vector for a user–candidate pair."""
     u_scores = interests_to_scores(user.get("interests"))
     c_scores = interests_to_scores(candidate.get("interests"))
@@ -282,7 +299,8 @@ def build_feature_vector(user: dict, candidate: dict) -> np.ndarray:
     shared_lang_count, has_shared_lang = _language_features(
         user.get("languages"), candidate.get("languages")
     )
-    bio_sim = _bio_similarity(user.get("bio"), candidate.get("bio"))
+    if bio_sim < 0:
+        bio_sim = _bio_similarity(user.get("bio"), candidate.get("bio"))
     same_city, same_country = _location_features(
         user.get("location"), candidate.get("location")
     )
@@ -367,7 +385,8 @@ def rank_candidates(user: dict, candidates: list[dict]) -> list[dict]:
     """Score and sort candidates by XGBoost match probability."""
     if not candidates:
         return []
-    X = np.vstack([build_feature_vector(user, c) for c in candidates])
+    bio_sims = _batch_bio_similarities(user.get("bio"), [c.get("bio") for c in candidates])
+    X = np.vstack([build_feature_vector(user, c, bio_sim=bs) for c, bs in zip(candidates, bio_sims)])
     probs = model.predict_proba(X)[:, 1]
     scored = [
         {
