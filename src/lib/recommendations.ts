@@ -1,5 +1,5 @@
 /**
- * Client-side recommendation engine for Circles and Experiences.
+ * Client-side recommendation engine for Experiences.
  * Computes overlap scores and generates transparent explanation strings.
  */
 
@@ -81,37 +81,6 @@ function scheduleFit(
 }
 
 // ---- Public API ----
-
-export function scoreCircles<T extends { tags?: string[] | null; city?: string | null }>(
-  prefs: UserPreferences,
-  circles: T[],
-): ScoredItem<T>[] {
-  return circles
-    .map(circle => {
-      let score = 0;
-      const reasons: string[] = [];
-      const tags = circle.tags || [];
-
-      const { count, matched } = tagOverlap(prefs.interests, tags);
-      if (count > 0) {
-        score += count * 3;
-        reasons.push(`You chose: ${matched.join(" + ")}`);
-      }
-
-      if (cityMatch(prefs.location, prefs.destination, circle.city || null)) {
-        score += 2;
-        reasons.push(`In ${circle.city}`);
-      }
-
-      if (vibeMatch(prefs.activity_vibe, tags)) {
-        score += 1;
-      }
-
-      return { item: circle, score, reasons };
-    })
-    .filter(s => s.score > 0)
-    .sort((a, b) => b.score - a.score);
-}
 
 export function scoreExperiences<T extends { tags?: string[] | null; city?: string | null; schedule?: string | null; language?: string | null }>(
   prefs: UserPreferences,

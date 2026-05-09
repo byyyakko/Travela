@@ -52,9 +52,9 @@ const tutorialSteps = [
     message: "Chat with matches, guides, and travel buddies! 📨",
   },
   {
-    selector: '[data-tour="circles"]',
-    title: "Circles 🔵",
-    message: "Join interest-based groups and organize meetups! 🎉",
+    selector: '[data-tour="explore"]',
+    title: "Experiences 🌟",
+    message: "Discover and book experiences hosted by locals! ✨",
   },
   {
     selector: '[data-tour="toilet"]',
