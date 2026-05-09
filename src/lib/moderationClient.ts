@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "";
+import { BACKEND_URL } from "@/lib/config";
 
 async function authHeaders(): Promise<HeadersInit> {
   const { data: { session } } = await supabase.auth.getSession();

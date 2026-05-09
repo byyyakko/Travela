@@ -24,6 +24,7 @@ import { validateRealLocation } from "@/lib/validateLocation";
 import { containsProfanity, containsProfanityWithAI } from "@/lib/profanity";
 import { COMMON_LANGUAGES } from "@/lib/languages";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BACKEND_URL } from "@/lib/config";
 
 const MAX_PHOTOS = 6;
 const MAX_PROMPTS = 3;
@@ -135,7 +136,7 @@ const Profile = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "edit">("profile");
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
+  const backendUrl = BACKEND_URL;
 
   // Load gender preference from Neon via backend
   const { data: neonGender } = useQuery({
