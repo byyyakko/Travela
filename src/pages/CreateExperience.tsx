@@ -23,7 +23,6 @@ const CreateExperience = () => {
     city: "",
     duration: "",
     price: "",
-    currency: "$",
     max_people: "",
     meeting_point: "",
     schedule: "",
@@ -50,8 +49,7 @@ const CreateExperience = () => {
       const itinerary = form.itinerary.split("\n").map((l) => l.trim()).filter(Boolean);
 
       // Always store a price: host's price + 10% fee, or flat $1 platform fee if free.
-      const currency = hasPrice ? form.currency : "$";
-      const priceStr = `${currency}${fmt(totalPrice)}`;
+      const priceStr = `$${fmt(totalPrice)}`;
 
       const payload: any = {
         host_id: user.id,
@@ -95,7 +93,7 @@ const CreateExperience = () => {
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Experience Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 [&_input]:border-2 [&_input]:border-foreground/40 [&_input:focus-visible]:border-primary [&_textarea]:border-2 [&_textarea]:border-foreground/40 [&_textarea:focus-visible]:border-primary">
             <div>
               <Label>Title *</Label>
               <Input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Hawker Culture Walk — Chinatown" />
@@ -131,17 +129,13 @@ const CreateExperience = () => {
               </div>
               <div>
                 <Label>Price (per booking, optional)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    className="w-20"
-                    value={form.currency}
-                    onChange={(e) => update("currency", e.target.value)}
-                    placeholder="$"
-                  />
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">$</span>
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
+                    className="pl-7"
                     value={form.price}
                     onChange={(e) => update("price", e.target.value)}
                     placeholder="0 for free"
