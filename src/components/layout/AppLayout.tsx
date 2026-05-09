@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays, MessageSquareHeart, DoorOpen, CircleDot, Compass, Globe, Sparkles, Bath } from "lucide-react";
+import { Home, Users, User, MessageCircle, Search, Settings, CalendarDays, MessageSquareHeart, DoorOpen, Compass, Globe, Sparkles, Bath } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ const navItems = [
   { path: "/match", icon: Sparkles, label: "For You", tour: "for-you" },
   
   { path: "/messages", icon: MessageCircle, label: "Chat", tour: "chat" },
-  { path: "/circles", icon: CircleDot, label: "Circles", tour: "circles" },
   { path: "/toilet-finder", icon: Bath, label: "Toilet", tour: "toilet" },
 ];
 
