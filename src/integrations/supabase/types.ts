@@ -857,6 +857,45 @@ export type Database = {
         }
         Relationships: []
       }
+      toilet_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          rating: number
+          toilet_key: string
+          toilet_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          rating: number
+          toilet_key: string
+          toilet_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          rating?: number
+          toilet_key?: string
+          toilet_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           country: string
