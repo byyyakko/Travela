@@ -339,7 +339,7 @@ const Match = () => {
             placeholder="Search local guides..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 rounded-full"
+            className="pl-10 rounded-full border-2 border-border focus-visible:border-primary focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
           />
         </div>
 
