@@ -19,7 +19,7 @@ interface AppLayoutProps {
 
 const navItems = [
   { path: "/home", icon: Home, label: "Home", tour: "home" },
-  { path: "/experiences", icon: Compass, label: "Explore", tour: "explore" },
+  { path: "/experiences", icon: Compass, label: "Experiences", tour: "explore" },
   { path: "/match", icon: Sparkles, label: "For You", tour: "for-you" },
   
   { path: "/messages", icon: MessageCircle, label: "Chat", tour: "chat" },
