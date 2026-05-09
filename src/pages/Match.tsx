@@ -7,11 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, MapPin, Calendar as CalIcon, Clock, Users, CircleDot, Compass } from "lucide-react";
+import { Sparkles, MapPin, Calendar as CalIcon, Clock, Users, Compass } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { scoreCircles, scoreExperiences, type UserPreferences } from "@/lib/recommendations";
+import { scoreExperiences, type UserPreferences } from "@/lib/recommendations";
+import { displayPrice } from "@/lib/pricing";
 
 const Match = () => {
   const { user } = useAuth();
@@ -43,18 +44,6 @@ const Match = () => {
         time_availability: (userProfile as any).time_availability || [],
       }
     : null;
-
-  const { data: circles, isLoading: circlesLoading } = useQuery({
-    queryKey: ["allCircles"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("circles")
-        .select("*, circle_memberships(count)")
-        .order("created_at", { ascending: false });
-      return data || [];
-    },
-    enabled: !!user,
-  });
 
   const { data: experiences, isLoading: expLoading } = useQuery({
     queryKey: ["allExperiences"],
@@ -99,10 +88,9 @@ const Match = () => {
     enabled: !!user,
   });
 
-  const suggestedCircles = prefs && circles ? scoreCircles(prefs, circles).slice(0, 5) : [];
   const suggestedExperiences = prefs && experiences ? scoreExperiences(prefs, experiences).slice(0, 5) : [];
 
-  const isLoading = circlesLoading || expLoading || !userProfile;
+  const isLoading = expLoading || !userProfile;
 
   return (
     <AppLayout>
@@ -156,7 +144,7 @@ const Match = () => {
                             <div className="flex items-start justify-between gap-2">
                               <h3 className="font-bold text-base leading-tight">{(exp as any).title}</h3>
                               {(exp as any).price ? (
-                                <Badge variant="secondary" className="shrink-0 text-xs">{(exp as any).price}</Badge>
+                                <Badge variant="secondary" className="shrink-0 text-xs">{displayPrice((exp as any).price)}</Badge>
                               ) : (
                                 <Badge className="bg-green-100 text-green-700 shrink-0 text-xs">Free</Badge>
                               )}
@@ -207,62 +195,6 @@ const Match = () => {
               )}
             </section>
 
-            {/* Suggested Circles */}
-            <section className="space-y-3">
-              <div className="flex items-center gap-2">
-                <CircleDot className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold">Suggested Circles</h2>
-              </div>
-              {suggestedCircles.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">
-                  No circle suggestions yet — try joining some interests!
-                </p>
-              ) : (
-                <div className="grid gap-3">
-                  {suggestedCircles.map(({ item: circle, reasons }, i) => (
-                    <motion.div
-                      key={(circle as any).id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      <Card
-                        className="cursor-pointer hover:shadow-md transition-shadow border border-border/60"
-                        onClick={() => navigate(`/circles/${(circle as any).id}`)}
-                      >
-                        <CardContent className="p-4 space-y-2">
-                          <p className="text-[11px] text-primary font-medium bg-primary/10 rounded-full px-2.5 py-1 w-fit">
-                            💡 Suggested because {reasons[0]?.toLowerCase()}
-                            {reasons[1] ? ` and ${reasons[1].toLowerCase()}` : ""}
-                          </p>
-                          <h3 className="font-bold text-base">{(circle as any).name}</h3>
-                          {(circle as any).description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">{(circle as any).description}</p>
-                          )}
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {(circle as any).city && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" /> {(circle as any).city}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Users className="w-3 h-3" /> {(circle as any).circle_memberships?.[0]?.count || 0} members
-                            </span>
-                          </div>
-                          {(circle as any).tags?.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {(circle as any).tags.slice(0, 4).map((tag: string) => (
-                                <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">{tag}</Badge>
-                              ))}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </section>
           </>
         )}
       </div>
