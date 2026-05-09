@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Sparkles, MessageCircle, Map, MapPin, Globe, Wifi, Languages, Heart, Users } from "lucide-react";
+import { Check, Star, Sparkles, MessageCircle, Map, MapPin, Globe, Wifi, Languages, Heart, Users, BadgePercent, PartyPopper } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -60,10 +60,11 @@ const tiers: TierInfo[] = [
     highlighted: true,
     features: [
       { text: "Everything in Free Explorer", icon: Check },
+      { text: "No platform fee on experiences you host", icon: BadgePercent },
+      { text: "50% off last-minute experience deals", icon: PartyPopper },
       { text: "Cultural translation layer", icon: Languages },
       { text: "Smart local itineraries", icon: MapPin },
       { text: "Offline mode access", icon: Wifi },
-      { text: "Priority response nudging", icon: Sparkles },
     ],
   },
 ];

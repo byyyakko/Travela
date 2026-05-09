@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { Calendar, MapPin, Users, Clock, Shield, Globe, CheckCircle, XCircle, Package, Share2 } from "lucide-react";
 import { format } from "date-fns";
+import { computeBookerPrice } from "@/lib/pricing";
+import { Sparkles } from "lucide-react";
 
 const ExperienceDetail = () => {
   const { experienceId } = useParams<{ experienceId: string }>();
@@ -29,10 +31,20 @@ const ExperienceDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("experiences").select("*").eq("id", experienceId!).single();
       if (error) throw error;
-      const { data: profile } = await supabase.from("profiles").select("user_id, display_name, avatar_url, bio, languages").eq("user_id", data.host_id).maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("user_id, display_name, avatar_url, bio, languages, subscription_tier").eq("user_id", data.host_id).maybeSingle();
       return { ...data, host: profile };
     },
     enabled: !!experienceId,
+  });
+
+  const { data: viewerProfile } = useQuery({
+    queryKey: ["viewerSubscription", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.from("profiles").select("subscription_tier").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
   });
 
   const isHost = experience?.host_id === user?.id;
@@ -74,6 +86,16 @@ const ExperienceDetail = () => {
   const approvedCount = requests?.filter((r: any) => r.status === "approved").length || 0;
   const spotsLeft = experience?.max_people ? experience.max_people - approvedCount : null;
   const isFull = spotsLeft !== null && spotsLeft <= 0;
+
+  const bookerPrice = experience
+    ? computeBookerPrice({
+        price: experience.price,
+        hostTier: (experience.host as any)?.subscription_tier,
+        viewerTier: viewerProfile?.subscription_tier,
+        schedule: experience.schedule,
+        spotsLeft,
+      })
+    : null;
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/experiences/${experienceId}`;
@@ -184,10 +206,22 @@ const ExperienceDetail = () => {
           )}
 
           {/* Price */}
-          {experience.price ? (
-            <Badge variant="outline" className="text-sm">{experience.price}</Badge>
-          ) : (
-            <Badge className="bg-green-100 text-green-700 text-sm">Free</Badge>
+          {bookerPrice && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {bookerPrice.total === 0 ? (
+                <Badge className="bg-green-100 text-green-700 text-sm">Free</Badge>
+              ) : (
+                <Badge variant="outline" className="text-sm">{bookerPrice.display}</Badge>
+              )}
+              {bookerPrice.isLastMinuteDeal && bookerPrice.originalDisplay && (
+                <>
+                  <span className="text-xs text-muted-foreground line-through">{bookerPrice.originalDisplay}</span>
+                  <Badge className="bg-primary text-primary-foreground text-xs gap-1">
+                    <Sparkles className="w-3 h-3" /> 50% off · Plus deal
+                  </Badge>
+                </>
+              )}
+            </div>
           )}
         </div>
 
