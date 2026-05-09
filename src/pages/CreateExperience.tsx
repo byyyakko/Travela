@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
+import { PLATFORM_FEE_RATE } from "@/lib/pricing";
 
 const CreateExperience = () => {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ const CreateExperience = () => {
     city: "",
     duration: "",
     price: "",
+    currency: "$",
     max_people: "",
     meeting_point: "",
     schedule: "",
@@ -33,12 +35,22 @@ const CreateExperience = () => {
 
   const update = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
 
+  const basePrice = parseFloat(form.price);
+  const hasPrice = !isNaN(basePrice) && basePrice > 0;
+  const totalPrice = hasPrice ? basePrice * (1 + PLATFORM_FEE_RATE) : 0;
+  const fmt = (n: number) => n.toFixed(2).replace(/\.00$/, "");
+
   const handleSubmit = async () => {
     if (!user || !form.title.trim()) return;
     setSubmitting(true);
     try {
       const tags = form.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
       const itinerary = form.itinerary.split("\n").map((l) => l.trim()).filter(Boolean);
+
+      let priceStr: string | null = null;
+      if (hasPrice) {
+        priceStr = `${form.currency}${fmt(totalPrice)}`;
+      }
 
       const payload: any = {
         host_id: user.id,
@@ -47,7 +59,7 @@ const CreateExperience = () => {
         tags,
         city: form.city.trim() || null,
         duration: form.duration.trim() || null,
-        price: form.price.trim() || null,
+        price: priceStr,
         meeting_point: form.meeting_point.trim() || null,
         safety_guidelines: form.safety_guidelines.trim() || null,
         what_to_bring: form.what_to_bring.trim() || null,
@@ -117,10 +129,44 @@ const CreateExperience = () => {
                 <Input type="number" min="2" value={form.max_people} onChange={(e) => update("max_people", e.target.value)} placeholder="e.g. 6" />
               </div>
               <div>
-                <Label>Price (optional)</Label>
-                <Input value={form.price} onChange={(e) => update("price", e.target.value)} placeholder="e.g. $15 or Free" />
+                <Label>Price (per booking, optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    className="w-20"
+                    value={form.currency}
+                    onChange={(e) => update("currency", e.target.value)}
+                    placeholder="$"
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.price}
+                    onChange={(e) => update("price", e.target.value)}
+                    placeholder="0 for free"
+                  />
+                </div>
               </div>
             </div>
+            {hasPrice && (
+              <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm space-y-1">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Info className="w-4 h-4" /> Price breakdown
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Your stated price</span>
+                  <span>{form.currency}{fmt(basePrice)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Platform fee (10%)</span>
+                  <span>{form.currency}{fmt(basePrice * PLATFORM_FEE_RATE)}</span>
+                </div>
+                <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
+                  <span>Bookers see</span>
+                  <span>{form.currency}{fmt(totalPrice)}</span>
+                </div>
+              </div>
+            )}
             <div>
               <Label>Meeting Point</Label>
               <Input value={form.meeting_point} onChange={(e) => update("meeting_point", e.target.value)} placeholder="e.g. Chinatown MRT Exit A" />
