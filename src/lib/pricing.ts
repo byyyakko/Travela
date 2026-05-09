@@ -4,6 +4,12 @@
  */
 export const PLATFORM_FEE_RATE = 0.1;
 
+/**
+ * Flat platform fee charged to bookers when the host marks the
+ * experience as free / no payment required.
+ */
+export const FREE_FALLBACK_FEE = 1;
+
 const CURRENCY_SYMBOLS = ["$", "€", "£", "¥", "₹", "S$", "A$", "C$", "HK$", "NZ$", "RM", "฿", "₱", "₩", "₫", "kr", "zł"];
 
 /**
