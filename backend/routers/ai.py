@@ -245,9 +245,8 @@ Analyse the cultural context of the message and return ONLY valid JSON:
         system=system,
         messages=[{"role": "user", "content": req.message}],
     )
-    import json
     try:
-        return json.loads(response.content[0].text)
+        return extract_json(response.content[0].text)
     except Exception:
         return {
             "cultural_context": response.content[0].text,

@@ -1,5 +1,5 @@
 """Utility endpoints replacing Lovable Supabase edge functions."""
-import os, json
+import os, json, base64
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -102,29 +102,48 @@ def find_toilets(req: ToiletsRequest, _user_id: str = Depends(require_auth)):
 
 # ── Image moderation ──────────────────────────────────────────────────────────
 
+_MODERATION_SYSTEM = 'Analyse this image for moderation. Respond ONLY with valid JSON: {"is_safe":true,"is_nsfw":false,"is_vulgar":false,"is_ai_generated":false,"confidence":0.95,"reason":"..."}'
+
+
+def _moderate_with_source(claude, source: dict) -> dict:
+    response = claude.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=150,
+        system=_MODERATION_SYSTEM,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": source},
+                {"type": "text", "text": "Moderate this image."},
+            ],
+        }],
+    )
+    text = response.content[0].text
+    try:
+        return json.loads(text)
+    except Exception:
+        return {"is_safe": False, "is_nsfw": False, "is_vulgar": False,
+                "is_ai_generated": False, "confidence": 0, "reason": text}
+
+
 @router.post("/moderate-image")
 def moderate_image(req: ModerateImageRequest, _user_id: str = Depends(require_auth)):
     claude = get_claude()
+    # Try URL source first (fast, works for Supabase Storage and most CDNs)
     try:
-        response = claude.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=150,
-            system='Analyse this image for moderation. Respond ONLY with valid JSON: {"is_safe":true,"is_nsfw":false,"is_vulgar":false,"is_ai_generated":false,"confidence":0.95,"reason":"..."}',
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {"type": "url", "url": req.image_url},
-                    },
-                    {"type": "text", "text": "Moderate this image."},
-                ],
-            }],
-        )
+        return _moderate_with_source(claude, {"type": "url", "url": req.image_url})
+    except Exception as url_err:
+        err_str = str(url_err)
+        if "robots.txt" not in err_str and "disallowed" not in err_str and "Unable to download" not in err_str:
+            raise HTTPException(status_code=502, detail=f"Image moderation failed: {url_err}")
+
+    # Fallback: download and base64-encode (handles robots.txt-protected URLs)
+    try:
+        img_resp = httpx.get(req.image_url, timeout=10, follow_redirects=True)
+        img_b64 = base64.standard_b64encode(img_resp.content).decode()
+        media_type = img_resp.headers.get("content-type", "image/jpeg").split(";")[0]
+        return _moderate_with_source(claude, {"type": "base64", "media_type": media_type, "data": img_b64})
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Image moderation failed: {e}")
-    try:
-        return json.loads(response.content[0].text)
-    except Exception:
-        return {"is_safe": False, "is_nsfw": False, "is_vulgar": False,
-                "is_ai_generated": False, "confidence": 0, "reason": response.content[0].text}
