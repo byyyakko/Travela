@@ -140,8 +140,10 @@ def moderate_image(req: ModerateImageRequest, _user_id: str = Depends(require_au
     # Fallback: download and base64-encode (handles robots.txt-protected URLs)
     try:
         img_resp = httpx.get(req.image_url, timeout=10, follow_redirects=True)
-        img_b64 = base64.standard_b64encode(img_resp.content).decode()
         media_type = img_resp.headers.get("content-type", "image/jpeg").split(";")[0]
+        if not media_type.startswith("image/"):
+            raise HTTPException(status_code=502, detail="URL did not return an image")
+        img_b64 = base64.standard_b64encode(img_resp.content).decode()
         return _moderate_with_source(claude, {"type": "base64", "media_type": media_type, "data": img_b64})
     except HTTPException:
         raise
