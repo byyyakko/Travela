@@ -139,9 +139,10 @@ async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(requi
 
 From each search result extract a 1-2 sentence summary and the source URL. Include both in the activity JSON.
 Also include latitude and longitude for every activity so it can be pinned on a map.
+Generate ALL days requested. 3-5 activities per day.
 {f'Additionally use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
 Return ONLY a raw JSON object — no markdown, no code fences, no explanation. URLs belong only in source_url fields:
-{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing|shopping","location":"...","latitude":0.0,"longitude":0.0,"summary":"...","source_url":"..."}}]}}]}}"""
+{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing|shopping","location":"...","latitude":0.0,"longitude":0.0,"summary":"...","source_url":"..."}}]}}],"accommodations":[{{"name":"...","type":"hotel|hostel|guesthouse|resort","area":"...","price_range":"budget|mid-range|luxury","description":"...","tip":"...","booking_url":"https://www.booking.com/search.html?ss=Name+City","latitude":0.0,"longitude":0.0}}],"transport":{{"from_airport":"...","getting_around":"...","modes":[{{"mode":"...","description":"...","estimated_cost":"...","tip":"..."}}]}}}}"""
 
     response = claude.messages.create(
         model="claude-sonnet-4-6",

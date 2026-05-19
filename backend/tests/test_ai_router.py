@@ -464,6 +464,115 @@ class TestItinerary:
         acts = r.json()["days"][0]["activities"]
         assert acts[0]["category"] == "shopping"
 
+    # ── Korea / multi-day / repeat-call coverage ─────────────────────────────
+
+    def test_korea_prompt_forwarded_to_claude(self):
+        """A Korea-specific prompt must be forwarded verbatim as the user message."""
+        korea_prompt = "5 days in Seoul — street food, K-culture, and palaces"
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            client.post("/ai/itinerary", json={"prompt": korea_prompt})
+        messages = create_mock.call_args.kwargs["messages"]
+        assert any(m["content"] == korea_prompt for m in messages), \
+            "Korea prompt must be passed verbatim to Claude"
+
+    def test_repeated_calls_return_200(self):
+        """Calling /ai/itinerary twice in succession must both return 200 (no state pollution)."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
+            r1 = client.post("/ai/itinerary", json={"prompt": "3 days in Seoul"})
+            r2 = client.post("/ai/itinerary", json={"prompt": "5 days in Busan"})
+        assert r1.status_code == 200, "First call must succeed"
+        assert r2.status_code == 200, "Second call must succeed — no state leak between requests"
+
+    def test_repeated_calls_each_return_title(self):
+        """Both calls in succession must return a valid itinerary with a title."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
+            r1 = client.post("/ai/itinerary", json={"prompt": "3 days in Seoul"})
+            r2 = client.post("/ai/itinerary", json={"prompt": "5 days in Jeju"})
+        assert "title" in r1.json()
+        assert "title" in r2.json()
+
+    def test_accommodations_field_in_schema(self):
+        """System prompt must include accommodations schema so Claude populates it."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post()
+        system = create_mock.call_args.kwargs["system"]
+        assert "accommodations" in system, \
+            "System prompt must include accommodations so the frontend hotel section renders"
+
+    def test_transport_field_in_schema(self):
+        """System prompt must include transport schema so Claude populates it."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post()
+        system = create_mock.call_args.kwargs["system"]
+        assert "transport" in system, \
+            "System prompt must include transport so the frontend transport section renders"
+
+    def test_all_days_instruction_in_system_prompt(self):
+        """System prompt must instruct Claude to generate ALL requested days."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post()
+        system = create_mock.call_args.kwargs["system"]
+        assert "all days" in system.lower() or "generate all" in system.lower(), \
+            "System prompt must instruct Claude to generate all requested days"
+
+    def test_response_has_description_field(self):
+        """Top-level description field must be present (used in frontend overview card)."""
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
+            r = self._post()
+        assert "description" in r.json(), "Top-level description field must be present"
+
+    def test_accommodations_returned_when_present(self):
+        """When Claude returns accommodations, the endpoint passes them through unchanged."""
+        itinerary_with_hotels = json.dumps({
+            "title": "5 Days in Seoul",
+            "description": "K-culture deep dive",
+            "days": [{"day": 1, "theme": "Palaces", "activities": [{
+                "time": "9:00 AM", "title": "Gyeongbokgung Palace",
+                "description": "Joseon dynasty palace", "tip": "Rent hanbok",
+                "category": "culture", "location": "Jongno-gu, Seoul",
+                "latitude": 37.5796, "longitude": 126.9770,
+                "summary": "The largest of the Five Grand Palaces built by the Joseon dynasty.",
+                "source_url": "https://www.tripadvisor.com/Attraction_Review-g294197-d324888",
+            }]}],
+            "accommodations": [{"name": "Myeongdong Boutique Hotel",
+                "type": "hotel", "area": "Myeongdong",
+                "price_range": "mid-range", "description": "Central location near street food.",
+                "tip": "Book early", "booking_url": "https://www.booking.com/search.html?ss=Myeongdong+Seoul",
+                "latitude": 37.5636, "longitude": 126.9869}],
+            "transport": {"from_airport": "AREX train to Seoul Station (43 min)",
+                "getting_around": "T-money card for subway", "modes": [
+                    {"mode": "Subway", "description": "Extensive network", "estimated_cost": "₩1,400/ride", "tip": "Get a T-money card"}
+                ]},
+        })
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.return_value = _mock_claude_text(itinerary_with_hotels)
+            r = self._post("5 days in Seoul")
+        data = r.json()
+        assert "accommodations" in data, "accommodations must be present when Claude returns them"
+        assert len(data["accommodations"]) == 1
+        assert data["accommodations"][0]["name"] == "Myeongdong Boutique Hotel"
+        assert "transport" in data, "transport must be present when Claude returns it"
+        assert "from_airport" in data["transport"]
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # /ai/attractions

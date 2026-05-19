@@ -1,13 +1,33 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL?.trim() || "https://travela-backend-p2zp.onrender.com";
+
 async function invoke<T>(fn: string, body: unknown): Promise<T> {
   const { data, error } = await supabase.functions.invoke(fn, { body });
   if (error) throw new Error(error.message || `Edge function ${fn} failed`);
   return data as T;
 }
 
+async function backendPost<T>(path: string, body: unknown): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const resp = await fetch(`${BACKEND_URL}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token ?? ""}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.detail || `Backend ${path} failed (${resp.status})`);
+  }
+  return resp.json();
+}
+
 export const aiItinerary = (prompt: string) =>
-  invoke<Record<string, unknown>>("ai-travel", { type: "itinerary", prompt });
+  backendPost<Record<string, unknown>>("/ai/itinerary", { prompt });
 
 export const aiPhrases = (country: string) =>
   invoke<Record<string, unknown>>("ai-travel", { type: "phrases", country });
