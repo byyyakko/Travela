@@ -1,11 +1,11 @@
 """Utility endpoints replacing Lovable Supabase edge functions."""
-import os, json, base64
+import os, json
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from middleware.auth import require_auth
-from routers.ai import get_claude
+from routers.ai import get_claude, extract_json
 
 router = APIRouter(prefix="/utils", tags=["utils"])
 
@@ -95,38 +95,34 @@ def find_toilets(req: ToiletsRequest, _user_id: str = Depends(require_auth)):
         messages=[{"role": "user", "content": prompt}],
     )
     try:
-        return json.loads(response.content[0].text)
+        return extract_json(response.content[0].text)
     except Exception:
-        return {"raw": response.content[0].text}
+        return {"toilets": [], "raw": response.content[0].text}
 
 
 # ── Image moderation ──────────────────────────────────────────────────────────
 
 @router.post("/moderate-image")
 def moderate_image(req: ModerateImageRequest, _user_id: str = Depends(require_auth)):
-    try:
-        img_resp = httpx.get(req.image_url, timeout=15, follow_redirects=True)
-        img_b64 = base64.standard_b64encode(img_resp.content).decode()
-        media_type = img_resp.headers.get("content-type", "image/jpeg").split(";")[0]
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not fetch image: {e}")
-
     claude = get_claude()
-    response = claude.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=150,
-        system='Analyse this image for moderation. Respond ONLY with valid JSON: {"is_safe":true,"is_nsfw":false,"is_vulgar":false,"is_ai_generated":false,"confidence":0.95,"reason":"..."}',
-        messages=[{
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "source": {"type": "base64", "media_type": media_type, "data": img_b64},
-                },
-                {"type": "text", "text": "Moderate this image."},
-            ],
-        }],
-    )
+    try:
+        response = claude.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=150,
+            system='Analyse this image for moderation. Respond ONLY with valid JSON: {"is_safe":true,"is_nsfw":false,"is_vulgar":false,"is_ai_generated":false,"confidence":0.95,"reason":"..."}',
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {"type": "url", "url": req.image_url},
+                    },
+                    {"type": "text", "text": "Moderate this image."},
+                ],
+            }],
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Image moderation failed: {e}")
     try:
         return json.loads(response.content[0].text)
     except Exception:
