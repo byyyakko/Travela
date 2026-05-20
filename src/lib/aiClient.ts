@@ -20,8 +20,41 @@ async function backendPost<T>(path: string, body: unknown): Promise<T> {
   return resp.json();
 }
 
-export const aiItinerary = (prompt: string) =>
-  backendPost<Record<string, unknown>>("/ai/itinerary", { prompt });
+export async function aiItinerary(
+  prompt: string,
+  onStatus?: (status: string) => void
+): Promise<Record<string, unknown>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const resp = await fetch(`${BACKEND_URL}/ai/itinerary`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token ?? ""}`,
+    },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.detail || `Backend /ai/itinerary failed (${resp.status})`);
+  }
+  const reader = resp.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const payload = JSON.parse(line.slice(6));
+      if (payload.status === "done") return payload.data;
+      if (onStatus) onStatus(payload.status);
+    }
+  }
+  throw new Error("Itinerary stream ended without result");
+}
 
 export const aiPhrases = (country: string) =>
   backendPost<Record<string, unknown>>("/ai/phrases", { country });

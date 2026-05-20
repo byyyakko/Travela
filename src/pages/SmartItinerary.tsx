@@ -109,6 +109,7 @@ const SmartItinerary = () => {
     return saved ? JSON.parse(saved) : null;
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState("searching");
   const [activeDay, setActiveDay] = useState(() => {
     return Number(sessionStorage.getItem("smart-itinerary-day")) || 1;
   });
@@ -215,11 +216,12 @@ const SmartItinerary = () => {
   const generateItinerary = async () => {
     if (!prompt.trim()) return;
     setIsLoading(true);
+    setLoadingStatus("searching");
     setItinerary(null);
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await aiItinerary(prompt.trim());
+      const data: any = await aiItinerary(prompt.trim(), setLoadingStatus);
 
       if (data?.error) {
         toast({ title: "Error", description: data.error, variant: "destructive" });
@@ -433,7 +435,15 @@ const SmartItinerary = () => {
               className="w-20 h-20 mx-auto mb-4 object-contain mix-blend-multiply"
               animate={{ y: [0, -8, 0], transition: { duration: 1.5, repeat: Infinity } }}
             />
-            <p className="text-muted-foreground">Planning your perfect trip... 🗺️</p>
+            <p className="text-muted-foreground capitalize">
+              {{
+                searching: "Searching the web...",
+                planning: "Planning your days...",
+                researching: "Researching local spots...",
+                crafting: "Crafting your itinerary...",
+                finalizing: "Finalizing your trip...",
+              }[loadingStatus] ?? "Planning your perfect trip..."}
+            </p>
           </Card>
         )}
 

@@ -7,7 +7,9 @@ import os
 import re
 import json
 import time
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 
@@ -123,14 +125,18 @@ class TranslationRequest(BaseModel):
 
 @router.post("/itinerary")
 async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(require_auth)):
-    start = time.time()
-    claude = get_claude()
+    async def stream():
+        yield 'data: {"status":"searching"}\n\n'
 
-    query_vec = embed_query(req.prompt)
-    chunks = retrieve_chunks(query_vec) if query_vec else []
-    context = "\n\n---\n\n".join(chunks)
+        start = time.time()
+        claude = get_claude()
+        container: dict = {}
 
-    system = f"""You are a local travel expert. For each activity, perform an intent-aware web search to find real, currently operating places:
+        async def run():
+            query_vec = embed_query(req.prompt)
+            chunks = retrieve_chunks(query_vec) if query_vec else []
+            context = "\n\n---\n\n".join(chunks)
+            system = f"""You are a local travel expert. For each activity, perform an intent-aware web search to find real, currently operating places:
 - food / dining → search "best [specific dish or cuisine] restaurants in [neighbourhood, city]"
 - culture / museum / temple → search "[place name] [city] opening hours admission fee"
 - adventure / outdoor → search "[activity type] tours [city] booking"
@@ -143,24 +149,39 @@ Generate ALL days requested. 3-5 activities per day.
 {f'Additionally use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
 Return ONLY a raw JSON object — no markdown, no code fences, no explanation. URLs belong only in source_url fields:
 {{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing|shopping","location":"...","latitude":0.0,"longitude":0.0,"summary":"...","source_url":"..."}}]}}],"accommodations":[{{"name":"...","type":"hotel|hostel|guesthouse|resort","area":"...","price_range":"budget|mid-range|luxury","description":"...","tip":"...","booking_url":"https://www.booking.com/search.html?ss=Name+City","latitude":0.0,"longitude":0.0}}],"transport":{{"from_airport":"...","getting_around":"...","modes":[{{"mode":"...","description":"...","estimated_cost":"...","tip":"..."}}]}}}}"""
+            response = await asyncio.to_thread(
+                claude.messages.create,
+                model="claude-sonnet-4-6",
+                max_tokens=8000,
+                tools=[{"type": "web_search_20260209", "name": "web_search"}],
+                system=system,
+                messages=[{"role": "user", "content": req.prompt}],
+            )
+            result = next((b.text for b in reversed(response.content) if hasattr(b, "text")), "")
+            latency = int((time.time() - start) * 1000)
+            if query_vec:
+                log_query(user_id, req.prompt, query_vec, result, latency)
+            try:
+                container["data"] = extract_json(result)
+            except Exception:
+                container["data"] = {"raw": result}
 
-    response = claude.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=8000,
-        tools=[{"type": "web_search_20260209", "name": "web_search"}],
-        system=system,
-        messages=[{"role": "user", "content": req.prompt}],
+        task = asyncio.create_task(run())
+        statuses = ["planning", "researching", "crafting", "finalizing"]
+        idx = 0
+        while not task.done():
+            await asyncio.sleep(5)
+            if not task.done():
+                yield f'data: {{"status":"{statuses[min(idx, len(statuses)-1)]}"}}\n\n'
+                idx += 1
+        await task
+        yield f'data: {json.dumps({"status": "done", "data": container.get("data", {})})}\n\n'
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
-    result = next((b.text for b in reversed(response.content) if hasattr(b, "text")), "")
-    latency = int((time.time() - start) * 1000)
-
-    if query_vec:
-        log_query(user_id, req.prompt, query_vec, result, latency)
-
-    try:
-        return extract_json(result)
-    except Exception:
-        return {"raw": result}
 
 
 @router.post("/phrases")
