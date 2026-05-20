@@ -23,6 +23,14 @@ def _token(sub: str = "user-123", exp: int | None = None) -> str:
     return f"{_b64({'alg': 'none', 'typ': 'JWT'})}.{_b64({'sub': sub, 'exp': exp})}.sig"
 
 
+def _token_with_issuer(sub: str = "user-123") -> str:
+    return (
+        f"{_b64({'alg': 'none', 'typ': 'JWT'})}."
+        f"{_b64({'sub': sub, 'exp': int(time.time()) + 300, 'iss': 'https://example.supabase.co/auth/v1'})}."
+        "sig"
+    )
+
+
 class _MockResponse:
     def __init__(self, status_code: int, body: dict):
         self.status_code = status_code
@@ -96,3 +104,18 @@ def test_rejects_expired_token_before_supabase_call(client):
     assert r.status_code == 401
     assert r.json()["detail"] == "Token expired"
     assert _MockAsyncClient.requested_headers is None
+
+
+def test_uses_jwt_issuer_when_auth_env_url_missing(client, monkeypatch):
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_OWN_URL", raising=False)
+    r = client.get("/protected", headers={"Authorization": f"Bearer {_token_with_issuer()}"})
+    assert r.status_code == 200
+
+
+def test_missing_auth_config_without_issuer_is_invalid_token(client, monkeypatch):
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_OWN_URL", raising=False)
+    r = client.get("/protected", headers={"Authorization": f"Bearer {_token()}"})
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Invalid token"

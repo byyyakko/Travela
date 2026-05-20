@@ -43,16 +43,25 @@ async def require_auth(request: Request) -> str:
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    supabase_url = os.getenv("SUPABASE_URL") or os.getenv("SUPABASE_OWN_URL")
+    issuer = payload.get("iss", "")
+    issuer_url = issuer.removesuffix("/auth/v1") if issuer.endswith("/auth/v1") else ""
+    supabase_url = (
+        os.getenv("SUPABASE_URL")
+        or os.getenv("SUPABASE_OWN_URL")
+        or os.getenv("VITE_SUPABASE_URL")
+        or issuer_url
+    )
     supabase_key = (
         os.getenv("SUPABASE_ANON_KEY")
         or os.getenv("SUPABASE_PUBLISHABLE_KEY")
+        or os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY")
         or os.getenv("SUPABASE_OWN_ANON_KEY")
         or os.getenv("SUPABASE_SERVICE_KEY")
         or os.getenv("SUPABASE_OWN_SERVICE_KEY")
+        or token
     )
     if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Auth service not configured")
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     try:
         async with httpx.AsyncClient(timeout=SUPABASE_AUTH_TIMEOUT_SECONDS) as client:
