@@ -48,6 +48,8 @@ async def require_auth(request: Request) -> str:
         os.getenv("SUPABASE_ANON_KEY")
         or os.getenv("SUPABASE_PUBLISHABLE_KEY")
         or os.getenv("SUPABASE_OWN_ANON_KEY")
+        or os.getenv("SUPABASE_SERVICE_KEY")
+        or os.getenv("SUPABASE_OWN_SERVICE_KEY")
     )
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Auth service not configured")
