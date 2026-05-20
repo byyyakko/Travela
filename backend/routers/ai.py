@@ -136,15 +136,18 @@ async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(requi
             query_vec = embed_query(req.prompt)
             chunks = retrieve_chunks(query_vec) if query_vec else []
             context = "\n\n---\n\n".join(chunks)
-            system = f"""You are a local travel expert. For each activity, perform an intent-aware web search to find real, currently operating places:
-- food / dining → search "best [specific dish or cuisine] restaurants in [neighbourhood, city]"
-- culture / museum / temple → search "[place name] [city] opening hours admission fee"
-- adventure / outdoor → search "[activity type] tours [city] booking"
-- sightseeing / landmark → search "[attraction name] [city] visitor guide tips"
-- shopping → search "[market or area name] [city] what to buy"
+            system = f"""You are a local travel expert with deep knowledge of world destinations. Recommend real, well-known places based on your knowledge of food, culture, and travel.
 
-From each search result extract a 1-2 sentence summary and the source URL. Include both in the activity JSON.
+For each activity, provide a 1-2 sentence summary of why this place is worth visiting and include a source_url linking to a relevant travel resource (TripAdvisor, official website, or travel guide).
 Also include latitude and longitude for every activity so it can be pinned on a map.
+
+Use your knowledge to cover all activity types:
+- food / dining: popular restaurants known for authentic local cuisine
+- culture / museum / temple: hours, admission, and visitor tips
+- adventure / outdoor: guided tours and outdoor experiences
+- sightseeing / landmark: best times and photography spots
+- shopping: local markets and what to buy
+
 Generate ALL days requested. 3-5 activities per day.
 {f'Additionally use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
 Return ONLY a raw JSON object — no markdown, no code fences, no explanation. URLs belong only in source_url fields:
@@ -153,11 +156,10 @@ Return ONLY a raw JSON object — no markdown, no code fences, no explanation. U
                 claude.messages.create,
                 model="claude-sonnet-4-6",
                 max_tokens=8000,
-                tools=[{"type": "web_search_20260209", "name": "web_search"}],
                 system=system,
                 messages=[{"role": "user", "content": req.prompt}],
             )
-            result = next((b.text for b in reversed(response.content) if hasattr(b, "text")), "")
+            result = response.content[0].text
             latency = int((time.time() - start) * 1000)
             if query_vec:
                 log_query(user_id, req.prompt, query_vec, result, latency)
@@ -170,10 +172,12 @@ Return ONLY a raw JSON object — no markdown, no code fences, no explanation. U
         statuses = ["planning", "researching", "crafting", "finalizing"]
         idx = 0
         while not task.done():
-            await asyncio.sleep(5)
-            if not task.done():
-                yield f'data: {{"status":"{statuses[min(idx, len(statuses)-1)]}"}}\n\n'
-                idx += 1
+            try:
+                await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+            except asyncio.TimeoutError:
+                if not task.done():
+                    yield f'data: {{"status":"{statuses[min(idx, len(statuses)-1)]}"}}\n\n'
+                    idx += 1
         await task
         yield f'data: {json.dumps({"status": "done", "data": container.get("data", {})})}\n\n'
 

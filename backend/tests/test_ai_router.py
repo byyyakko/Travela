@@ -145,6 +145,28 @@ def _mock_claude_search_multi(final_text: str) -> MagicMock:
     return resp
 
 
+class _SseResponse:
+    """Wraps an SSE StreamingResponse so .json() returns the payload from the 'done' event."""
+
+    def __init__(self, resp):
+        self.status_code = resp.status_code
+        self._resp = resp
+
+    def json(self):
+        if self.status_code != 200:
+            return self._resp.json()
+        for line in self._resp.text.split("\n"):
+            if not line.startswith("data: "):
+                continue
+            try:
+                payload = json.loads(line[6:])
+                if payload.get("status") == "done":
+                    return payload["data"]
+            except Exception:
+                continue
+        raise ValueError(f"No SSE done event in response: {self._resp.text[:300]!r}")
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # /ai/itinerary
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -152,7 +174,7 @@ def _mock_claude_search_multi(final_text: str) -> MagicMock:
 class TestItinerary:
 
     def _post(self, prompt: str = "3 days in Tokyo"):
-        return client.post("/ai/itinerary", json={"prompt": prompt})
+        return _SseResponse(client.post("/ai/itinerary", json={"prompt": prompt}))
 
     # ── Auth ────────────────────────────────────────────────────────────────
 
@@ -206,40 +228,6 @@ class TestItinerary:
                               "latitude", "longitude", "summary", "source_url"):
                     assert field in act, f"Activity missing field: {field}"
 
-    # ── Web search integration ───────────────────────────────────────────────
-
-    def test_claude_called_with_web_search_tool(self):
-        """The itinerary endpoint MUST pass web_search_20260209 to Claude."""
-        with patch("routers.ai.get_claude") as mock_factory, \
-             patch("routers.ai.embed_query", return_value=None):
-            create_mock = mock_factory.return_value.messages.create
-            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
-            self._post()
-            call_kwargs = create_mock.call_args.kwargs
-            tools = call_kwargs.get("tools", [])
-            tool_types = [t.get("type") for t in tools]
-            assert "web_search_20260209" in tool_types, (
-                "web_search_20260209 tool must be passed to Claude for real place verification"
-            )
-
-    def test_extracts_text_after_tool_use_blocks(self):
-        """When Claude returns tool_use + tool_result + text, text is extracted correctly."""
-        with patch("routers.ai.get_claude") as mock_factory, \
-             patch("routers.ai.embed_query", return_value=None):
-            mock_factory.return_value.messages.create.return_value = _mock_claude_with_search(ITINERARY_JSON)
-            r = self._post()
-        assert r.status_code == 200
-        assert "title" in r.json()
-
-    def test_extracts_text_after_multiple_search_rounds(self):
-        """Two search rounds before final text — still extracts the last text block."""
-        with patch("routers.ai.get_claude") as mock_factory, \
-             patch("routers.ai.embed_query", return_value=None):
-            mock_factory.return_value.messages.create.return_value = _mock_claude_search_multi(ITINERARY_JSON)
-            r = self._post()
-        assert r.status_code == 200
-        assert "days" in r.json()
-
     # ── RAG path ─────────────────────────────────────────────────────────────
 
     def test_logs_query_when_embedding_available(self):
@@ -267,7 +255,8 @@ class TestItinerary:
         fake_vec = [0.1] * 1024
         with patch("routers.ai.get_claude") as mock_factory, \
              patch("routers.ai.embed_query", return_value=fake_vec), \
-             patch("routers.ai.retrieve_chunks", return_value=["Shibuya crossing tip", "Ramen etiquette"]):
+             patch("routers.ai.retrieve_chunks", return_value=["Shibuya crossing tip", "Ramen etiquette"]), \
+             patch("routers.ai.log_query"):
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
             self._post()
@@ -288,16 +277,6 @@ class TestItinerary:
     def test_missing_prompt_rejected(self):
         r = client.post("/ai/itinerary", json={})
         assert r.status_code == 422
-
-    def test_system_prompt_instructs_web_search(self):
-        """System prompt must tell Claude to search before recommending places."""
-        with patch("routers.ai.get_claude") as mock_factory, \
-             patch("routers.ai.embed_query", return_value=None):
-            create_mock = mock_factory.return_value.messages.create
-            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
-            self._post()
-        system = create_mock.call_args.kwargs["system"]
-        assert "search" in system.lower(), "System prompt must mention web search"
 
     def test_system_prompt_prohibits_urls(self):
         with patch("routers.ai.get_claude") as mock_factory, \
@@ -493,8 +472,8 @@ class TestItinerary:
         with patch("routers.ai.get_claude") as mock_factory, \
              patch("routers.ai.embed_query", return_value=None):
             mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
-            r1 = client.post("/ai/itinerary", json={"prompt": "3 days in Seoul"})
-            r2 = client.post("/ai/itinerary", json={"prompt": "5 days in Jeju"})
+            r1 = _SseResponse(client.post("/ai/itinerary", json={"prompt": "3 days in Seoul"}))
+            r2 = _SseResponse(client.post("/ai/itinerary", json={"prompt": "5 days in Jeju"}))
         assert "title" in r1.json()
         assert "title" in r2.json()
 
@@ -802,7 +781,8 @@ class TestChat:
         fake_vec = [0.2] * 1024
         with patch("routers.ai.get_claude") as mock_factory, \
              patch("routers.ai.embed_query", return_value=fake_vec), \
-             patch("routers.ai.retrieve_chunks", return_value=["Best sushi spots in Tokyo"]):
+             patch("routers.ai.retrieve_chunks", return_value=["Best sushi spots in Tokyo"]), \
+             patch("routers.ai.log_query"):
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text("Try Tsukiji!")
             self._post()
