@@ -21,6 +21,12 @@ router = APIRouter(prefix="/ai", tags=["ai"])
 _claude = None
 _voyage = None
 
+MAX_ITINERARY_PROMPT_LENGTH = 1000
+MAX_ITINERARY_DAYS = 10
+EMBED_TIMEOUT_SECONDS = 8
+RAG_TIMEOUT_SECONDS = 8
+CLAUDE_ITINERARY_TIMEOUT_SECONDS = 75
+
 
 def get_claude():
     global _claude
@@ -101,6 +107,36 @@ def embed_query(text: str) -> list[float] | None:
     return result.embeddings[0]
 
 
+def estimate_requested_days(prompt: str) -> int | None:
+    """Best-effort trip length detection from natural-language prompts."""
+    text = prompt.lower()
+    total = 0
+    for amount, unit in re.findall(r"(\d+)\s*(day|days|week|weeks|month|months)\b", text):
+        value = int(amount)
+        if unit.startswith("day"):
+            total += value
+        elif unit.startswith("week"):
+            total += value * 7
+        elif unit.startswith("month"):
+            total += value * 30
+    return total or None
+
+
+def itinerary_token_budget(days: int | None) -> int:
+    if days is None or days <= 3:
+        return 5000
+    if days <= 5:
+        return 6500
+    return 8000
+
+
+async def run_with_timeout(func, timeout: int, *args, **kwargs):
+    return await asyncio.wait_for(
+        asyncio.to_thread(func, *args, **kwargs),
+        timeout=timeout,
+    )
+
+
 # ── Request schemas ───────────────────────────────────────────────────────────
 
 class ItineraryRequest(BaseModel):
@@ -125,17 +161,50 @@ class TranslationRequest(BaseModel):
 
 @router.post("/itinerary")
 async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(require_auth)):
+    prompt = req.prompt.strip()
+    if not prompt:
+        raise HTTPException(status_code=422, detail="Prompt is required")
+    if len(prompt) > MAX_ITINERARY_PROMPT_LENGTH:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Prompt is too long. Please keep it under {MAX_ITINERARY_PROMPT_LENGTH} characters.",
+        )
+
+    requested_days = estimate_requested_days(prompt)
+    if requested_days and requested_days > MAX_ITINERARY_DAYS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Smart itinerary can generate up to {MAX_ITINERARY_DAYS} days at a time. Please shorten the trip.",
+        )
+
     async def stream():
         yield 'data: {"status":"searching"}\n\n'
 
         start = time.time()
-        claude = get_claude()
         container: dict = {}
 
         async def run():
-            query_vec = embed_query(req.prompt)
-            chunks = retrieve_chunks(query_vec) if query_vec else []
+            claude = get_claude()
+            try:
+                query_vec = await run_with_timeout(embed_query, EMBED_TIMEOUT_SECONDS, prompt)
+            except Exception:
+                query_vec = None
+
+            try:
+                chunks = (
+                    await run_with_timeout(retrieve_chunks, RAG_TIMEOUT_SECONDS, query_vec)
+                    if query_vec
+                    else []
+                )
+            except Exception:
+                chunks = []
+
             context = "\n\n---\n\n".join(chunks)
+            day_instruction = (
+                f"Generate exactly {requested_days} days."
+                if requested_days
+                else "Generate the appropriate number of days requested by the user."
+            )
             system = f"""You are a local travel expert with deep knowledge of world destinations. Recommend real, well-known places based on your knowledge of food, culture, and travel.
 
 For each activity, provide a 1-2 sentence summary of why this place is worth visiting and include a source_url linking to a relevant travel resource (TripAdvisor, official website, or travel guide).
@@ -148,21 +217,25 @@ Use your knowledge to cover all activity types:
 - sightseeing / landmark: best times and photography spots
 - shopping: local markets and what to buy
 
-Generate ALL days requested. 3-5 activities per day.
+{day_instruction} Generate ALL days requested, up to {MAX_ITINERARY_DAYS} days. Use 3 activities per day unless the prompt clearly requires more.
 {f'Additionally use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
 Return ONLY a raw JSON object — no markdown, no code fences, no explanation. URLs belong only in source_url fields:
 {{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing|shopping","location":"...","latitude":0.0,"longitude":0.0,"summary":"...","source_url":"..."}}]}}],"accommodations":[{{"name":"...","type":"hotel|hostel|guesthouse|resort","area":"...","price_range":"budget|mid-range|luxury","description":"...","tip":"...","booking_url":"https://www.booking.com/search.html?ss=Name+City","latitude":0.0,"longitude":0.0}}],"transport":{{"from_airport":"...","getting_around":"...","modes":[{{"mode":"...","description":"...","estimated_cost":"...","tip":"..."}}]}}}}"""
-            response = await asyncio.to_thread(
+            response = await run_with_timeout(
                 claude.messages.create,
+                CLAUDE_ITINERARY_TIMEOUT_SECONDS,
                 model="claude-sonnet-4-6",
-                max_tokens=8000,
+                max_tokens=itinerary_token_budget(requested_days),
                 system=system,
-                messages=[{"role": "user", "content": req.prompt}],
+                messages=[{"role": "user", "content": prompt}],
             )
             result = response.content[0].text
             latency = int((time.time() - start) * 1000)
             if query_vec:
-                log_query(user_id, req.prompt, query_vec, result, latency)
+                try:
+                    await run_with_timeout(log_query, RAG_TIMEOUT_SECONDS, user_id, prompt, query_vec, result, latency)
+                except Exception:
+                    pass
             try:
                 container["data"] = extract_json(result)
             except Exception:
@@ -178,7 +251,15 @@ Return ONLY a raw JSON object — no markdown, no code fences, no explanation. U
                 if not task.done():
                     yield f'data: {{"status":"{statuses[min(idx, len(statuses)-1)]}"}}\n\n'
                     idx += 1
-        await task
+        try:
+            await task
+        except asyncio.TimeoutError:
+            yield f'data: {json.dumps({"status": "error", "error": "Itinerary generation timed out. Try a shorter trip or fewer requirements."})}\n\n'
+            return
+        except Exception:
+            yield f'data: {json.dumps({"status": "error", "error": "AI itinerary service failed. Please try again in a moment."})}\n\n'
+            return
+
         yield f'data: {json.dumps({"status": "done", "data": container.get("data", {})})}\n\n'
 
     return StreamingResponse(

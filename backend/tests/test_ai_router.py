@@ -9,6 +9,7 @@ Mocking strategy:
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import asyncio
 import json
 import pytest
 from unittest.mock import patch, MagicMock
@@ -278,6 +279,27 @@ class TestItinerary:
         r = client.post("/ai/itinerary", json={})
         assert r.status_code == 422
 
+    def test_empty_prompt_rejected(self):
+        r = client.post("/ai/itinerary", json={"prompt": "   "})
+        assert r.status_code == 422
+        assert "Prompt is required" in r.json()["detail"]
+
+    def test_overlong_trip_rejected_before_ai_call(self):
+        with patch("routers.ai.get_claude") as mock_factory:
+            r = client.post("/ai/itinerary", json={"prompt": "30 days in Japan"})
+        assert r.status_code == 422
+        assert "up to 10 days" in r.json()["detail"]
+        mock_factory.assert_not_called()
+
+    def test_claude_timeout_returns_stream_error(self):
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            mock_factory.return_value.messages.create.side_effect = asyncio.TimeoutError()
+            r = client.post("/ai/itinerary", json={"prompt": "3 days in Tokyo"})
+        assert r.status_code == 200
+        assert '"status": "error"' in r.text
+        assert "timed out" in r.text
+
     def test_system_prompt_prohibits_urls(self):
         with patch("routers.ai.get_claude") as mock_factory, \
              patch("routers.ai.embed_query", return_value=None):
@@ -295,12 +317,20 @@ class TestItinerary:
             self._post()
         assert create_mock.call_args.kwargs["model"] == "claude-sonnet-4-6"
 
-    def test_max_tokens_is_8000(self):
+    def test_short_trip_uses_smaller_token_budget(self):
         with patch("routers.ai.get_claude") as mock_factory, \
              patch("routers.ai.embed_query", return_value=None):
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
             self._post()
+        assert create_mock.call_args.kwargs["max_tokens"] == 5000
+
+    def test_longer_allowed_trip_uses_larger_token_budget(self):
+        with patch("routers.ai.get_claude") as mock_factory, \
+             patch("routers.ai.embed_query", return_value=None):
+            create_mock = mock_factory.return_value.messages.create
+            create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
+            self._post("8 days in Seoul")
         assert create_mock.call_args.kwargs["max_tokens"] == 8000
 
     def test_user_prompt_passed_as_message(self):

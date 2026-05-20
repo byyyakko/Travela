@@ -37,6 +37,9 @@ export async function aiItinerary(
     const err = await resp.json().catch(() => ({}));
     throw new Error(err?.detail || `Backend /ai/itinerary failed (${resp.status})`);
   }
+  if (!resp.body) {
+    throw new Error("Backend did not return an itinerary stream");
+  }
   const reader = resp.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -48,9 +51,17 @@ export async function aiItinerary(
     buffer = lines.pop() ?? "";
     for (const line of lines) {
       if (!line.startsWith("data: ")) continue;
-      const payload = JSON.parse(line.slice(6));
-      if (payload.status === "done") return payload.data;
-      if (onStatus) onStatus(payload.status);
+      let payload: { status?: string; data?: Record<string, unknown>; error?: string };
+      try {
+        payload = JSON.parse(line.slice(6));
+      } catch {
+        throw new Error("Backend returned an invalid itinerary stream");
+      }
+      if (payload.status === "error") {
+        throw new Error(payload.error || "Itinerary generation failed");
+      }
+      if (payload.status === "done") return payload.data ?? {};
+      if (payload.status && onStatus) onStatus(payload.status);
     }
   }
   throw new Error("Itinerary stream ended without result");

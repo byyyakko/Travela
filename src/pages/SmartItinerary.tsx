@@ -258,7 +258,8 @@ const SmartItinerary = () => {
       // Auto-save to history
       await saveToHistory(prompt.trim(), itineraryData);
     } catch (err) {
-      toast({ title: "Error", description: "Failed to generate itinerary. Try again!", variant: "destructive" });
+      const message = err instanceof Error ? err.message : "Failed to generate itinerary. Try again!";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
