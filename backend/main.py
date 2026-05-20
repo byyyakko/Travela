@@ -140,8 +140,9 @@ def track_analytics(event: AnalyticsEvent):
     """Write an analytics event to Neon."""
     if not os.getenv("NEON_DATABASE_URL"):
         return {"status": "ok", "note": "neon not configured"}
-    conn = get_conn()
+    conn = None
     try:
+        conn = get_conn()
         cur = conn.cursor()
         cur.execute(
             """
@@ -161,5 +162,6 @@ def track_analytics(event: AnalyticsEvent):
     except Exception as e:
         print(f"[analytics] write failed: {e}")
     finally:
-        put_conn(conn)
+        if conn is not None:
+            put_conn(conn)
     return {"status": "ok"}

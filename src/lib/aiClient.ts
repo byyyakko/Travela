@@ -1,11 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL?.trim() || "https://travela-backend-p2zp.onrender.com";
+  import.meta.env.VITE_BACKEND_URL?.trim();
+
+function getBackendUrl(): string {
+  if (!BACKEND_URL) {
+    throw new Error("Backend URL is not configured");
+  }
+  return BACKEND_URL;
+}
 
 async function backendPost<T>(path: string, body: unknown): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
-  const resp = await fetch(`${BACKEND_URL}${path}`, {
+  const resp = await fetch(`${getBackendUrl()}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -25,7 +32,7 @@ export async function aiItinerary(
   onStatus?: (status: string) => void
 ): Promise<Record<string, unknown>> {
   const { data: { session } } = await supabase.auth.getSession();
-  const resp = await fetch(`${BACKEND_URL}/ai/itinerary`, {
+  const resp = await fetch(`${getBackendUrl()}/ai/itinerary`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
