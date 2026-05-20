@@ -229,41 +229,29 @@ class TestItinerary:
                               "latitude", "longitude", "summary", "source_url"):
                     assert field in act, f"Activity missing field: {field}"
 
-    # ── RAG path ─────────────────────────────────────────────────────────────
+    # ── Simple itinerary path ────────────────────────────────────────────────
 
-    def test_logs_query_when_embedding_available(self):
-        fake_vec = [0.1] * 1024
+    def test_itinerary_skips_embedding_and_rag_for_speed(self):
         with patch("routers.ai.get_claude") as mock_factory, \
-             patch("routers.ai.embed_query", return_value=fake_vec), \
-             patch("routers.ai.retrieve_chunks", return_value=["Tokyo tip 1"]), \
+             patch("routers.ai.embed_query") as mock_embed, \
+             patch("routers.ai.retrieve_chunks") as mock_retrieve, \
              patch("routers.ai.log_query") as mock_log:
             mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
             r = self._post()
         assert r.status_code == 200
-        mock_log.assert_called_once()
-        log_args = mock_log.call_args.args
-        assert log_args[0] == "test-user-id"
-
-    def test_skips_log_when_no_embedding(self):
-        with patch("routers.ai.get_claude") as mock_factory, \
-             patch("routers.ai.embed_query", return_value=None), \
-             patch("routers.ai.log_query") as mock_log:
-            mock_factory.return_value.messages.create.return_value = _mock_claude_text(ITINERARY_JSON)
-            self._post()
+        mock_embed.assert_not_called()
+        mock_retrieve.assert_not_called()
         mock_log.assert_not_called()
 
-    def test_rag_chunks_injected_in_system_prompt(self):
-        fake_vec = [0.1] * 1024
+    def test_itinerary_system_prompt_is_concise(self):
         with patch("routers.ai.get_claude") as mock_factory, \
-             patch("routers.ai.embed_query", return_value=fake_vec), \
-             patch("routers.ai.retrieve_chunks", return_value=["Shibuya crossing tip", "Ramen etiquette"]), \
-             patch("routers.ai.log_query"):
+             patch("routers.ai.embed_query"):
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
             self._post()
         system_prompt = create_mock.call_args.kwargs["system"]
-        assert "Shibuya crossing tip" in system_prompt
-        assert "Ramen etiquette" in system_prompt
+        assert "exactly 3 activities per day" in system_prompt
+        assert "concise" in system_prompt.lower()
 
     # ── Fallback ─────────────────────────────────────────────────────────────
 
@@ -323,7 +311,7 @@ class TestItinerary:
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
             self._post()
-        assert create_mock.call_args.kwargs["max_tokens"] == 5000
+        assert create_mock.call_args.kwargs["max_tokens"] == 2500
 
     def test_longer_allowed_trip_uses_larger_token_budget(self):
         with patch("routers.ai.get_claude") as mock_factory, \
@@ -331,7 +319,7 @@ class TestItinerary:
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
             self._post("8 days in Seoul")
-        assert create_mock.call_args.kwargs["max_tokens"] == 8000
+        assert create_mock.call_args.kwargs["max_tokens"] == 5000
 
     def test_user_prompt_passed_as_message(self):
         prompt = "5 days exploring Kyoto temples"
@@ -507,27 +495,26 @@ class TestItinerary:
         assert "title" in r1.json()
         assert "title" in r2.json()
 
-    def test_accommodations_field_in_schema(self):
-        """System prompt must include accommodations schema so Claude populates it."""
+    def test_accommodations_not_requested_by_default(self):
+        """Default itinerary generation stays small; hotels can be a separate feature."""
         with patch("routers.ai.get_claude") as mock_factory, \
              patch("routers.ai.embed_query", return_value=None):
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
             self._post()
         system = create_mock.call_args.kwargs["system"]
-        assert "accommodations" in system, \
-            "System prompt must include accommodations so the frontend hotel section renders"
+        assert "accommodations" not in system
 
-    def test_transport_field_in_schema(self):
-        """System prompt must include transport schema so Claude populates it."""
+    def test_transport_category_allowed_without_transport_section(self):
+        """Transport can appear as an activity without forcing a verbose transport block."""
         with patch("routers.ai.get_claude") as mock_factory, \
              patch("routers.ai.embed_query", return_value=None):
             create_mock = mock_factory.return_value.messages.create
             create_mock.return_value = _mock_claude_text(ITINERARY_JSON)
             self._post()
         system = create_mock.call_args.kwargs["system"]
-        assert "transport" in system, \
-            "System prompt must include transport so the frontend transport section renders"
+        assert "transport" in system
+        assert '"transport":' not in system
 
     def test_all_days_instruction_in_system_prompt(self):
         """System prompt must instruct Claude to generate ALL requested days."""

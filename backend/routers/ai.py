@@ -25,7 +25,7 @@ MAX_ITINERARY_PROMPT_LENGTH = 1000
 MAX_ITINERARY_DAYS = 10
 EMBED_TIMEOUT_SECONDS = 8
 RAG_TIMEOUT_SECONDS = 8
-CLAUDE_ITINERARY_TIMEOUT_SECONDS = 75
+CLAUDE_ITINERARY_TIMEOUT_SECONDS = 60
 
 
 def get_claude():
@@ -124,10 +124,10 @@ def estimate_requested_days(prompt: str) -> int | None:
 
 def itinerary_token_budget(days: int | None) -> int:
     if days is None or days <= 3:
-        return 5000
+        return 2500
     if days <= 5:
-        return 6500
-    return 8000
+        return 3500
+    return 5000
 
 
 async def run_with_timeout(func, timeout: int, *args, **kwargs):
@@ -185,42 +185,20 @@ async def generate_itinerary(req: ItineraryRequest, user_id: str = Depends(requi
 
         async def run():
             claude = get_claude()
-            try:
-                query_vec = await run_with_timeout(embed_query, EMBED_TIMEOUT_SECONDS, prompt)
-            except Exception:
-                query_vec = None
-
-            try:
-                chunks = (
-                    await run_with_timeout(retrieve_chunks, RAG_TIMEOUT_SECONDS, query_vec)
-                    if query_vec
-                    else []
-                )
-            except Exception:
-                chunks = []
-
-            context = "\n\n---\n\n".join(chunks)
             day_instruction = (
                 f"Generate exactly {requested_days} days."
                 if requested_days
                 else "Generate the appropriate number of days requested by the user."
             )
-            system = f"""You are a local travel expert with deep knowledge of world destinations. Recommend real, well-known places based on your knowledge of food, culture, and travel.
+            system = f"""You are a practical local travel planner. Create a concise, real-world itinerary that is quick to read and easy to follow.
 
-For each activity, provide a 1-2 sentence summary of why this place is worth visiting and include a source_url linking to a relevant travel resource (TripAdvisor, official website, or travel guide).
-Also include latitude and longitude for every activity so it can be pinned on a map.
+For each activity, include a short summary, a practical tip, a source_url, and real latitude/longitude coordinates so it can be pinned on a map.
 
-Use your knowledge to cover all activity types:
-- food / dining: popular restaurants known for authentic local cuisine
-- culture / museum / temple: hours, admission, and visitor tips
-- adventure / outdoor: guided tours and outdoor experiences
-- sightseeing / landmark: best times and photography spots
-- shopping: local markets and what to buy
+Use only these categories: food, culture, adventure, sightseeing, shopping, transport. For food, prefer real hawker stalls, markets, cafes, or restaurants.
 
-{day_instruction} Generate ALL days requested, up to {MAX_ITINERARY_DAYS} days. Use 3 activities per day unless the prompt clearly requires more.
-{f'Additionally use this knowledge base context:{chr(10)}{context}{chr(10)}' if context else ''}
-Return ONLY a raw JSON object — no markdown, no code fences, no explanation. URLs belong only in source_url fields:
-{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing|shopping","location":"...","latitude":0.0,"longitude":0.0,"summary":"...","source_url":"..."}}]}}],"accommodations":[{{"name":"...","type":"hotel|hostel|guesthouse|resort","area":"...","price_range":"budget|mid-range|luxury","description":"...","tip":"...","booking_url":"https://www.booking.com/search.html?ss=Name+City","latitude":0.0,"longitude":0.0}}],"transport":{{"from_airport":"...","getting_around":"...","modes":[{{"mode":"...","description":"...","estimated_cost":"...","tip":"..."}}]}}}}"""
+{day_instruction} Generate ALL days requested, up to {MAX_ITINERARY_DAYS} days. Use exactly 3 activities per day. Keep every text field concise.
+Return ONLY a raw JSON object, no markdown:
+{{"title":"...","description":"...","days":[{{"day":1,"theme":"...","activities":[{{"time":"9:00 AM","title":"...","description":"...","tip":"...","category":"food|culture|adventure|sightseeing|shopping|transport","location":"...","latitude":0.0,"longitude":0.0,"summary":"...","source_url":"..."}}]}}]}}"""
             response = await run_with_timeout(
                 claude.messages.create,
                 CLAUDE_ITINERARY_TIMEOUT_SECONDS,
@@ -230,12 +208,6 @@ Return ONLY a raw JSON object — no markdown, no code fences, no explanation. U
                 messages=[{"role": "user", "content": prompt}],
             )
             result = response.content[0].text
-            latency = int((time.time() - start) * 1000)
-            if query_vec:
-                try:
-                    await run_with_timeout(log_query, RAG_TIMEOUT_SECONDS, user_id, prompt, query_vec, result, latency)
-                except Exception:
-                    pass
             try:
                 container["data"] = extract_json(result)
             except Exception:
