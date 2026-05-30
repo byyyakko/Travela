@@ -124,10 +124,11 @@ def link_profile(body: LinkRequest, user_id: str = Depends(require_auth)):
 
 _PROFILE_COLS = (
     "id", "user_id", "email", "display_name", "avatar_url", "bio", "location",
-    "is_local", "is_verified", "is_restricted", "interests", "languages",
-    "time_availability", "date_of_birth", "min_age_preference", "max_age_preference",
-    "activity_vibe", "has_seen_tutorial", "gender", "same_gender_only",
-    "subscription_tier", "theme", "created_at", "updated_at", "migration_linked",
+    "theme", "is_local", "interests", "date_of_birth", "min_age_preference",
+    "max_age_preference", "is_verified", "destination", "travel_start_date",
+    "travel_end_date", "languages", "subscription_tier", "is_restricted",
+    "restriction_reason", "activity_vibe", "time_availability", "has_seen_tutorial",
+    "created_at", "updated_at", "migration_linked", "gender", "same_gender_only",
 )
 
 def _row_to_profile(row) -> dict:
@@ -140,14 +141,18 @@ class ProfileUpdate(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
+    theme: Optional[str] = None
     is_local: Optional[bool] = None
     interests: Optional[list[str]] = None
-    languages: Optional[list[str]] = None
-    time_availability: Optional[list[str]] = None
     date_of_birth: Optional[str] = None
     min_age_preference: Optional[int] = None
     max_age_preference: Optional[int] = None
+    destination: Optional[str] = None
+    travel_start_date: Optional[str] = None
+    travel_end_date: Optional[str] = None
+    languages: Optional[list[str]] = None
     activity_vibe: Optional[str] = None
+    time_availability: Optional[list[str]] = None
     has_seen_tutorial: Optional[bool] = None
     gender: Optional[str] = None
     same_gender_only: Optional[bool] = None
