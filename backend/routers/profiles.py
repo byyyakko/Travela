@@ -98,16 +98,23 @@ def link_profile(body: LinkRequest, user_id: str = Depends(require_auth)):
         if not row:
             return {"linked": False, "reason": "no_profile"}
         profile_id, existing_uid = row
-        if str(existing_uid) == user_id:
+        if existing_uid is not None and str(existing_uid) == user_id:
             return {"linked": True, "already_linked": True}
+        if existing_uid is not None and str(existing_uid) != user_id:
+            raise HTTPException(status_code=409, detail="profile_already_linked_to_different_user")
+        # Profile has NULL user_id — safe to link
         cur.execute(
             """UPDATE public.profiles
                SET user_id = %s::uuid, migration_linked = true, updated_at = now()
-               WHERE id = %s""",
-            (user_id, profile_id),
+               WHERE id = %s AND (user_id IS NULL OR user_id::text = %s)""",
+            (user_id, profile_id, user_id),
         )
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=409, detail="profile_already_linked_to_different_user")
         conn.commit()
         return {"linked": True}
+    except HTTPException:
+        raise
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
