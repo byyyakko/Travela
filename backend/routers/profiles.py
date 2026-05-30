@@ -1,5 +1,5 @@
 """Profile gender preference endpoints — Neon-backed."""
-from typing import Optional
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -115,6 +115,83 @@ def link_profile(body: LinkRequest, user_id: str = Depends(require_auth)):
         return {"linked": True}
     except HTTPException:
         raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
+_PROFILE_COLS = (
+    "id", "user_id", "email", "display_name", "avatar_url", "bio", "location",
+    "is_local", "is_verified", "is_restricted", "interests", "languages",
+    "time_availability", "date_of_birth", "min_age_preference", "max_age_preference",
+    "activity_vibe", "has_seen_tutorial", "gender", "same_gender_only",
+    "subscription_tier", "theme", "created_at", "updated_at", "migration_linked",
+)
+
+def _row_to_profile(row) -> dict:
+    return {col: (str(val) if hasattr(val, "isoformat") else val)
+            for col, val in zip(_PROFILE_COLS, row)}
+
+
+class ProfileUpdate(BaseModel):
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    is_local: Optional[bool] = None
+    interests: Optional[list[str]] = None
+    languages: Optional[list[str]] = None
+    time_availability: Optional[list[str]] = None
+    date_of_birth: Optional[str] = None
+    min_age_preference: Optional[int] = None
+    max_age_preference: Optional[int] = None
+    activity_vibe: Optional[str] = None
+    has_seen_tutorial: Optional[bool] = None
+    gender: Optional[str] = None
+    same_gender_only: Optional[bool] = None
+
+
+@router.get("/me")
+def get_my_profile(user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cols = ", ".join(_PROFILE_COLS)
+        cur.execute(
+            f"SELECT {cols} FROM public.profiles WHERE user_id = %s::uuid",
+            (user_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return _row_to_profile(row)
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
+@router.patch("/me")
+def update_my_profile(body: ProfileUpdate, user_id: str = Depends(require_auth)):
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    set_clause = ", ".join(f"{k} = %s" for k in updates)
+    values = list(updates.values()) + [user_id]
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE public.profiles SET {set_clause}, updated_at = now() WHERE user_id = %s::uuid",
+            values,
+        )
+        conn.commit()
+        return {"updated": list(updates.keys())}
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
