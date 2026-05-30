@@ -5,7 +5,9 @@ const BACKEND_URL =
 
 function getBackendUrl(): string {
   if (!BACKEND_URL) {
-    throw new Error("Backend URL is not configured");
+    throw new Error(
+      "Backend URL is not configured. Set VITE_BACKEND_URL in Cloudflare dashboard → Workers & Pages → travela → Settings → Environment Variables."
+    );
   }
   return BACKEND_URL;
 }
@@ -32,14 +34,30 @@ export async function aiItinerary(
   onStatus?: (status: string) => void
 ): Promise<Record<string, unknown>> {
   const { data: { session } } = await supabase.auth.getSession();
-  const resp = await fetch(`${getBackendUrl()}/ai/itinerary`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session?.access_token ?? ""}`,
-    },
-    body: JSON.stringify({ prompt }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90_000);
+
+  let resp: Response;
+  try {
+    resp = await fetch(`${getBackendUrl()}/ai/itinerary`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token ?? ""}`,
+      },
+      body: JSON.stringify({ prompt }),
+      signal: controller.signal,
+    });
+  } catch (err: unknown) {
+    clearTimeout(timeoutId);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Itinerary generation timed out (90s). Please try a shorter prompt or try again.");
+    }
+    throw err;
+  }
+
+  clearTimeout(timeoutId);
+
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
     throw new Error(err?.detail || `Backend /ai/itinerary failed (${resp.status})`);
