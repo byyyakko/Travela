@@ -80,3 +80,36 @@ def get_locals_gender(body: LocalGenderRequest, user_id: str = Depends(require_a
         return [{"user_id": row[0], "gender": row[1]} for row in cur.fetchall()]
     finally:
         put_conn(conn)
+
+
+class LinkRequest(BaseModel):
+    email: str
+
+@router.post("/auth/link")
+def link_profile(body: LinkRequest, user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, user_id FROM public.profiles WHERE email = %s",
+            (body.email,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return {"linked": False, "reason": "no_profile"}
+        profile_id, existing_uid = row
+        if str(existing_uid) == user_id:
+            return {"linked": True, "already_linked": True}
+        cur.execute(
+            """UPDATE public.profiles
+               SET user_id = %s::uuid, migration_linked = true, updated_at = now()
+               WHERE id = %s""",
+            (user_id, profile_id),
+        )
+        conn.commit()
+        return {"linked": True}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
