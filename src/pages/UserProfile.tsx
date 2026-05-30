@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { apiGet } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,13 +34,7 @@ const UserProfile = () => {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["publicProfile", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId!)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+      return apiGet(`/profiles/${userId}`);
     },
     enabled: !!userId,
   });
