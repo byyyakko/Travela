@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { checkEmailBanned } from "@/lib/moderationClient";
+import { apiGet, apiPost } from "@/lib/dataClient";
 
 interface AuthContextType {
   session: Session | null;
@@ -24,15 +25,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkMerchantStatus = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "merchant")
-      .maybeSingle();
-    const hasMerchantRole = !!data;
-    setIsMerchant(hasMerchantRole);
-    return hasMerchantRole;
+    try {
+      const roles = await apiGet<string[]>("/profiles/me/roles");
+      const hasMerchantRole = roles.includes("merchant");
+      setIsMerchant(hasMerchantRole);
+      return hasMerchantRole;
+    } catch {
+      return false;
+    }
   }, [user]);
 
   useEffect(() => {
@@ -88,7 +88,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error && data.session) {
+      apiPost("/profiles/auth/link", { email }).catch((err: unknown) =>
+        console.warn("[AuthContext] auth/link failed:", err)
+      );
+    }
     return { error };
   };
 
