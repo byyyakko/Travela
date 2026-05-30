@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiDelete } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Card } from "@/components/ui/card";
@@ -103,16 +103,7 @@ const TripDetail = ({ trip, onBack }: TripDetailProps) => {
   // Fetch itinerary items
   const { data: itineraryItems, isLoading } = useQuery({
     queryKey: ["itinerary", trip.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("itinerary_items")
-        .select("*")
-        .eq("trip_id", trip.id)
-        .order("day_date", { ascending: true })
-        .order("order_index", { ascending: true });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => apiGet<any[]>(`/trips/${trip.id}/items`),
     enabled: !!user,
   });
 
@@ -120,9 +111,7 @@ const TripDetail = ({ trip, onBack }: TripDetailProps) => {
   const addItem = useMutation({
     mutationFn: async () => {
       if (!selectedDay) return;
-      const { error } = await supabase.from("itinerary_items").insert({
-        trip_id: trip.id,
-        user_id: user!.id,
+      await apiPost(`/trips/${trip.id}/items`, {
         day_date: selectedDay,
         title: newItem.title,
         description: newItem.description || null,
@@ -130,7 +119,6 @@ const TripDetail = ({ trip, onBack }: TripDetailProps) => {
         location: newItem.location || null,
         category: newItem.category,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["itinerary", trip.id] });
@@ -144,8 +132,7 @@ const TripDetail = ({ trip, onBack }: TripDetailProps) => {
   // Delete itinerary item
   const deleteItem = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("itinerary_items").delete().eq("id", id);
-      if (error) throw error;
+      await apiDelete(`/trips/${trip.id}/items/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["itinerary", trip.id] });

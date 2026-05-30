@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,22 +87,13 @@ const CutesyPlanner = () => {
 
   const { data: trips, isLoading } = useQuery({
     queryKey: ["trips", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("trips")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => apiGet<any[]>("/trips"),
     enabled: !!user,
   });
 
   const createTrip = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("trips").insert({
-        user_id: user!.id,
+      await apiPost("/trips", {
         name: tripName,
         country: selectedCountry,
         start_date: dateRange.from?.toISOString().split('T')[0],
@@ -110,7 +101,6 @@ const CutesyPlanner = () => {
         interests: selectedInterests,
         status: "planned",
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trips"] });
@@ -123,11 +113,7 @@ const CutesyPlanner = () => {
 
   const updateTripStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase
-        .from("trips")
-        .update({ status })
-        .eq("id", id);
-      if (error) throw error;
+      await apiPatch(`/trips/${id}`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trips"] });
@@ -137,8 +123,7 @@ const CutesyPlanner = () => {
 
   const deleteTrip = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("trips").delete().eq("id", id);
-      if (error) throw error;
+      await apiDelete(`/trips/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trips"] });

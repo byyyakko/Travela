@@ -20,6 +20,7 @@ from routers.profiles import router as profiles_router
 from routers.posts import router as posts_router
 from routers.experiences import router as experiences_router
 from routers.stores import router as stores_router
+from routers.trips import router as trips_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -58,6 +59,7 @@ app.include_router(profiles_router)
 app.include_router(posts_router)
 app.include_router(experiences_router)
 app.include_router(stores_router)
+app.include_router(trips_router)
 
 MAX_CANDIDATES = 200
 

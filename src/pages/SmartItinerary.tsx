@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiDelete } from "@/lib/dataClient";
 import { aiItinerary } from "@/lib/aiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -124,17 +124,7 @@ const SmartItinerary = () => {
   // Fetch past itinerary history
   const { data: historyItems } = useQuery({
     queryKey: ["itinerary-history", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("itinerary_history" as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data as any[];
-    },
+    queryFn: () => apiGet<any[]>("/trips/history"),
     enabled: !!user,
   });
 
@@ -142,13 +132,13 @@ const SmartItinerary = () => {
   const saveToHistory = useCallback(async (p: string, data: ItineraryData) => {
     if (!user) return;
     try {
-      const { data: inserted, error } = await supabase
-        .from("itinerary_history" as any)
-        .insert({ user_id: user.id, prompt: p, title: data.title, itinerary_data: data as any })
-        .select("id")
-        .single();
-      if (!error && inserted) {
-        setCurrentHistoryId((inserted as any).id);
+      const inserted = await apiPost<{ id: string }>("/trips/history", {
+        prompt: p,
+        title: data.title,
+        itinerary_data: data,
+      });
+      if (inserted?.id) {
+        setCurrentHistoryId(inserted.id);
         queryClient.invalidateQueries({ queryKey: ["itinerary-history"] });
       }
     } catch { /* silent */ }
@@ -167,7 +157,7 @@ const SmartItinerary = () => {
   // Delete a history item
   const deleteHistoryItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await supabase.from("itinerary_history" as any).delete().eq("id", id);
+    await apiDelete(`/trips/history/${id}`);
     queryClient.invalidateQueries({ queryKey: ["itinerary-history"] });
     if (currentHistoryId === id) setCurrentHistoryId(null);
     toast({ title: "Deleted", description: "Itinerary removed from history." });
@@ -277,38 +267,28 @@ const SmartItinerary = () => {
       const country = itinerary.title.replace(/^.*in\s+/i, "").trim() || "Unknown";
 
       // Create the trip
-      const { data: trip, error: tripError } = await supabase
-        .from("trips")
-        .insert({
-          user_id: user.id,
-          name: itinerary.title,
-          country,
-          start_date: format(startDate, "yyyy-MM-dd"),
-          end_date: format(endDate, "yyyy-MM-dd"),
-          notes: itinerary.description,
-          status: "planned",
-        })
-        .select("id")
-        .single();
-
-      if (tripError) throw tripError;
+      const trip = await apiPost<{ id: string }>("/trips", {
+        name: itinerary.title,
+        country,
+        start_date: format(startDate, "yyyy-MM-dd"),
+        end_date: format(endDate, "yyyy-MM-dd"),
+        notes: itinerary.description,
+        status: "planned",
+      });
 
       // Create itinerary items for each day/activity
-      const items = itinerary.days.flatMap((day) =>
-        day.activities.map((activity, idx) => ({
-          trip_id: trip.id,
-          user_id: user.id,
-          day_date: format(addDays(startDate, day.day - 1), "yyyy-MM-dd"),
-          title: activity.title,
-          description: activity.description + (activity.tip ? `\n💡 ${activity.tip}` : ""),
-          time: activity.time,
-          category: activity.category || "activity",
-          order_index: idx,
-        }))
-      );
-
-      const { error: itemsError } = await supabase.from("itinerary_items").insert(items);
-      if (itemsError) throw itemsError;
+      for (const day of itinerary.days) {
+        for (const [idx, activity] of day.activities.entries()) {
+          await apiPost(`/trips/${trip.id}/items`, {
+            day_date: format(addDays(startDate, day.day - 1), "yyyy-MM-dd"),
+            title: activity.title,
+            description: activity.description + (activity.tip ? `\n💡 ${activity.tip}` : ""),
+            time: activity.time,
+            category: activity.category || "activity",
+            order_index: idx,
+          });
+        }
+      }
 
       setAddedToPlanner(true);
       toast({
