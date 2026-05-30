@@ -70,7 +70,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         checkEmailBanned(email),
         new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5_000)),
       ]);
-    } catch {
+    } catch (err) {
+      console.error("[AuthContext] checkEmailBanned failed, failing open:", err);
       banned = false;
     }
     if (banned) {
