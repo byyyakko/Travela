@@ -247,6 +247,152 @@ def add_my_role(body: RoleCreate, user_id: str = Depends(require_auth)):
         put_conn(conn)
 
 
+# ── Profile Photos ────────────────────────────────────────────────────────────
+
+class PhotoCreate(BaseModel):
+    photo_url: str
+    display_order: Optional[int] = 0
+
+
+@router.get("/me/photos")
+def get_my_photos(user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, photo_url, display_order, created_at FROM public.profile_photos WHERE user_id = %s::uuid ORDER BY display_order",
+            (user_id,),
+        )
+        return [{"id": str(r[0]), "photo_url": r[1], "display_order": r[2], "created_at": str(r[3])}
+                for r in cur.fetchall()]
+    finally:
+        put_conn(conn)
+
+
+@router.post("/me/photos")
+def add_my_photo(body: PhotoCreate, user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO public.profile_photos (user_id, photo_url, display_order) VALUES (%s::uuid, %s, %s) RETURNING id",
+            (user_id, body.photo_url, body.display_order),
+        )
+        photo_id = cur.fetchone()[0]
+        conn.commit()
+        return {"id": str(photo_id), "photo_url": body.photo_url, "display_order": body.display_order}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
+@router.delete("/me/photos/{photo_id}")
+def delete_my_photo(photo_id: str, user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM public.profile_photos WHERE id = %s::uuid AND user_id = %s::uuid",
+            (photo_id, user_id),
+        )
+        conn.commit()
+        return {"deleted": photo_id}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
+# ── Profile Prompts ───────────────────────────────────────────────────────────
+
+class PromptCreate(BaseModel):
+    question: str
+    answer: str
+
+
+class PromptUpdate(BaseModel):
+    question: Optional[str] = None
+    answer: Optional[str] = None
+
+
+@router.get("/me/prompts")
+def get_my_prompts(user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, question, answer, created_at FROM public.profile_prompts WHERE user_id = %s::uuid ORDER BY created_at",
+            (user_id,),
+        )
+        return [{"id": str(r[0]), "question": r[1], "answer": r[2], "created_at": str(r[3])}
+                for r in cur.fetchall()]
+    finally:
+        put_conn(conn)
+
+
+@router.post("/me/prompts")
+def add_my_prompt(body: PromptCreate, user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO public.profile_prompts (user_id, question, answer) VALUES (%s::uuid, %s, %s) RETURNING id",
+            (user_id, body.question, body.answer),
+        )
+        prompt_id = cur.fetchone()[0]
+        conn.commit()
+        return {"id": str(prompt_id), "question": body.question, "answer": body.answer}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
+@router.patch("/me/prompts/{prompt_id}")
+def update_my_prompt(prompt_id: str, body: PromptUpdate, user_id: str = Depends(require_auth)):
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    set_clause = ", ".join(f"{k} = %s" for k in updates)
+    values = list(updates.values()) + [prompt_id, user_id]
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE public.profile_prompts SET {set_clause} WHERE id = %s::uuid AND user_id = %s::uuid",
+            values,
+        )
+        conn.commit()
+        return {"updated": prompt_id}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
+@router.delete("/me/prompts/{prompt_id}")
+def delete_my_prompt(prompt_id: str, user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM public.profile_prompts WHERE id = %s::uuid AND user_id = %s::uuid",
+            (prompt_id, user_id),
+        )
+        conn.commit()
+        return {"deleted": prompt_id}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
 @router.get("/{target_user_id}")
 def get_profile(target_user_id: str, user_id: str = Depends(require_auth)):
     conn = get_conn()

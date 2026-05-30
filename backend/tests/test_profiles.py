@@ -73,3 +73,22 @@ def test_get_me_still_works_after_adding_dynamic_route():
     """Ensure /profiles/me is not swallowed by /{target_user_id}."""
     r = client.get("/profiles/me")
     assert r.status_code in (200, 404)  # NOT routed to profile-by-id
+
+
+def test_get_my_photos_returns_list():
+    r = client.get("/profiles/me/photos")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+def test_get_my_prompts_returns_list():
+    r = client.get("/profiles/me/prompts")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+def test_add_photo_missing_url_returns_422():
+    r = client.post("/profiles/me/photos", json={})
+    assert r.status_code == 422
+
+def test_add_prompt_missing_fields_returns_422():
+    r = client.post("/profiles/me/prompts", json={"question": "only question"})
+    assert r.status_code == 422
