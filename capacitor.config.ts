@@ -5,8 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Travela',
   webDir: 'dist',
   server: {
-    url: 'https://5f71ecdd-095e-46af-9091-59b8dedda493.lovableproject.com?forceHideBadge=true',
-    cleartext: true
+    url: 'https://travela.asherethankoh2103.workers.dev',
   }
 };
 
