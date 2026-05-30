@@ -401,4 +401,4 @@ def test_cors_unknown_origin_does_not_reflect():
             "Access-Control-Request-Method": "GET",
         },
     )
-    assert r.headers.get("access-control-allow-origin") != "https://evil.example.com"
+    assert "access-control-allow-origin" not in r.headers
