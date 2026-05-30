@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { apiPost } from "@/lib/dataClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -173,12 +174,7 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
     mutationFn: async (content: string) => {
       if (!currentUserId) throw new Error("Not authenticated");
       
-      const { error } = await supabase.from("post_comments").insert({
-        post_id: post.id,
-        user_id: currentUserId,
-        content,
-      });
-      if (error) throw error;
+      await apiPost(`/posts/${post.id}/comments`, { content });
     },
     onSuccess: () => {
       setCommentText("");
@@ -229,18 +225,10 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const handleLike = async () => {
     if (!currentUserId || isDemo) return;
 
+    await apiPost(`/posts/${post.id}/likes`);
     if (isLiked) {
-      await supabase
-        .from("post_likes")
-        .delete()
-        .eq("post_id", post.id)
-        .eq("user_id", currentUserId);
       setLikeCount((prev) => prev - 1);
     } else {
-      await supabase.from("post_likes").insert({
-        post_id: post.id,
-        user_id: currentUserId,
-      });
       setLikeCount((prev) => prev + 1);
     }
     setIsLiked(!isLiked);
@@ -249,21 +237,13 @@ const PostCard = ({ post, category, currentUserId, onUpdate }: PostCardProps) =>
   const handleBookmark = async () => {
     if (!currentUserId || isDemo) return;
 
+    await apiPost(`/posts/${post.id}/bookmarks`);
     if (isBookmarked) {
-      await supabase
-        .from("post_bookmarks")
-        .delete()
-        .eq("post_id", post.id)
-        .eq("user_id", currentUserId);
       toast({
         title: "Removed from saved",
         description: "Post removed from your saved collection.",
       });
     } else {
-      await supabase.from("post_bookmarks").insert({
-        post_id: post.id,
-        user_id: currentUserId,
-      });
       toast({
         title: "Saved!",
         description: "Post added to your saved collection.",

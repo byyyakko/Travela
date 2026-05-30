@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiPost } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,16 +93,13 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
         uploadedUrls.push(publicUrl);
       }
 
-      const { error } = await supabase.from("posts").insert({
-        user_id: user.id,
+      await apiPost("/posts", {
         content: content.trim(),
         image_url: uploadedUrls[0] || null,
         image_urls: uploadedUrls.length > 0 ? uploadedUrls : [],
         location_tag: locationTag.trim() || null,
         category: selectedCategories.length > 0 ? selectedCategories.join(",") : null,
       });
-
-      if (error) throw error;
 
       setContent("");
       setLocationTag("");
