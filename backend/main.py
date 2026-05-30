@@ -18,6 +18,7 @@ from routers.auth_rate import router as auth_rate_router
 from routers.moderation import router as moderation_router, ensure_moderation_tables
 from routers.profiles import router as profiles_router
 from routers.posts import router as posts_router
+from routers.experiences import router as experiences_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,6 +55,7 @@ app.include_router(auth_rate_router)
 app.include_router(moderation_router)
 app.include_router(profiles_router)
 app.include_router(posts_router)
+app.include_router(experiences_router)
 
 MAX_CANDIDATES = 200
 

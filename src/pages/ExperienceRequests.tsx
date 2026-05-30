@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPatch } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,46 +17,45 @@ const ExperienceRequests = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  // Get all experiences hosted by user
+  // Get all experiences hosted by user (filter client-side from full list)
   const { data: myExperiences, isLoading } = useQuery({
     queryKey: ["my-hosted-experiences", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("experiences")
-        .select("id, title")
-        .eq("host_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      const all = await apiGet<any[]>("/experiences");
+      return all
+        .filter((e: any) => e.host_id === user!.id)
+        .map((e: any) => ({ id: e.id, title: e.title }));
     },
     enabled: !!user,
   });
 
-  // Get all requests for those experiences
+  // Get all requests for those experiences via backend (host-authenticated)
   const { data: allRequests } = useQuery({
     queryKey: ["my-hosted-requests", myExperiences?.map((e: any) => e.id)],
     queryFn: async () => {
       if (!myExperiences?.length) return [];
-      const ids = myExperiences.map((e: any) => e.id);
-      const { data, error } = await supabase
-        .from("experience_join_requests")
-        .select("*")
-        .in("experience_id", ids)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      const userIds = [...new Set(data.map((r: any) => r.traveller_id))];
-      const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", userIds);
-      const pMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p]));
       const expMap = Object.fromEntries(myExperiences.map((e: any) => [e.id, e]));
-      return data.map((r: any) => ({ ...r, profile: pMap[r.traveller_id], experience: expMap[r.experience_id] }));
+      const results = await Promise.all(
+        myExperiences.map((e: any) =>
+          apiGet<any[]>(`/experiences/${e.id}/requests`).catch(() => [] as any[])
+        )
+      );
+      return results.flat().map((r: any) => ({
+        ...r,
+        profile: {
+          display_name: r.requester_display_name,
+          avatar_url: r.requester_avatar_url,
+        },
+        experience: expMap[r.experience_id],
+      }));
     },
     enabled: !!myExperiences,
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ requestId, status, travellerId, hostId }: { requestId: string; status: string; travellerId: string; hostId: string }) => {
-      const { error } = await supabase.from("experience_join_requests").update({ status }).eq("id", requestId);
-      if (error) throw error;
+    mutationFn: async ({ requestId, status, travellerId, hostId, experienceId }: { requestId: string; status: string; travellerId: string; hostId: string; experienceId: string }) => {
+      await apiPatch(`/experiences/${experienceId}/requests/${requestId}`, { status });
+      // Auto-create conversation on approval (kept on Supabase per migration plan)
       if (status === "approved") {
         const p1 = hostId < travellerId ? hostId : travellerId;
         const p2 = hostId < travellerId ? travellerId : hostId;
@@ -97,10 +97,10 @@ const ExperienceRequests = () => {
                     <span className="text-sm font-medium flex-1">{r.profile?.display_name || "Traveller"}</span>
                     {r.status === "pending" ? (
                       <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="text-green-600 h-8 w-8" onClick={() => updateMutation.mutate({ requestId: r.id, status: "approved", travellerId: r.traveller_id, hostId: user!.id })}>
+                        <Button size="icon" variant="ghost" className="text-green-600 h-8 w-8" onClick={() => updateMutation.mutate({ requestId: r.id, status: "approved", travellerId: r.traveller_id, hostId: user!.id, experienceId: r.experience_id })}>
                           <CheckCircle className="w-5 h-5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => updateMutation.mutate({ requestId: r.id, status: "declined", travellerId: r.traveller_id, hostId: user!.id })}>
+                        <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => updateMutation.mutate({ requestId: r.id, status: "declined", travellerId: r.traveller_id, hostId: user!.id, experienceId: r.experience_id })}>
                           <XCircle className="w-5 h-5" />
                         </Button>
                       </div>

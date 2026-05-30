@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiPatch } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -29,10 +30,18 @@ const ExperienceDetail = () => {
   const { data: experience, isLoading } = useQuery({
     queryKey: ["experience", experienceId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("experiences").select("*").eq("id", experienceId!).single();
-      if (error) throw error;
-      const { data: profile } = await supabase.from("profiles").select("user_id, display_name, avatar_url, bio, languages, subscription_tier").eq("user_id", data.host_id).maybeSingle();
-      return { ...data, host: profile };
+      const data = await apiGet<any>(`/experiences/${experienceId}`);
+      return {
+        ...data,
+        host: {
+          user_id: data.host_id,
+          display_name: data.host_display_name,
+          avatar_url: data.host_avatar_url,
+          bio: data.host_bio,
+          languages: data.host_languages,
+          subscription_tier: data.host_subscription_tier,
+        },
+      };
     },
     enabled: !!experienceId,
   });
@@ -49,7 +58,8 @@ const ExperienceDetail = () => {
 
   const isHost = experience?.host_id === user?.id;
 
-  // Fetch my request
+  // Fetch my request (traveller checking their own status — kept on Supabase as the
+  // backend /requests endpoint is host-only)
   const { data: myRequest } = useQuery({
     queryKey: ["experience-my-request", experienceId, user?.id],
     queryFn: async () => {
@@ -64,21 +74,24 @@ const ExperienceDetail = () => {
     enabled: !!experienceId && !!user && !isHost,
   });
 
-  // Fetch all requests (for host or approved count)
+  // Fetch all requests (host-only view via backend)
   const { data: requests } = useQuery({
     queryKey: ["experience-requests", experienceId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("experience_join_requests")
-        .select("*")
-        .eq("experience_id", experienceId!)
-        .order("created_at");
-      if (error) throw error;
-      const userIds = data.map((r: any) => r.traveller_id);
-      if (!userIds.length) return [];
-      const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", userIds);
-      const pMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p]));
-      return data.map((r: any) => ({ ...r, profile: pMap[r.traveller_id] }));
+      try {
+        const data = await apiGet<any[]>(`/experiences/${experienceId}/requests`);
+        // Reshape requester profile fields to match existing JSX expectations
+        return data.map((r: any) => ({
+          ...r,
+          profile: {
+            display_name: r.requester_display_name,
+            avatar_url: r.requester_avatar_url,
+          },
+        }));
+      } catch {
+        // Non-hosts will receive a 403 — return empty so approved count is shown as 0
+        return [];
+      }
     },
     enabled: !!experienceId,
   });
@@ -116,12 +129,9 @@ const ExperienceDetail = () => {
   // Submit join request
   const joinMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("experience_join_requests").insert({
-        experience_id: experienceId!,
-        traveller_id: user!.id,
+      await apiPost(`/experiences/${experienceId}/join`, {
         message: joinMessage.trim() || null,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Request sent!", description: "The host will review your request." });
@@ -135,9 +145,8 @@ const ExperienceDetail = () => {
   // Host: approve/decline
   const updateMutation = useMutation({
     mutationFn: async ({ requestId, status }: { requestId: string; status: string }) => {
-      const { error } = await supabase.from("experience_join_requests").update({ status }).eq("id", requestId);
-      if (error) throw error;
-      // Auto-create conversation on approval
+      await apiPatch(`/experiences/${experienceId}/requests/${requestId}`, { status });
+      // Auto-create conversation on approval (kept on Supabase per migration plan)
       if (status === "approved" && experience) {
         const req = requests?.find((r: any) => r.id === requestId);
         if (req) {

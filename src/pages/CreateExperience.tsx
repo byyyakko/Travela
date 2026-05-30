@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { apiPost } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,6 @@ const CreateExperience = () => {
       const priceStr = hasPrice ? `$${fmt(basePrice)}` : null;
 
       const payload: any = {
-        host_id: user.id,
         title: form.title.trim(),
         description: form.description.trim() || null,
         tags,
@@ -85,8 +85,7 @@ const CreateExperience = () => {
       if (form.max_people) payload.max_people = parseInt(form.max_people);
       if (form.schedule) payload.schedule = new Date(form.schedule).toISOString();
 
-      const { data, error } = await supabase.from("experiences").insert(payload).select().single();
-      if (error) throw error;
+      const data = await apiPost<{ id: string; title: string }>("/experiences", payload);
       toast({ title: "Experience created!", description: `"${data.title}" is live.` });
       navigate(`/experiences/${data.id}`);
     } catch (e: any) {

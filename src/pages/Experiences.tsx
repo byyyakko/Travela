@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { apiGet } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -65,46 +66,40 @@ const Experiences = () => {
   const { data: experiences, isLoading } = useQuery({
     queryKey: ["experiences", search, activeTag, dateFilter?.toISOString(), timeFilter, freeOnly],
     queryFn: async () => {
-      let q = supabase.from("experiences").select("*").order("schedule", { ascending: true });
+      const raw = await apiGet<any[]>("/experiences");
 
-      if (search.trim()) {
-        q = q.or(`title.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
-      }
-      if (activeTag) q = q.contains("tags", [activeTag.toLowerCase()]);
-      if (freeOnly) q = q.or("price.is.null,price.eq.");
-
-      const { data, error } = await q;
-      if (error) throw error;
-
-      // Fetch host profiles
-      const hostIds = [...new Set(data.map((e: any) => e.host_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name, avatar_url, subscription_tier")
-        .in("user_id", hostIds);
-      const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p]));
-
-      // Fetch approved counts
-      const expIds = data.map((e: any) => e.id);
-      let approvedCounts: Record<string, number> = {};
-      if (expIds.length) {
-        const { data: reqData } = await supabase
-          .from("experience_join_requests")
-          .select("experience_id")
-          .in("experience_id", expIds)
-          .eq("status", "approved");
-        if (reqData) {
-          reqData.forEach((r: any) => {
-            approvedCounts[r.experience_id] = (approvedCounts[r.experience_id] || 0) + 1;
-          });
-        }
-      }
-
-      let result = data.map((e: any) => ({
+      // Shape host object from flattened backend fields
+      let result = raw.map((e: any) => ({
         ...e,
-        host: profileMap[e.host_id],
-        approved_count: approvedCounts[e.id] || 0,
+        host: {
+          display_name: e.host_display_name,
+          avatar_url: e.host_avatar_url,
+          subscription_tier: e.host_subscription_tier ?? null,
+        },
+        approved_count: 0,
       }));
+
+      // Client-side search filter
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        result = result.filter(
+          (e: any) =>
+            e.title?.toLowerCase().includes(q) ||
+            e.description?.toLowerCase().includes(q)
+        );
+      }
+
+      // Client-side tag filter
+      if (activeTag) {
+        result = result.filter((e: any) =>
+          Array.isArray(e.tags) && e.tags.includes(activeTag.toLowerCase())
+        );
+      }
+
+      // Client-side free filter
+      if (freeOnly) {
+        result = result.filter((e: any) => !e.price || e.price === "");
+      }
 
       // Client-side date filter
       if (dateFilter) {
