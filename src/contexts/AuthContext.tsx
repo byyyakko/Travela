@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { checkEmailBanned } from "@/lib/moderationClient";
@@ -22,22 +22,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isMerchant, setIsMerchant] = useState(false);
 
-  const checkMerchantStatus = async (): Promise<boolean> => {
+  const checkMerchantStatus = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
-    
     const { data } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "merchant")
       .maybeSingle();
-    
     const hasMerchantRole = !!data;
     setIsMerchant(hasMerchantRole);
     return hasMerchantRole;
-  };
+  }, [user]);
 
   useEffect(() => {
+    // Initialise from persisted session immediately (prevents flash of unauth UI)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -49,17 +54,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Check merchant status when user changes
   useEffect(() => {
     if (user) {
       checkMerchantStatus();
     } else {
       setIsMerchant(false);
     }
-  }, [user]);
+  }, [user, checkMerchantStatus]);
 
   const signUp = async (email: string, password: string) => {
-    const banned = await checkEmailBanned(email);
+    // Fail-open: if the banned-email check times out (cold backend), allow sign-up to proceed
+    let banned = false;
+    try {
+      banned = await Promise.race([
+        checkEmailBanned(email),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5_000)),
+      ]);
+    } catch {
+      banned = false;
+    }
     if (banned) {
       return { error: new Error("This account has been suspended. You cannot register with this email.") };
     }
@@ -74,10 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
