@@ -7,4 +7,4 @@ services:
     plan: free
     envVars:
       - key: ALLOWED_ORIGINS
-        value: "*"
+        value: "https://travela.asherethankoh2103.workers.dev,capacitor://localhost,https://localhost,http://localhost:8080,http://localhost:5173"

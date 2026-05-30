@@ -25,13 +25,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Travela Match API", version="2.0.0", lifespan=lifespan)
 
-ALLOWED_ORIGINS = [
-    "https://travela.asherethankoh2103.workers.dev",
-    "http://localhost:8080",
-    "http://localhost:5173",
-    "capacitor://localhost",
-    "https://localhost",
-]
+_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS = (
+    [o.strip() for o in _origins_env.split(",") if o.strip()]
+    if _origins_env.strip()
+    else [
+        "https://travela.asherethankoh2103.workers.dev",
+        "http://localhost:8080",
+        "http://localhost:5173",
+        "capacitor://localhost",
+        "https://localhost",
+    ]
+)
 
 app.add_middleware(
     CORSMiddleware,
