@@ -59,3 +59,17 @@ def test_patch_my_profile_returns_400_for_empty_body():
 def test_patch_my_profile_returns_200_or_404_for_valid_field():
     r = client.patch("/profiles/me", json={"display_name": "Test"})
     assert r.status_code in (200, 404, 500)  # 404/500 expected since test UUID has no row
+
+def test_get_my_roles_returns_list():
+    r = client.get("/profiles/me/roles")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+def test_get_profile_by_user_id_returns_200_or_404():
+    r = client.get("/profiles/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+    assert r.status_code in (200, 404)
+
+def test_get_me_still_works_after_adding_dynamic_route():
+    """Ensure /profiles/me is not swallowed by /{target_user_id}."""
+    r = client.get("/profiles/me")
+    assert r.status_code in (200, 404)  # NOT routed to profile-by-id

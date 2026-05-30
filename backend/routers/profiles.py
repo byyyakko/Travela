@@ -202,3 +202,65 @@ def update_my_profile(body: ProfileUpdate, user_id: str = Depends(require_auth))
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         put_conn(conn)
+
+
+_PUBLIC_COLS = (
+    "user_id", "display_name", "avatar_url", "bio", "location",
+    "is_local", "is_verified", "interests", "languages",
+    "date_of_birth", "activity_vibe", "gender", "created_at",
+)
+
+
+class RoleCreate(BaseModel):
+    role: str
+
+
+@router.get("/me/roles")
+def get_my_roles(user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT role FROM public.user_roles WHERE user_id = %s::uuid",
+            (user_id,),
+        )
+        return [row[0] for row in cur.fetchall()]
+    finally:
+        put_conn(conn)
+
+
+@router.post("/me/roles")
+def add_my_role(body: RoleCreate, user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO public.user_roles (user_id, role) VALUES (%s::uuid, %s) ON CONFLICT DO NOTHING",
+            (user_id, body.role),
+        )
+        conn.commit()
+        return {"role": body.role}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
+@router.get("/{target_user_id}")
+def get_profile(target_user_id: str, user_id: str = Depends(require_auth)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cols = ", ".join(_PUBLIC_COLS)
+        cur.execute(
+            f"SELECT {cols} FROM public.profiles WHERE user_id = %s::uuid",
+            (target_user_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return {col: (str(val) if hasattr(val, "isoformat") else val)
+                for col, val in zip(_PUBLIC_COLS, row)}
+    finally:
+        put_conn(conn)
