@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/dataClient";
 import { uploadAndModerate } from "@/lib/moderateImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Trash2, Image, Utensils, MapPin, Sparkles, Pencil } from "lucide-react";
@@ -47,9 +47,13 @@ const MerchantProducts = () => {
 
   const fetchItems = async () => {
     if (!store?.id) return;
-    const { data, error } = await supabase.from("store_items").select("*").eq("store_id", store.id).order("created_at", { ascending: false });
-    if (error) { console.error("Error fetching items:", error); toast({ title: "Error", description: "Could not load your items.", variant: "destructive" }); }
-    else { setItems(data || []); }
+    try {
+      const data = await apiGet<StoreItem[]>(`/stores/${store.id}/items`);
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      toast({ title: "Error", description: "Could not load your items.", variant: "destructive" });
+    }
     setLoading(false);
   };
 
@@ -86,20 +90,37 @@ const MerchantProducts = () => {
     }
     const itemData = { name: formData.name, description: formData.description || null, image_url: formData.image_url || null, ordering_tip: isFood ? formData.ordering_tip || null : null, price: !isFood ? formData.price || null : null };
     if (editingItem) {
-      const { error } = await supabase.from("store_items").update(itemData).eq("id", editingItem.id);
-      if (error) { toast({ title: "Error", description: "Could not update item.", variant: "destructive" }); }
-      else { toast({ title: "Success", description: "Item updated successfully!" }); resetForm(); setDialogOpen(false); fetchItems(); }
+      try {
+        await apiPatch(`/stores/${store.id}/items/${editingItem.id}`, itemData);
+        toast({ title: "Success", description: "Item updated successfully!" });
+        resetForm();
+        setDialogOpen(false);
+        fetchItems();
+      } catch {
+        toast({ title: "Error", description: "Could not update item.", variant: "destructive" });
+      }
     } else {
-      const { error } = await supabase.from("store_items").insert({ store_id: store.id, ...itemData });
-      if (error) { toast({ title: "Error", description: "Could not add item.", variant: "destructive" }); }
-      else { toast({ title: "Success", description: "Item added successfully!" }); resetForm(); setDialogOpen(false); fetchItems(); }
+      try {
+        await apiPost(`/stores/${store.id}/items`, itemData);
+        toast({ title: "Success", description: "Item added successfully!" });
+        resetForm();
+        setDialogOpen(false);
+        fetchItems();
+      } catch {
+        toast({ title: "Error", description: "Could not add item.", variant: "destructive" });
+      }
     }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("store_items").delete().eq("id", id);
-    if (error) { toast({ title: "Error", description: "Could not delete item.", variant: "destructive" }); }
-    else { toast({ title: "Deleted", description: "Item removed successfully." }); setItems((prev) => prev.filter((item) => item.id !== id)); }
+    if (!store?.id) return;
+    try {
+      await apiDelete(`/stores/${store.id}/items/${id}`);
+      toast({ title: "Deleted", description: "Item removed successfully." });
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    } catch {
+      toast({ title: "Error", description: "Could not delete item.", variant: "destructive" });
+    }
   };
 
   const getPageTitle = () => isFood ? "Menu Items" : "Attractions & Activities";

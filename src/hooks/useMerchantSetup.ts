@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { apiGet, apiPost } from "@/lib/dataClient";
 
 interface PendingMerchantData {
   storeName: string;
@@ -43,11 +43,12 @@ export const useMerchantSetup = () => {
         const pendingData: PendingMerchantData = JSON.parse(pendingDataStr);
 
         // Check if store already exists
-        const { data: existingStore } = await supabase
-          .from("stores")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
+        let existingStore: { id: string } | null = null;
+        try {
+          existingStore = await apiGet<{ id: string }>("/stores/me");
+        } catch {
+          existingStore = null;
+        }
 
         if (existingStore) {
           // Store already created, clean up and redirect
@@ -59,24 +60,20 @@ export const useMerchantSetup = () => {
         }
 
         // Create the store
-        const { error: storeError } = await supabase.from("stores").insert({
-          user_id: user.id,
+        await apiPost("/stores", {
           store_name: pendingData.storeName,
           store_type: pendingData.storeType,
           phone: pendingData.phone,
           address: pendingData.address,
         });
 
-        if (storeError) throw storeError;
-
         // Assign merchant role
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: user.id,
-          role: "merchant",
-        });
-
-        if (roleError && !roleError.message.includes("duplicate")) {
-          throw roleError;
+        try {
+          await apiPost("/profiles/me/roles", { role: "merchant" });
+        } catch (roleErr: any) {
+          if (!String(roleErr?.message ?? "").includes("duplicate")) {
+            throw roleErr;
+          }
         }
 
         // Clean up and redirect

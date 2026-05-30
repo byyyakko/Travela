@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/dataClient";
 import { supabase } from "@/integrations/supabase/client";
 import { utilGeocode } from "@/lib/aiClient";
 import { uploadAndModerate } from "@/lib/moderateImage";
@@ -59,25 +60,34 @@ const MerchantSettings = () => {
   useEffect(() => {
     const fetchStoreDetails = async () => {
       if (!user) return;
-      const { data, error } = await supabase.from("stores").select("store_name, store_type, phone, address, country, description, website_url, dietary_options, latitude, longitude").eq("user_id", user.id).single();
-      if (error) {
-        console.error("Error fetching store:", error);
-        toast({ title: "Error", description: "Could not load store details.", variant: "destructive" });
-      } else if (data) {
+      try {
+        const data = await apiGet<{
+          store_name: string; store_type: string; phone: string | null; address: string | null;
+          country: string | null; description: string | null; website_url: string | null;
+          dietary_options: string[] | null; latitude: number | null; longitude: number | null;
+        }>("/stores/me");
         setFormData({
-          store_name: data.store_name || "", store_type: data.store_type || "food", phone: data.phone || "",
-          address: data.address || "", country: data.country || "", description: data.description || "",
-          website_url: data.website_url || "", dietary_options: data.dietary_options || [],
+          store_name: data.store_name || "", store_type: (data.store_type as "food" | "attractions" | "entertainment") || "food",
+          phone: data.phone || "", address: data.address || "", country: data.country || "",
+          description: data.description || "", website_url: data.website_url || "",
+          dietary_options: data.dietary_options || [],
         });
         setOriginalAddress(data.address || "");
         if (data.latitude && data.longitude) setCoordinates({ lat: data.latitude, lng: data.longitude });
+      } catch (error) {
+        console.error("Error fetching store:", error);
+        toast({ title: "Error", description: "Could not load store details.", variant: "destructive" });
       }
       setLoading(false);
     };
     const fetchStoreImages = async () => {
       if (!store?.id) return;
-      const { data, error } = await supabase.from("store_images").select("*").eq("store_id", store.id).order("display_order", { ascending: true });
-      if (!error && data) setStoreImages(data);
+      try {
+        const data = await apiGet<StoreImage[]>(`/stores/${store.id}/images`);
+        setStoreImages(data);
+      } catch (err) {
+        console.error("Error fetching store images:", err);
+      }
     };
     fetchStoreDetails();
     if (store?.id) fetchStoreImages();
@@ -110,8 +120,7 @@ const MerchantSettings = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${store.id}/${Date.now()}.${fileExt}`;
       const { publicUrl: urlPublic } = await uploadAndModerate("store-items", fileName, file);
-      const { data: imageData, error: insertError } = await supabase.from("store_images").insert({ store_id: store.id, image_url: urlPublic, display_order: storeImages.length }).select().single();
-      if (insertError) throw insertError;
+      const imageData = await apiPost<StoreImage>(`/stores/${store.id}/images`, { image_url: urlPublic, display_order: storeImages.length });
       setStoreImages([...storeImages, imageData]);
       toast({ title: "Image uploaded", description: "Your store image has been added." });
     } catch (err) {
@@ -127,8 +136,7 @@ const MerchantSettings = () => {
       const urlParts = imageUrl.split("/store-items/");
       const filePath = urlParts[1];
       if (filePath) await supabase.storage.from("store-items").remove([filePath]);
-      const { error } = await supabase.from("store_images").delete().eq("id", imageId);
-      if (error) throw error;
+      await apiDelete(`/stores/${store!.id}/images/${imageId}`);
       setStoreImages(storeImages.filter(img => img.id !== imageId));
       toast({ title: "Image deleted", description: "Store image has been removed." });
     } catch (err) {
@@ -162,13 +170,13 @@ const MerchantSettings = () => {
       website_url: formData.website_url, dietary_options: formData.dietary_options,
     };
     if (latitude !== null && longitude !== null) { updateData.latitude = latitude; updateData.longitude = longitude; }
-    const { error } = await supabase.from("stores").update(updateData).eq("id", store.id);
-    if (error) {
-      console.error("Error updating store:", error);
-      toast({ title: "Error", description: "Could not save store settings.", variant: "destructive" });
-    } else {
+    try {
+      await apiPatch(`/stores/${store.id}`, updateData);
       toast({ title: "Success", description: "Store settings saved successfully!" });
       setOriginalAddress(formData.address);
+    } catch (error) {
+      console.error("Error updating store:", error);
+      toast({ title: "Error", description: "Could not save store settings.", variant: "destructive" });
     }
     setSaving(false);
   };

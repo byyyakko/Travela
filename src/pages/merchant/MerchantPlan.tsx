@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Crown, Sparkles, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { apiPatch } from "@/lib/dataClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
 interface StoreContext {
@@ -60,19 +59,17 @@ const MerchantPlan = () => {
   const currentTier = store?.subscription_tier || "tier_0";
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [upgrading, setUpgrading] = useState(false);
 
   const handleUpgrade = async (tier: string) => {
     if (!store?.id) return;
     setUpgrading(true);
     try {
-      const { error } = await supabase.from("stores").update({ subscription_tier: tier as "tier_0" | "tier_1" | "tier_2" }).eq("id", store.id);
-      if (error) throw error;
+      await apiPatch(`/stores/${store.id}`, { subscription_tier: tier });
       await queryClient.invalidateQueries({ queryKey: ["merchant-store"] });
       const planName = plans.find(p => p.tier === tier)?.name || tier;
       toast({ title: "Plan Updated! 🎉", description: `You're now on the ${planName} plan.` });
-    } catch (error: any) {
+    } catch {
       toast({ title: "Error", description: "Failed to update plan. Please try again.", variant: "destructive" });
     } finally {
       setUpgrading(false);

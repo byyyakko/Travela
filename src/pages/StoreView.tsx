@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost } from "@/lib/dataClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,23 +49,23 @@ const StoreView = () => {
 
   const { data: store, isLoading: storeLoading } = useQuery({
     queryKey: ["store", storeId],
-    queryFn: async () => { const { data, error } = await supabase.from("stores").select("*").eq("id", storeId).single(); if (error) throw error; return data as Store; },
+    queryFn: () => apiGet<Store>(`/stores/${storeId}`),
     enabled: !!storeId,
   });
 
   const { data: storeImages } = useQuery({
     queryKey: ["store-images", storeId],
-    queryFn: async () => { const { data, error } = await supabase.from("store_images").select("*").eq("store_id", storeId).order("display_order", { ascending: true }); if (error) throw error; return data as StoreImage[]; },
+    queryFn: () => apiGet<StoreImage[]>(`/stores/${storeId}/images`),
     enabled: !!storeId,
   });
 
   const { data: storeItems } = useQuery({
     queryKey: ["store-items", storeId],
-    queryFn: async () => { const { data, error } = await supabase.from("store_items").select("*").eq("store_id", storeId).order("created_at", { ascending: true }); if (error) throw error; return data as StoreItem[]; },
+    queryFn: () => apiGet<StoreItem[]>(`/stores/${storeId}/items`),
     enabled: !!storeId,
   });
 
-  useEffect(() => { if (storeId) { supabase.from("store_visits").insert({ store_id: storeId, page_viewed: "store_page" }); } }, [storeId]);
+  useEffect(() => { if (storeId) { apiPost(`/stores/${storeId}/visits`, { page_viewed: "store_page" }).catch(() => {}); } }, [storeId]);
 
   const handleViewOnMap = () => {
     if (store?.latitude && store?.longitude) navigate(`/map?lat=${store.latitude}&lng=${store.longitude}&store=${store.id}`);
