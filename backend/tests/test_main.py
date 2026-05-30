@@ -377,3 +377,28 @@ class TestGenderFilter:
         })
         assert r.status_code == 200
         assert r.json()["ranked"] == []
+
+
+def test_cors_allowed_origin_returns_header():
+    """Cloudflare origin receives the specific origin echoed back in the CORS header."""
+    r = client.options(
+        "/health",
+        headers={
+            "Origin": "https://travela.asherethankoh2103.workers.dev",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert r.status_code in (200, 204)
+    assert r.headers.get("access-control-allow-origin") == "https://travela.asherethankoh2103.workers.dev"
+
+
+def test_cors_unknown_origin_does_not_reflect():
+    """An unknown origin is NOT reflected back — header must not equal the evil origin."""
+    r = client.options(
+        "/health",
+        headers={
+            "Origin": "https://evil.example.com",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert r.headers.get("access-control-allow-origin") != "https://evil.example.com"
