@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Camera, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiPatch } from "@/lib/dataClient";
 import { uploadAndModerate } from "@/lib/moderateImage";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ const AvatarPickerDialog = ({ open, onOpenChange, currentAvatar, onAvatarChange 
     if (!user) return;
     setSelectedPreset(url);
     try {
-      await supabase.from("profiles").update({ avatar_url: url }).eq("user_id", user.id);
+      await apiPatch("/profiles/me", { avatar_url: url });
       onAvatarChange(url);
       toast({ title: "Avatar updated!" });
       onOpenChange(false);
@@ -60,7 +60,7 @@ const AvatarPickerDialog = ({ open, onOpenChange, currentAvatar, onAvatarChange 
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
       const { publicUrl } = await uploadAndModerate("avatars", fileName, file, { upsert: true });
-      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
+      await apiPatch("/profiles/me", { avatar_url: publicUrl });
       onAvatarChange(publicUrl);
       toast({ title: "Profile picture updated!" });
       onOpenChange(false);

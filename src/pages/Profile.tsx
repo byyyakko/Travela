@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import PostCard from "@/components/posts/PostCard";
 import AppLayout from "@/components/layout/AppLayout";
@@ -68,11 +69,7 @@ const MyPostsSection = ({ userId }: { userId?: string }) => {
       if (error) throw error;
 
       // Fetch own profile for display
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, avatar_url, location")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const profile = await apiGet<{ display_name: string | null; avatar_url: string | null; location: string | null } | null>("/profiles/me").catch(() => null);
 
       return (data || []).map((post) => ({
         ...post,
@@ -163,13 +160,7 @@ const Profile = () => {
     queryKey: ["profilePhotos", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("profile_photos")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("display_order", { ascending: true });
-      if (error) throw error;
-      return data || [];
+      return apiGet<{ id: string; photo_url: string; display_order: number; created_at: string }[]>("/profiles/me/photos");
     },
     enabled: !!user,
   });
@@ -189,20 +180,15 @@ const Profile = () => {
 
       const { publicUrl } = await uploadAndModerate("avatars", fileName, file, { upsert: true });
 
-      const { error: insertError } = await supabase
-        .from("profile_photos")
-        .insert({
-          user_id: user.id,
-          photo_url: publicUrl,
-          display_order: profilePhotos.length,
-        });
-
-      if (insertError) throw insertError;
+      await apiPost("/profiles/me/photos", {
+        photo_url: publicUrl,
+        display_order: profilePhotos.length,
+      });
 
       // If this is the first photo and no avatar, set it as avatar
       if (!avatarUrl) {
         setAvatarUrl(publicUrl);
-        await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
+        await apiPatch("/profiles/me", { avatar_url: publicUrl });
       }
 
       refetchPhotos();
@@ -218,14 +204,14 @@ const Profile = () => {
   const handleDeletePhoto = async (photoId: string, photoUrl: string) => {
     if (!user) return;
     try {
-      await supabase.from("profile_photos").delete().eq("id", photoId);
+      await apiDelete(`/profiles/me/photos/${photoId}`);
 
       // If this was the avatar, update to next photo or null
       if (avatarUrl === photoUrl) {
         const remaining = profilePhotos.filter(p => p.id !== photoId);
         const newAvatar = remaining.length > 0 ? remaining[0].photo_url : null;
         setAvatarUrl(newAvatar);
-        await supabase.from("profiles").update({ avatar_url: newAvatar }).eq("user_id", user.id);
+        await apiPatch("/profiles/me", { avatar_url: newAvatar });
       }
 
       refetchPhotos();
@@ -239,7 +225,7 @@ const Profile = () => {
     if (!user) return;
     try {
       setAvatarUrl(photoUrl);
-      await supabase.from("profiles").update({ avatar_url: photoUrl }).eq("user_id", user.id);
+      await apiPatch("/profiles/me", { avatar_url: photoUrl });
       toast({ title: "Main photo updated!" });
     } catch (error: any) {
       toast({ title: "Error updating main photo", description: error.message, variant: "destructive" });
@@ -251,13 +237,7 @@ const Profile = () => {
     queryKey: ["profilePrompts", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("profile_prompts")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("display_order", { ascending: true });
-      if (error) throw error;
-      return data || [];
+      return apiGet<{ id: string; question: string; answer: string; created_at: string }[]>("/profiles/me/prompts");
     },
     enabled: !!user,
   });
@@ -281,13 +261,10 @@ const Profile = () => {
       return;
     }
     try {
-      const { error } = await supabase.from("profile_prompts").insert({
-        user_id: user.id,
+      await apiPost("/profiles/me/prompts", {
         question: selectedPromptQuestion,
         answer: promptAnswer.trim(),
-        display_order: profilePrompts.length,
       });
-      if (error) throw error;
       setSelectedPromptQuestion("");
       setPromptAnswer("");
       refetchPrompts();
@@ -299,7 +276,7 @@ const Profile = () => {
 
   const handleDeletePrompt = async (promptId: string) => {
     try {
-      await supabase.from("profile_prompts").delete().eq("id", promptId);
+      await apiDelete(`/profiles/me/prompts/${promptId}`);
       refetchPrompts();
       toast({ title: "Prompt removed" });
     } catch (error: any) {
@@ -312,13 +289,22 @@ const Profile = () => {
     queryFn: async () => {
       if (!user) return null;
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
+      const data = await apiGet<{
+        display_name: string | null;
+        bio: string | null;
+        location: string | null;
+        is_local: boolean;
+        is_verified: boolean;
+        interests: string[] | null;
+        avatar_url: string | null;
+        date_of_birth: string | null;
+        min_age_preference: number | null;
+        max_age_preference: number | null;
+        destination: string | null;
+        travel_start_date: string | null;
+        travel_end_date: string | null;
+        languages: string[] | null;
+      } | null>("/profiles/me");
 
       if (data) {
         setDisplayName(data.display_name || "");
@@ -353,11 +339,8 @@ const Profile = () => {
       const { publicUrl } = await uploadAndModerate("avatars", fileName, file, { upsert: true });
 
       setAvatarUrl(publicUrl);
-      
-      await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("user_id", user.id);
+
+      await apiPatch("/profiles/me", { avatar_url: publicUrl });
 
       toast({ title: "Avatar updated!" });
     } catch (error: any) {
@@ -466,25 +449,20 @@ const Profile = () => {
     setSaving(true);
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          display_name: displayName.trim() || null,
-          bio: bio.trim() || null,
-          location: location.trim() || null,
-          is_local: isLocal,
-          interests: interests.length > 0 ? interests : null,
-          date_of_birth: dateOfBirth || null,
-          min_age_preference: minAgePreference,
-          max_age_preference: maxAgePreference,
-          destination: destination.trim() || null,
-          travel_start_date: travelStartDate || null,
-          travel_end_date: travelEndDate || null,
-          languages: languages.length > 0 ? languages : [],
-        })
-        .eq("user_id", user.id);
-
-      if (error) throw error;
+      await apiPatch("/profiles/me", {
+        display_name: displayName.trim() || null,
+        bio: bio.trim() || null,
+        location: location.trim() || null,
+        is_local: isLocal,
+        interests: interests.length > 0 ? interests : null,
+        date_of_birth: dateOfBirth || null,
+        min_age_preference: minAgePreference,
+        max_age_preference: maxAgePreference,
+        destination: destination.trim() || null,
+        travel_start_date: travelStartDate || null,
+        travel_end_date: travelEndDate || null,
+        languages: languages.length > 0 ? languages : [],
+      });
 
       // Save gender preference to Neon
       const { data: { session } } = await supabase.auth.getSession();
