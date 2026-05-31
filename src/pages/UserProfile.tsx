@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { apiGet } from "@/lib/dataClient";
+import { apiGet, apiPost } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -257,30 +257,13 @@ const UserProfile = () => {
                   className="flex-1 gap-2"
                   onClick={async () => {
                     if (!user || !userId) return;
-                    // Check for existing conversation
-                    const { data: existing } = await supabase
-                      .from("conversations")
-                      .select("id")
-                      .or(
-                        `and(participant1_id.eq.${user.id},participant2_id.eq.${userId}),and(participant1_id.eq.${userId},participant2_id.eq.${user.id})`
-                      )
-                      .maybeSingle();
-
-                    if (existing) {
+                    try {
+                      // Create or find existing conversation via backend
+                      await apiPost("/conversations", { other_user_id: userId });
                       navigate("/messages");
-                      return;
+                    } catch (err: any) {
+                      toast({ title: "Error", description: err.message, variant: "destructive" });
                     }
-
-                    // Create new conversation as a message request (accepted = null)
-                    const { error } = await supabase.from("conversations").insert({
-                      participant1_id: user.id,
-                      participant2_id: userId,
-                    });
-                    if (error) {
-                      toast({ title: "Error", description: error.message, variant: "destructive" });
-                      return;
-                    }
-                    navigate("/messages");
                   }}
                 >
                   <MessageCircle className="w-4 h-4" /> Message

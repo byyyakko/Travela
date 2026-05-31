@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
@@ -185,11 +186,7 @@ const Match = () => {
     queryKey: ["myConversations", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
-        .from("conversations")
-        .select("participant1_id, participant2_id, accepted")
-        .or(`participant1_id.eq.${user.id},participant2_id.eq.${user.id}`);
-      return data || [];
+      return apiGet<Array<{ participant1_id: string; participant2_id: string; accepted: boolean | null }>>("/conversations");
     },
     enabled: !!user,
   });
@@ -275,27 +272,13 @@ const Match = () => {
   const connectMutation = useMutation({
     mutationFn: async ({ localId, message }: { localId: string; message: string }) => {
       if (!user) throw new Error("Not authenticated");
-      const p1 = user.id < localId ? user.id : localId;
-      const p2 = user.id < localId ? localId : user.id;
 
-      // Create conversation
-      const { data: convo, error: convoErr } = await supabase
-        .from("conversations")
-        .insert({ participant1_id: p1, participant2_id: p2 })
-        .select()
-        .single();
-      if (convoErr) {
-        if (convoErr.code === "23505") throw new Error("You already sent a request to this guide.");
-        throw convoErr;
-      }
+      // Create conversation via backend
+      const convo = await apiPost<{ id: string; existing: boolean }>("/conversations", { other_user_id: localId });
 
-      // Send intro message
+      // Send intro message if provided
       if (message.trim()) {
-        await supabase.from("messages").insert({
-          conversation_id: convo.id,
-          sender_id: user.id,
-          content: message.trim(),
-        });
+        await apiPost(`/conversations/${convo.id}/messages`, { content: message.trim() });
       }
 
       return convo;

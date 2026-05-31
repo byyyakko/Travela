@@ -146,17 +146,14 @@ const ExperienceDetail = () => {
   const updateMutation = useMutation({
     mutationFn: async ({ requestId, status }: { requestId: string; status: string }) => {
       await apiPatch(`/experiences/${experienceId}/requests/${requestId}`, { status });
-      // Auto-create conversation on approval (kept on Supabase per migration plan)
+      // Auto-create conversation on approval via backend
       if (status === "approved" && experience) {
         const req = requests?.find((r: any) => r.id === requestId);
         if (req) {
-          const p1 = experience.host_id < req.traveller_id ? experience.host_id : req.traveller_id;
-          const p2 = experience.host_id < req.traveller_id ? req.traveller_id : experience.host_id;
-          await supabase.from("conversations").insert({
-            participant1_id: p1,
-            participant2_id: p2,
-            accepted: true,
-          }).select().maybeSingle();
+          const otherUserId = req.traveller_id === experience.host_id ? req.traveller_id : req.traveller_id;
+          await apiPost("/conversations", { other_user_id: otherUserId }).catch(() => {
+            // Conversation may already exist — ignore duplicate errors
+          });
         }
       }
     },

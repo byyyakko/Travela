@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { apiGet, apiPatch } from "@/lib/dataClient";
+import { apiGet, apiPatch, apiPost } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,11 +54,11 @@ const ExperienceRequests = () => {
   const updateMutation = useMutation({
     mutationFn: async ({ requestId, status, travellerId, hostId, experienceId }: { requestId: string; status: string; travellerId: string; hostId: string; experienceId: string }) => {
       await apiPatch(`/experiences/${experienceId}/requests/${requestId}`, { status });
-      // Auto-create conversation on approval (kept on Supabase per migration plan)
+      // Auto-create conversation on approval via backend
       if (status === "approved") {
-        const p1 = hostId < travellerId ? hostId : travellerId;
-        const p2 = hostId < travellerId ? travellerId : hostId;
-        await supabase.from("conversations").insert({ participant1_id: p1, participant2_id: p2, accepted: true }).select().maybeSingle();
+        await apiPost("/conversations", { other_user_id: travellerId }).catch(() => {
+          // Conversation may already exist — ignore duplicate errors
+        });
       }
     },
     onSuccess: () => {

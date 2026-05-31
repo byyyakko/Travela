@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiPatch, getWsUrl } from "@/lib/dataClient";
 import { aiTranslate } from "@/lib/aiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -95,45 +95,7 @@ const Messages = () => {
     queryKey: ["conversations", user?.id],
     queryFn: async () => {
       if (!user) return [];
-
-      const { data, error } = await supabase
-        .from("conversations")
-        .select("*")
-        .or(`participant1_id.eq.${user.id},participant2_id.eq.${user.id}`)
-        .order("updated_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch other user profiles and last messages
-      const enrichedConversations: Conversation[] = await Promise.all(
-        (data || []).map(async (conv) => {
-          const otherUserId = conv.participant1_id === user.id 
-            ? conv.participant2_id 
-            : conv.participant1_id;
-
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("display_name, avatar_url")
-            .eq("user_id", otherUserId)
-            .maybeSingle();
-
-          const { data: lastMsgData } = await supabase
-            .from("messages")
-            .select("content, created_at")
-            .eq("conversation_id", conv.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          return {
-            ...conv,
-            otherUser: profileData || undefined,
-            lastMessage: lastMsgData || undefined,
-          };
-        })
-      );
-
-      return enrichedConversations;
+      return apiGet<Conversation[]>("/conversations");
     },
     enabled: !!user,
   });
@@ -143,37 +105,21 @@ const Messages = () => {
     if (!selectedConversation) return;
 
     const fetchMessages = async () => {
-      const { data } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", selectedConversation.id)
-        .order("created_at", { ascending: true });
-
+      const data = await apiGet<Message[]>(`/conversations/${selectedConversation.id}/messages`);
       setMessages(data || []);
     };
 
     fetchMessages();
 
-    // Subscribe to new messages
-    const channel = supabase
-      .channel(`messages:${selectedConversation.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${selectedConversation.id}`,
-        },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+    // Subscribe to new messages via WebSocket
+    const wsUrl = getWsUrl(`/ws/conversations/${selectedConversation.id}`);
+    const ws = new WebSocket(wsUrl);
+    ws.onmessage = (event) => {
+      const msg: Message = JSON.parse(event.data);
+      setMessages((prev) => [...prev, msg]);
     };
+
+    return () => ws.close();
   }, [selectedConversation, user?.id]);
 
   // Scroll to bottom when messages change
@@ -199,28 +145,26 @@ const Messages = () => {
   };
 
   const handleAcceptConversation = async (convId: string) => {
-    const { error } = await supabase
-      .from("conversations")
-      .update({ accepted: true })
-      .eq("id", convId);
-    if (!error) {
+    try {
+      await apiPatch(`/conversations/${convId}`, { accepted: true });
       queryClient.invalidateQueries({ queryKey: ["conversations", user?.id] });
       if (selectedConversation?.id === convId) {
         setSelectedConversation({ ...selectedConversation!, accepted: true });
       }
       toast({ title: "Message request accepted!" });
+    } catch {
+      toast({ title: "Error", description: "Failed to accept conversation", variant: "destructive" });
     }
   };
 
   const handleDeclineConversation = async (convId: string) => {
-    const { error } = await supabase
-      .from("conversations")
-      .update({ accepted: false, declined_at: new Date().toISOString() } as any)
-      .eq("id", convId);
-    if (!error) {
+    try {
+      await apiPatch(`/conversations/${convId}`, { accepted: false });
       queryClient.invalidateQueries({ queryKey: ["conversations", user?.id] });
       setSelectedConversation(null);
       toast({ title: "Message request declined" });
+    } catch {
+      toast({ title: "Error", description: "Failed to decline conversation", variant: "destructive" });
     }
   };
 
@@ -232,15 +176,12 @@ const Messages = () => {
       toast({ title: "Inappropriate content", description: "Your message contains inappropriate language. Please revise it.", variant: "destructive" });
       return;
     }
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: selectedConversation.id,
-      sender_id: user.id,
-      content: newMessage.trim(),
-    });
-
-    if (!error) {
+    try {
+      await apiPost(`/conversations/${selectedConversation.id}/messages`, { content: newMessage.trim() });
       track("message_sent", { conversation_id: selectedConversation.id });
       setNewMessage("");
+    } catch {
+      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
     }
   };
 
