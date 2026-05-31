@@ -2,7 +2,7 @@
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -21,6 +21,7 @@ from routers.posts import router as posts_router
 from routers.experiences import router as experiences_router
 from routers.stores import router as stores_router
 from routers.trips import router as trips_router
+from routers.messages import router as messages_router, _connections
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,6 +61,29 @@ app.include_router(posts_router)
 app.include_router(experiences_router)
 app.include_router(stores_router)
 app.include_router(trips_router)
+app.include_router(messages_router)
+
+
+# ── WebSocket — real-time message delivery ────────────────────────────────────
+
+@app.websocket("/ws/conversations/{conversation_id}")
+async def ws_conversation(websocket: WebSocket, conversation_id: str):
+    """Subscribe to live messages in a conversation.
+    No JWT validation here — clients connect after auth via the REST API.
+    The conversation_id acts as the subscription key."""
+    await websocket.accept()
+    _connections.setdefault(conversation_id, set()).add(websocket)
+    try:
+        while True:
+            # Keep connection alive; client may send pings or we just wait
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        _connections.get(conversation_id, set()).discard(websocket)
+
 
 MAX_CANDIDATES = 200
 
