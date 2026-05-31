@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { apiGet, apiPost, apiPatch } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -50,26 +49,18 @@ const ExperienceDetail = () => {
     queryKey: ["viewerSubscription", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data } = await supabase.from("profiles").select("subscription_tier").eq("user_id", user.id).maybeSingle();
-      return data;
+      return apiGet<{ subscription_tier?: string }>("/profiles/me");
     },
     enabled: !!user?.id,
   });
 
   const isHost = experience?.host_id === user?.id;
 
-  // Fetch my request (traveller checking their own status — kept on Supabase as the
-  // backend /requests endpoint is host-only)
+  // Fetch my request (traveller checking their own status via backend my-request endpoint)
   const { data: myRequest } = useQuery({
     queryKey: ["experience-my-request", experienceId, user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("experience_join_requests")
-        .select("*")
-        .eq("experience_id", experienceId!)
-        .eq("traveller_id", user!.id)
-        .maybeSingle();
-      return data;
+      return apiGet<Record<string, unknown> | null>(`/experiences/${experienceId}/my-request`);
     },
     enabled: !!experienceId && !!user && !isHost,
   });

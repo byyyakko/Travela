@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { apiGet } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -44,8 +43,7 @@ const Experiences = () => {
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
-      return data;
+      return apiGet<Record<string, unknown>>("/profiles/me");
     },
     enabled: !!user,
   });

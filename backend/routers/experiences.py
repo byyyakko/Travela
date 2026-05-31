@@ -148,6 +148,30 @@ def create_experience(body: ExperienceCreate, user_id: str = Depends(require_aut
         put_conn(conn)
 
 
+@router.get("/{experience_id}/my-request")
+def get_my_request(experience_id: str, user_id: str = Depends(require_auth)):
+    """Return the caller's own join request for an experience (traveller view)."""
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT id, experience_id, traveller_id, message, status, created_at
+               FROM public.experience_join_requests
+               WHERE experience_id = %s::uuid AND traveller_id = %s::uuid""",
+            (experience_id, user_id),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        cols = ("id", "experience_id", "traveller_id", "message", "status", "created_at")
+        return _serialize(row, cols)
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        put_conn(conn)
+
+
 @router.post("/{experience_id}/join")
 def join_experience(
     experience_id: str,

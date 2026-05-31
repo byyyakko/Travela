@@ -22,6 +22,7 @@ from routers.experiences import router as experiences_router
 from routers.stores import router as stores_router
 from routers.trips import router as trips_router
 from routers.messages import router as messages_router, _connections
+from routers.reviews import router as reviews_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,6 +63,7 @@ app.include_router(experiences_router)
 app.include_router(stores_router)
 app.include_router(trips_router)
 app.include_router(messages_router)
+app.include_router(reviews_router)
 
 
 # ── WebSocket — real-time message delivery ────────────────────────────────────

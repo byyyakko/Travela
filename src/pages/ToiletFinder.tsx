@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { utilToilets, utilGeocode } from "@/lib/aiClient";
-import { supabase } from "@/integrations/supabase/client";
+import { apiGet, apiPost, apiDelete } from "@/lib/dataClient";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -112,22 +112,8 @@ const ToiletReviews = ({ toilet }: { toilet: Toilet }) => {
   const { data: reviews = [], isLoading } = useQuery({
     queryKey: ["toilet-reviews", key],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("toilet_reviews")
-        .select("id, user_id, toilet_key, rating, comment, created_at")
-        .eq("toilet_key", key)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      const userIds = Array.from(new Set((data || []).map((r) => r.user_id)));
-      let profileMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
-      if (userIds.length) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("user_id, display_name, avatar_url")
-          .in("user_id", userIds);
-        profileMap = Object.fromEntries((profs || []).map((p) => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }]));
-      }
-      return (data || []).map((r) => ({ ...r, profiles: profileMap[r.user_id] || null })) as ToiletReview[];
+      const data = await apiGet<ToiletReview[]>(`/reviews/toilet?toilet_key=${encodeURIComponent(key)}`);
+      return data;
     },
   });
 
@@ -137,20 +123,14 @@ const ToiletReviews = ({ toilet }: { toilet: Toilet }) => {
     mutationFn: async () => {
       if (!user) throw new Error("Sign in to leave a review.");
       if (rating < 1 || rating > 5) throw new Error("Please select a rating.");
-      const trimmed = comment.trim().slice(0, 500);
-      const { error } = await supabase.from("toilet_reviews").upsert(
-        {
-          user_id: user.id,
-          toilet_key: key,
-          toilet_name: toilet.name,
-          latitude: toilet.latitude,
-          longitude: toilet.longitude,
-          rating,
-          comment: trimmed || null,
-        },
-        { onConflict: "user_id,toilet_key" }
-      );
-      if (error) throw error;
+      await apiPost("/reviews/toilet", {
+        toilet_key: key,
+        toilet_name: toilet.name,
+        latitude: toilet.latitude,
+        longitude: toilet.longitude,
+        rating,
+        comment: comment.trim().slice(0, 500) || null,
+      });
     },
     onSuccess: () => {
       toast({ title: "Review saved" });
@@ -163,8 +143,7 @@ const ToiletReviews = ({ toilet }: { toilet: Toilet }) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("toilet_reviews").delete().eq("id", id);
-      if (error) throw error;
+      await apiDelete(`/reviews/toilet/${id}`);
     },
     onSuccess: () => {
       toast({ title: "Review deleted" });
